@@ -2,9 +2,9 @@
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
         <!-- Page Title -->
         <div class="mb-8 text-center">
-            <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white">
+            <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white">
                 <i class="fas fa-user-graduate mr-3"></i>Promotion & Demotion
-            </h1>
+            </h2>
             <p class="mt-3 text-lg text-gray-600 dark:text-gray-400">
                 Promote, demote, or repeat students in the next academic year while preserving their records
             </p>
@@ -107,7 +107,7 @@
                                     </select>
                                 </div>
 
-                                @if($oldSections->count() > 0)
+                                @if(count($oldSections) > 0)
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Section (Optional)
@@ -284,11 +284,11 @@
                 <div class="flex justify-between items-center mb-8">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Movement History</h2>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $promotions->count() }} movement record(s)</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ count($promotions) }} movement record(s)</p>
                     </div>
                 </div>
 
-                @if($promotions->count() > 0)
+                @if(count($promotions) > 0)
                     @foreach($promotions as $promotion)
                         <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -347,7 +347,7 @@
         {{-- ====================== VIEW PROMOTION ====================== --}}
         @if($currentView === 'view' && $selectedPromotion)
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-                <div class="px-8 py-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-2xl flex justify-between items-center">
+                <div class="dashboard-section-heading px-8 py-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-2xl flex justify-between items-center">
                     <h2 class="text-2xl font-bold"><i class="fas fa-info-circle mr-2"></i>Movement Details</h2>
                     <button wire:click="backToHistory" class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg font-medium">
                         <i class="fas fa-arrow-left mr-2"></i>Back
@@ -389,7 +389,7 @@
                         <h3 class="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
                             <i class="fas fa-users text-indigo-600"></i>Moved Students
                             <span class="ml-2 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-bold">
-                                {{ $promotionStudents->count() }}
+                                {{ count($promotionStudents) }}
                             </span>
                         </h3>
                     </div>

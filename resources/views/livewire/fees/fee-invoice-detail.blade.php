@@ -8,7 +8,7 @@
         <div class="px-6 py-8">
             <div class="flex flex-col md:flex-row items-start gap-6">
                 <div class="flex-1 text-white">
-                    <h1 class="text-3xl font-bold mb-2">{{ $feeInvoice->name }}</h1>
+                    <h2 class="text-3xl font-bold mb-2">{{ $feeInvoice->name }}</h2>
                     <div class="grid grid-cols-2 gap-4 text-sm mt-4">
                         <div>
                             <p class="opacity-75">Student</p>

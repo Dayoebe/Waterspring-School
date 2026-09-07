@@ -19,7 +19,7 @@
     <link rel="icon" href="{{ asset('images/watersprings/logo.png') }}" type="image/png">
     <link rel="shortcut icon" href="{{ asset(config('app.favicon', 'images/watersprings/logo.png')) }}" type="image/png">
     @include('partials.pwa-head', [
-        'pwaThemeColor' => '#dc2626',
+        'pwaThemeColor' => '#0875a5',
         'pwaTitle' => $title ?? config('app.name', 'School Portal'),
         'pwaIcon' => asset('images/watersprings/logo.png'),
     ])
@@ -43,57 +43,16 @@
     @vite('resources/css/app.css')
     <livewire:styles />
     @stack('head')
-    @include('partials.pwa-register', ['pwaThemeColor' => '#dc2626'])
+    @include('partials.pwa-register', ['pwaThemeColor' => '#0875a5'])
 </head>
 
-<body class="font-sans">
-    <a href="#main" class="sr-only">Skip to content</a>
-
-    <div x-data="{ menuOpen: window.innerWidth >= 1024 ? $persist(false) : false }">
-        <livewire:layouts.header />
-
-        <div class="lg:flex lg:flex-cols text-gray-900 bg-gray-100 dark:bg-gray-700 dark:text-gray-50 min-h-screen">
-            <livewire:layouts.menu />
-
-            <div class="flex min-h-screen w-full max-w-full flex-col overflow-scroll beautify-scrollbar">
-                <div class="bg-white dark:bg-gray-800 p-4 w-full border-b-2">
-                    <h1 class="text-3xl my-2 capitalize font-semibold flex items-center gap-2">
-                        @if (!empty($icon))
-                            <i class="{{ $icon }}"></i>
-                        @endif
-                        <span>{{ $title ?? 'Dashboard' }}</span>
-                    </h1>
-
-                    @if (!empty($description))
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ $description }}</p>
-                    @endif
-
-                    <div class="w-full">
-                        <x-show-set-school />
-                    </div>
-                    <div class="w-full">
-                        @isset($breadcrumbs)
-                            <x-breadcrumbs :paths="$breadcrumbs" />
-                        @endisset
-                    </div>
-                </div>
-
-                <main class="flex-1 p-4" id="main">
-                    {{ $slot }}
-                </main>
-
-                <footer class="border-t border-gray-200 bg-white px-4 py-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <p>Created by <a href="https://dayoebe.github.io" target="_blank" rel="noopener noreferrer" class="font-semibold text-red-600 transition hover:text-red-500 dark:text-red-400 dark:hover:text-red-300">Wireless Terminal</a></p>
-                        <p>&copy; {{ date('Y') }} {{ config('app.name', 'School Portal') }}</p>
-                    </div>
-                </footer>
-            </div>
-        </div>
-
-        @include('partials.dashboard-floating-countdown')
-        @livewire('common.display-status')
-    </div>
+<body class="dashboard-ui font-sans">
+    @include('partials.dashboard-shell', [
+        'dashboardTitle' => $title ?? 'Dashboard',
+        'dashboardDescription' => $description ?? null,
+        'dashboardIcon' => $icon ?? null,
+        'dashboardSlot' => $slot,
+    ])
 
     <livewire:scripts />
     @stack('scripts')

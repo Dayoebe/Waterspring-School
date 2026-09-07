@@ -28,7 +28,7 @@
                  x-transition:enter-end="opacity-100 transform scale-100"
                  class="inline-block w-full max-w-lg my-8 bg-white shadow-2xl rounded-2xl relative z-50">
                 
-                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4 rounded-t-2xl">
+                <div class="dashboard-section-heading bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4 rounded-t-2xl">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-bold text-white">
                             <i class="fas fa-users mr-2"></i>

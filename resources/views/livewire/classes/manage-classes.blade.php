@@ -42,7 +42,7 @@
             <div class="mb-8">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 class="text-4xl font-bold text-gray-900">Classes</h1>
+                        <h2 class="text-4xl font-bold text-gray-900">Classes</h2>
                         <p class="text-gray-600 mt-2 flex items-center">
                             <i class="fas fa-chalkboard-teacher mr-2 text-indigo-600"></i>
                             Manage all your school classes

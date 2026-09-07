@@ -1,5 +1,5 @@
 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-    <div class="bg-amber-600 px-6 py-4">
+    <div class="dashboard-section-heading bg-amber-600 px-6 py-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <h2 class="text-2xl font-bold text-white">
                 <i class="fas fa-user-shield mr-2"></i>Administrators

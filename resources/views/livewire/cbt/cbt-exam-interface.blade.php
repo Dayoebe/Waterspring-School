@@ -12,13 +12,13 @@
             @endif
 
             @if (session()->has('warning'))
-                <div class="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                <div class="dashboard-section-heading mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
                     <i class="fas fa-triangle-exclamation mr-2"></i>{{ session('warning') }}
                 </div>
             @endif
 
             @if (session()->has('message'))
-                <div class="mb-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">
+                <div class="dashboard-section-heading mb-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">
                     <i class="fas fa-circle-check mr-2"></i>{{ session('message') }}
                 </div>
             @endif
@@ -36,7 +36,7 @@
                         <i class="fas fa-graduation-cap text-4xl"></i>
                     </div>
                 </div>
-                <h1 class="text-3xl md:text-4xl font-bold text-center mb-2">{{ $assessment->title }}</h1>
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-2">{{ $assessment->title }}</h2>
                 @if($assessment->description)
                 <p class="text-center text-blue-100 text-lg">{{ $assessment->description }}</p>
                 @endif
@@ -103,7 +103,7 @@
                         @endif
 
                         @if (session()->has('warning'))
-                            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                            <div class="dashboard-section-heading rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
                                 <i class="fas fa-triangle-exclamation mr-2"></i>{{ session('warning') }}
                             </div>
                         @endif
@@ -129,7 +129,7 @@
                     <div class="w-32 h-32 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mb-6">
                         <i class="fas fa-hourglass-half text-7xl text-white"></i>
                     </div>
-                    <h1 class="text-4xl font-bold text-white mb-2">Exam Submitted</h1>
+                    <h2 class="text-4xl font-bold text-white mb-2">Exam Submitted</h2>
                     <p class="text-xl text-white/90">{{ $assessment->title }}</p>
                 </div>
             @else
@@ -138,9 +138,9 @@
                     <div class="w-32 h-32 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mb-6">
                         <i class="fas {{ $results['passed'] ? 'fa-check-circle' : 'fa-times-circle' }} text-7xl text-white"></i>
                     </div>
-                    <h1 class="text-4xl font-bold text-white mb-2">
+                    <h2 class="text-4xl font-bold text-white mb-2">
                         {{ $results['passed'] ? 'Congratulations!' : 'Keep Trying!' }}
-                    </h1>
+                    </h2>
                     <p class="text-xl text-white/90">{{ $assessment->title }}</p>
                 </div>
             @endif

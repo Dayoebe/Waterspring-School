@@ -13,7 +13,7 @@
                 @endif
                 
                 <div class="flex-1 text-white text-center md:text-left">
-                    <h1 class="text-3xl font-bold mb-2">{{ $school->name }}</h1>
+                    <h2 class="text-3xl font-bold mb-2">{{ $school->name }}</h2>
                     <p class="text-blue-100 mb-4">{{ $school->address }}</p>
                     <div class="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
                         @if($school->email)

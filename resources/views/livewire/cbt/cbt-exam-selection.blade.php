@@ -14,15 +14,15 @@
                     <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-red-100">Access</p>
                     <p class="mt-2 text-lg font-bold">Class Based</p>
                 </div>
-                <div class="rounded-2xl bg-orange-500 px-4 py-4 text-white shadow-sm">
+                <div class="dashboard-section-heading rounded-2xl bg-orange-500 px-4 py-4 text-white shadow-sm">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-100">Mode</p>
                     <p class="mt-2 text-lg font-bold">Timed CBT</p>
                 </div>
-                <div class="rounded-2xl bg-amber-500 px-4 py-4 text-slate-950 shadow-sm">
+                <div class="dashboard-section-heading rounded-2xl bg-amber-500 px-4 py-4 text-slate-950 shadow-sm">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-900/70">Visibility</p>
                     <p class="mt-2 text-lg font-bold">Published Papers</p>
                 </div>
-                <div class="rounded-2xl bg-lime-500 px-4 py-4 text-slate-950 shadow-sm">
+                <div class="dashboard-section-heading rounded-2xl bg-lime-500 px-4 py-4 text-slate-950 shadow-sm">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-lime-900/70">Progress</p>
                     <p class="mt-2 text-lg font-bold">Auto Saved</p>
                 </div>

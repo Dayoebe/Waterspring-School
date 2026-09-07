@@ -1,7 +1,7 @@
 <!-- Set School Card (Super Admin Only) -->
 @can('setSchool', App\Models\School::class)
 <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-    <div class="bg-lime-600 px-6 py-4">
+    <div class="dashboard-section-heading bg-lime-600 px-6 py-4">
         <h3 class="text-xl font-bold text-white">
             <i class="fas fa-cog mr-2"></i>Set Working School
         </h3>
@@ -33,7 +33,7 @@
 
 <!-- Schools List -->
 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-    <div class="bg-sky-600 px-6 py-4">
+    <div class="dashboard-section-heading bg-sky-600 px-6 py-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <h2 class="text-2xl font-bold text-white">
                 <i class="fas fa-school mr-2"></i>All Schools

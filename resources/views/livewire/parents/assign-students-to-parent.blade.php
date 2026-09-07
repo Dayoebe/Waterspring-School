@@ -8,7 +8,7 @@
                      class="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover">
                 
                 <div class="flex-1 text-white text-center md:text-left">
-                    <h1 class="text-3xl font-bold mb-2">Assign Students to {{ $parent->name }}</h1>
+                    <h2 class="text-3xl font-bold mb-2">Assign Students to {{ $parent->name }}</h2>
                     <p class="text-white/80">Currently assigned: {{ $assignedStudents->count() }} {{ Str::plural('student', $assignedStudents->count()) }}</p>
                 </div>
                 
@@ -23,7 +23,7 @@
     <!-- Assigned Students -->
     @if($assignedStudents->isNotEmpty())
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div class="bg-green-600 px-6 py-4">
+            <div class="dashboard-section-heading bg-green-600 px-6 py-4">
                 <h2 class="text-xl font-bold text-white">
                     <i class="fas fa-check-circle mr-2"></i>Assigned Students ({{ $assignedStudents->count() }})
                 </h2>
@@ -64,7 +64,7 @@
 
     <!-- Available Students to Assign -->
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div class="bg-blue-600 px-6 py-4">
+        <div class="dashboard-section-heading bg-blue-600 px-6 py-4">
             <h2 class="text-xl font-bold text-white">
                 <i class="fas fa-user-plus mr-2"></i>Available Students to Assign
             </h2>

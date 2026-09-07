@@ -10,7 +10,7 @@
             </div>
             
             <div class="flex-1 text-white text-center md:text-left">
-                <h1 class="text-3xl font-bold mb-2">{{ $subject->name }}</h1>
+                <h2 class="text-3xl font-bold mb-2">{{ $subject->name }}</h2>
                 <div class="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
                     <span class="flex items-center">
                         <i class="fas fa-code mr-2"></i>Code: {{ $subject->short_name }}

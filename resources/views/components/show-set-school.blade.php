@@ -1,11 +1,13 @@
-@role('super-admin')
-<div>
-    <p class="text-gray-600 dark:text-gray-200 text-xs md:text-base my-2">
-        @if (auth()->user()->school != null)
-            You are currently on {{auth()->user()->school->name}} - {{auth()->user()->school->address}}
+@hasanyrole('super-admin|super_admin')
+<div class="dashboard-school-context">
+    <i class="fas fa-school" aria-hidden="true"></i>
+    <div>
+        <span class="dashboard-school-label">School of operation</span>
+        @if (auth()->user()->school)
+            <span class="dashboard-school-name">{{ auth()->user()->school->name }}</span>
         @else
-            Please set a school
+            <a href="{{ route('schools.index') }}">Choose a school to get started</a>
         @endif
-    </p>
+    </div>
 </div>
-@endrole
+@endhasanyrole

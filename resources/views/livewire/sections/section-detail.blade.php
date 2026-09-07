@@ -7,9 +7,9 @@
         <div class="px-6 py-8">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
                 <div class="text-white">
-                    <h1 class="text-3xl font-bold mb-2">
+                    <h2 class="text-3xl font-bold mb-2">
                         <i class="fas fa-layer-group mr-3"></i>{{ $section->name }}
-                    </h1>
+                    </h2>
                     <div class="flex items-center space-x-4 text-blue-100">
                         <span class="flex items-center">
                             <i class="fas fa-school mr-2"></i>{{ $section->myClass->name }}

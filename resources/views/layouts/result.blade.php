@@ -19,7 +19,7 @@
     <link rel="icon" href="{{ asset('images/watersprings/logo.png') }}" type="image/png">
     <link rel="shortcut icon" href="{{ asset(config('app.favicon', 'images/watersprings/logo.png')) }}" type="image/png">
     @include('partials.pwa-head', [
-        'pwaThemeColor' => '#dc2626',
+        'pwaThemeColor' => '#087eae',
         'pwaTitle' => $title ?? config('app.name', 'School Portal'),
         'pwaIcon' => asset('images/watersprings/logo.png'),
     ])
@@ -40,51 +40,16 @@
 
     @vite('resources/css/app.css')
     <livewire:styles />
-    @include('partials.pwa-register', ['pwaThemeColor' => '#dc2626'])
+    @include('partials.pwa-register', ['pwaThemeColor' => '#087eae'])
 </head>
 
-<body class="font-sans">
-    <a href="#main" class="sr-only">Skip to content</a>
-
-    <div x-data="{ menuOpen: window.innerWidth >= 1024 ? $persist(false) : false }">
-        <livewire:layouts.header />
-
-        <div class="lg:flex lg:flex-cols text-gray-900 bg-gray-100 dark:bg-gray-700 dark:text-gray-50 min-h-screen">
-            <livewire:layouts.menu />
-
-            <div class="w-full max-w-full overflow-scroll beautify-scrollbar">
-                <div class="bg-white dark:bg-gray-800 p-4 w-full border-b-2">
-                    <h1 class="text-3xl my-2 capitalize font-semibold flex items-center gap-2">
-                        @if (!empty($icon))
-                            <i class="{{ $icon }}"></i>
-                        @else
-                            <i class="fas fa-chart-bar text-emerald-600 dark:text-emerald-400"></i>
-                        @endif
-                        <span>{{ $title ?? 'Results' }}</span>
-                    </h1>
-
-                    @if (!empty($description))
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ $description }}</p>
-                    @endif
-
-                    <div class="w-full">
-                        <x-show-set-school />
-                    </div>
-                    <div class="w-full">
-                        @isset($breadcrumbs)
-                            <x-breadcrumbs :paths="$breadcrumbs" />
-                        @endisset
-                    </div>
-                </div>
-
-                <main class="p-4" id="main">
-                    {{ $slot }}
-                </main>
-            </div>
-        </div>
-
-        @livewire('common.display-status')
-    </div>
+<body class="dashboard-ui font-sans">
+    @include('partials.dashboard-shell', [
+        'dashboardTitle' => $title ?? 'Results',
+        'dashboardDescription' => $description ?? null,
+        'dashboardIcon' => $icon ?? 'fas fa-chart-bar',
+        'dashboardSlot' => $slot,
+    ])
 
     <livewire:scripts />
     @stack('scripts')

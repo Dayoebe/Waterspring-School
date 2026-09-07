@@ -71,15 +71,15 @@
                 </div>
 
                 <div class="flex flex-wrap gap-3">
-                    <div class="rounded-2xl bg-emerald-500 px-4 py-3 text-white">
+                    <div class="dashboard-section-heading rounded-2xl bg-emerald-500 px-4 py-3 text-white">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">School</p>
                         <p class="mt-1 text-sm font-semibold">{{ $academicContext['school_name'] ?? config('app.name') }}</p>
                     </div>
-                    <div class="rounded-2xl bg-blue-500 px-4 py-3 text-white">
+                    <div class="dashboard-section-heading rounded-2xl bg-blue-500 px-4 py-3 text-white">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">Academic Year</p>
                         <p class="mt-1 text-sm font-semibold">{{ $academicContext['academic_year'] ?? 'Not set' }}</p>
                     </div>
-                    <div class="rounded-2xl bg-amber-800 px-4 py-3 text-slate-950">
+                    <div class="dashboard-section-heading rounded-2xl bg-amber-800 px-4 py-3 text-slate-950">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-900/70">Term</p>
                         <p class="mt-1 text-sm font-semibold">{{ $academicContext['semester'] ?? 'Not set' }}</p>
                     </div>

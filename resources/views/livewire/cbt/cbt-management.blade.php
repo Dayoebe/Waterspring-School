@@ -47,9 +47,9 @@
                     </span>
                 </div>
 
-                <h1 class="mt-4 text-3xl font-black leading-tight sm:text-4xl">
+                <h2 class="mt-4 text-3xl font-black leading-tight sm:text-4xl">
                     Manage sealed papers, student access, and results from one screen.
-                </h1>
+                </h2>
                 <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
                     Create assessments, vet question banks, control publication to students, and open participant eligibility without switching layouts across devices.
                 </p>
@@ -59,11 +59,11 @@
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-red-100">Access Rule</p>
                         <p class="mt-1 text-sm font-semibold">{{ $canLockAssessments ? 'Super Admin Controls Sealing' : 'Teacher Limited Access' }}</p>
                     </div>
-                    <div class="rounded-2xl bg-orange-500 px-4 py-3 text-white">
+                    <div class="dashboard-section-heading rounded-2xl bg-orange-500 px-4 py-3 text-white">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-100">Current Page</p>
                         <p class="mt-1 text-sm font-semibold">{{ $pageAssessmentCount }} Assessment{{ $pageAssessmentCount === 1 ? '' : 's' }}</p>
                     </div>
-                    <div class="rounded-2xl bg-amber-500 px-4 py-3 text-slate-950">
+                    <div class="dashboard-section-heading rounded-2xl bg-amber-500 px-4 py-3 text-slate-950">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-900/70">Question Flow</p>
                         <p class="mt-1 text-sm font-semibold">Draft, seal, publish</p>
                     </div>

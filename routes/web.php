@@ -525,6 +525,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
         ->middleware('permission:read admin|create admin|update admin|delete admin')
         ->name('admins.index');
     Route::get('/admins/{adminId}', \App\Livewire\Admins\AdminDetail::class)
+        ->whereNumber('adminId')
         ->middleware('permission:read admin')
         ->name('admins.show');
         
@@ -758,11 +759,11 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
 
                 // Grade Systems
                 Route::resource('grade-systems', GradeSystemController::class)
-                    ->only(['index', 'show'])
-                    ->middleware('permission:read grade system');
-                Route::resource('grade-systems', GradeSystemController::class)
                     ->only(['create', 'store'])
                     ->middleware('permission:create grade system');
+                Route::resource('grade-systems', GradeSystemController::class)
+                    ->only(['index', 'show'])
+                    ->middleware('permission:read grade system');
                 Route::resource('grade-systems', GradeSystemController::class)
                     ->only(['edit', 'update'])
                     ->middleware('permission:update grade system');

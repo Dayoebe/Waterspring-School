@@ -10,8 +10,8 @@
 
 @endphp
 
-<div class="pointer-events-none fixed bottom-3 right-3 z-[9999] sm:bottom-5 sm:right-5">
-    <div class="pointer-events-auto w-[min(15rem,calc(100vw-1rem))] rounded-xl border border-slate-200 bg-white p-3 text-slate-900 shadow-lg sm:w-64"
+<div class="dashboard-countdown">
+    <div class="dashboard-countdown-card pointer-events-auto w-[min(15rem,calc(100vw-1rem))] rounded-xl border border-slate-200 bg-white p-3 text-slate-900 shadow-lg sm:w-64"
         x-data="{
             targetIso: @js($countdownTarget->toIso8601String()),
             storageKey: 'dashboardCountdownDismissed:' + @js($countdownTarget->toIso8601String()),

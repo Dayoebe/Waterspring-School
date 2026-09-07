@@ -1,67 +1,41 @@
-<header class="bg-white dark:bg-gray-800 shadow-md dark:shadow-white h-16 w-full flex justify-between items-center py-2 dark:text-white border-b-2 dark:border-white">
-    <div class="flex items-center">
-        <button role="button" class="text-2xl mx-3 dark:text-white text-gray-700 px-6" @click="menuOpen = !menuOpen">
-            <p class="sr-only">Menu</p>
-            <i class="fa fa-bars" aria-hidden="true"></i>
+<header class="dashboard-topbar">
+    <div class="dashboard-brand-group">
+        <button type="button" class="dashboard-icon-button" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen.toString()" aria-controls="dashboard-sidebar" aria-label="Toggle navigation">
+            <i class="fas fa-bars" aria-hidden="true"></i>
         </button>
-        <a href="{{ route('home') }}" class="hidden md:flex items-center justify-center" aria-label="Home">
-            <img src="{{ asset(auth()->user()->school->logoURL ?? config('app.logo')) }}" alt="School Logo"
-                class="rounded-full w-12 h-12 border border-gray-200 bg-white p-1 object-contain shadow-lg">
-            <h1 class="text-lg font-semibold mx-3 text-center capitalize">{{ config('app.name') }}</h1>
+        <a href="{{ route('dashboard') }}" class="dashboard-brand">
+            <img src="{{ auth()->user()->school?->logo_url ?? asset(config('app.logo')) }}" alt="Watersprings logo" width="40" height="40">
+            <span><strong>Watersprings</strong><small>School management</small></span>
         </a>
     </div>
-    
-    @auth
-    <div class="flex justify-evenly items-center gap-6 px-5 h-full" x-data="{ 'dropDownOpen': false, 'darkMode': $persist(false), 'fullScreen': $persist(false) }">
-        {{-- full screen toggle --}}
-        <button @click="fullScreen = !fullScreen; fullScreen == true ? document.documentElement.requestFullscreen() : document.exitFullscreen()">
-            <i class="fa fa-expand text-xl" aria-hidden="true"></i>
-            <p class="sr-only">Full screen mode</p>
+    <div class="dashboard-topbar-actions" x-data="{ profileOpen: false, darkMode: $persist(false).as('watersprings.darkMode') }"
+        x-effect="document.body.classList.toggle('dark', darkMode)" @keydown.escape.window="profileOpen = false">
+        <a href="{{ route('home') }}" class="dashboard-website-link"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i><span>School website</span></a>
+        <button type="button" class="dashboard-icon-button dashboard-fullscreen" aria-label="Toggle fullscreen"
+            @click="(document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {})">
+            <i class="fas fa-expand" aria-hidden="true"></i>
         </button>
-        
-        {{-- Dark mode toggle --}}
-        <button @click="darkMode = !darkMode"
-            x-effect="darkMode == true ? document.body.classList.add('dark') : document.body.classList.remove('dark')">
-            <i class="text-xl" :class="{ 'far fa-moon': darkMode == false, 'fas fa-moon': darkMode == true }"
-                aria-hidden="true"></i>
-            <p class="sr-only">Dark mode</p>
+        <button type="button" class="dashboard-icon-button" @click="darkMode = !darkMode" :aria-pressed="darkMode.toString()" aria-label="Toggle dark mode">
+            <i :class="darkMode ? 'fas fa-sun' : 'far fa-moon'" aria-hidden="true"></i>
         </button>
-        
-        {{-- Click to open profile card --}}
-        <button class="h-full flex items-center gap-2" @click="dropDownOpen = !dropDownOpen">
-            <p class="sr-only">Open Profile Card</p>
-            <div class="flex items-center h-full">
-                <img src="{{ auth()->user()->profile_photo_url ?? asset('images/default-avatar.jpg') }}" alt="User Profile"
-                    class="rounded-full w-10 h-10 border border-gray-200 shadow-md">
-                <p class="hidden lg:block px-2">{{ auth()->user()->name ?? 'User' }}</p>
+        <div class="dashboard-profile">
+            <button type="button" class="dashboard-profile-button" @click="profileOpen = !profileOpen" :aria-expanded="profileOpen.toString()" aria-controls="dashboard-profile-panel" aria-label="Open account menu">
+                <img src="{{ auth()->user()->profile_photo_url }}" alt="" width="36" height="36">
+                <span class="dashboard-profile-name">{{ auth()->user()->name }}</span>
+                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div id="dashboard-profile-panel" class="dashboard-profile-panel" x-show="profileOpen" x-cloak x-transition @click.outside="profileOpen = false">
+                <p class="dashboard-profile-label">Signed in as</p>
+                <strong>{{ auth()->user()->name }}</strong>
+                @if (auth()->user()->school?->academicYear)
+                    <p class="dashboard-profile-label">{{ auth()->user()->school->academicYear->name }}</p>
+                @endif
+                <a href="{{ route('profile.edit') }}"><i class="far fa-user" aria-hidden="true"></i>My profile</a>
+                <a href="{{ route('password.change') }}"><i class="fas fa-lock" aria-hidden="true"></i>Change password</a>
+                <form action="{{ route('logout') }}" method="POST">@csrf
+                    <button type="submit"><i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>Sign out</button>
+                </form>
             </div>
-            <i :class="{ 'transition-all': true, 'fas fa-angle-right': dropDownOpen == false, 'fas fa-angle-down': dropDownOpen == true }"
-                aria-hidden="true"></i>
-        </button>
-        
-        {{-- User profile card --}}
-        <div class="absolute bg-blue-700 dark:bg-gray-800 top-16 w-5/6 border md:w-2/6 lg:w-1/5 shadow-md right-2 flex flex-col items-center justify-center rounded p-4 text-white"
-            x-show="dropDownOpen" x-transition style="display: none" @click.outside="dropDownOpen = false">
-            <img src="{{ auth()->user()->profile_photo_url ?? asset('images/default-avatar.jpg') }}" alt="User Profile"
-                class="rounded-full w-20 h-20 border border-gray-200 shadow-md">
-            <h2 class="text-lg font-bold">{{ auth()->user()->name ?? 'User' }}</h2>
-            <p class="text-center">
-                @isset(auth()->user()->school)
-                    @if(auth()->user()->school->academicYear)
-                        Academic year: {{ auth()->user()->school->academicYear->name }}<br>
-                    @endif
-                    @if(auth()->user()->school->term)
-                        Term: {{ auth()->user()->school->term->name }}
-                    @endif
-                @endisset
-            </p>
-            <form action="{{ route('logout') }}" class="w-full" method="POST">
-                @csrf
-                <button type="submit" class="w-full bg-white text-gray-900 p-3 mt-3 text-center">
-                    <i class="fa fa-power-off text-red-700 px-2" aria-hidden="true"></i>Log out
-                </button>
-            </form>
         </div>
     </div>
-    @endauth
 </header>

@@ -8,7 +8,7 @@
                      class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
                 
                 <div class="flex-1 text-white text-center md:text-left">
-                    <h1 class="text-3xl font-bold mb-2">{{ $student->name }}</h1>
+                    <h2 class="text-3xl font-bold mb-2">{{ $student->name }}</h2>
                     <div class="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
                         <span class="flex items-center">
                             <i class="fas fa-envelope mr-2"></i>{{ $student->email }}

@@ -49,11 +49,11 @@
     <div class="mb-4 sm:mb-6">
         <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
-                <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-themed-primary truncate flex items-center">
+                <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-themed-primary truncate flex items-center">
                     <i class="fas fa-chart-bar mr-2 text-accent-themed-primary"></i>
                     <span class="hidden sm:inline">{{ $isParentViewer ? 'Child CBT Results' : 'My CBT Results' }}</span>
                     <span class="sm:hidden">Results</span>
-                </h1>
+                </h2>
                 <p class="text-xs sm:text-sm text-themed-secondary mt-1">
                     {{ $isParentViewer ? 'View CBT performance only for students linked to your parent account.' : 'View your assessment performance' }}
                 </p>

@@ -50,6 +50,8 @@ The following modules are present in the codebase. Their availability depends on
 
 The permission matrix defines super-admin, principal, admin, teacher, student, parent, applicant and basic user roles. Access is enforced through route middleware, permissions and policies; a role does not automatically receive every action in a module. See [app/Support/PermissionMatrix.php](app/Support/PermissionMatrix.php).
 
+Dashboard layouts, forms, tables, and navigation share a responsive light/dark design system. See [Dashboard design](docs/dashboard-design.md) for conventions and validation coverage.
+
 ## Requirements
 
 | Dependency | Project requirement |

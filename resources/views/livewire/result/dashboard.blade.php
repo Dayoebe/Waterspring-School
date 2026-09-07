@@ -9,7 +9,7 @@
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Total Students -->
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="dashboard-section-heading bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">Active Students</p>
@@ -22,7 +22,7 @@
             </div>
 
             <!-- Students with Results -->
-            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="dashboard-section-heading bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium">Results Uploaded</p>
@@ -35,7 +35,7 @@
             </div>
 
             <!-- Pending -->
-            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="dashboard-section-heading bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-yellow-100 text-sm font-medium">Pending Upload</p>
@@ -48,7 +48,7 @@
             </div>
 
             <!-- Average Score -->
-            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="dashboard-section-heading bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-shadow">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">Average Score</p>

@@ -49,27 +49,27 @@
     <!-- Subject Statistics -->
     @if(!empty($subjectStats))
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+            <div class="dashboard-section-heading bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
                 <p class="text-blue-100 text-sm font-medium">Active Students</p>
                 <p class="text-4xl font-bold mt-2">{{ $subjectStats['total_students'] }}</p>
             </div>
 
-            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+            <div class="dashboard-section-heading bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
                 <p class="text-green-100 text-sm font-medium">Highest Score</p>
                 <p class="text-4xl font-bold mt-2">{{ $subjectStats['highest_score'] }}</p>
             </div>
 
-            <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-xl">
+            <div class="dashboard-section-heading bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-xl">
                 <p class="text-red-100 text-sm font-medium">Lowest Score</p>
                 <p class="text-4xl font-bold mt-2">{{ $subjectStats['lowest_score'] }}</p>
             </div>
 
-            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+            <div class="dashboard-section-heading bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
                 <p class="text-purple-100 text-sm font-medium">Average Score</p>
                 <p class="text-4xl font-bold mt-2">{{ $subjectStats['average_score'] }}</p>
             </div>
 
-            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white shadow-xl">
+            <div class="dashboard-section-heading bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white shadow-xl">
                 <p class="text-yellow-100 text-sm font-medium">Pass Rate</p>
                 <p class="text-4xl font-bold mt-2">{{ $subjectStats['pass_rate'] }}%</p>
             </div>

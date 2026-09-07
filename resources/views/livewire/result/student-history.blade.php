@@ -154,7 +154,7 @@
                                 alt="{{ $studentRecord->user->name }}"
                                 class="h-20 w-20 rounded-full border-4 border-white/20 object-cover shadow-xl">
                             <div class="ml-5">
-                                <h1 class="text-2xl font-bold md:text-3xl">{{ $studentRecord->user->name }}</h1>
+                                <h2 class="text-2xl font-bold md:text-3xl">{{ $studentRecord->user->name }}</h2>
                                 <p class="mt-1 text-sky-200">{{ $studentRecord->myClass->name }} • {{ $studentRecord->admission_number }}</p>
                             </div>
                         </div>
@@ -194,7 +194,7 @@
             @endif
 
             <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
-                <div class="bg-indigo-600 px-6 py-4">
+                <div class="dashboard-section-heading bg-indigo-600 px-6 py-4">
                     <h3 class="flex items-center text-xl font-bold text-white">
                         <i class="fas fa-history mr-2"></i>
                         Academic Performance Timeline

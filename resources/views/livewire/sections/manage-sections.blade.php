@@ -8,9 +8,9 @@
         <div class="px-6 py-8">
             <div class="flex justify-between items-center">
                 <div class="text-white">
-                    <h1 class="text-3xl font-bold mb-2">
+                    <h2 class="text-3xl font-bold mb-2">
                         <i class="fas fa-layer-group mr-3"></i>Section Management
-                    </h1>
+                    </h2>
                     <p class="text-indigo-100">Create, manage, and organize class sections</p>
                 </div>
                 @if($classes->isNotEmpty())

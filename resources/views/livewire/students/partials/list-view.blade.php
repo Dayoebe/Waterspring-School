@@ -1,5 +1,5 @@
 <!-- Header -->
-<div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-lg shadow-lg">
+<div class="dashboard-section-heading bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-lg shadow-lg">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h2 class="text-3xl font-bold flex items-center">

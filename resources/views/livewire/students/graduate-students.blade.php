@@ -2,9 +2,9 @@
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
         <!-- Page Title -->
         <div class="mb-8 text-center">
-            <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white">
+            <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white">
                 <i class="fas fa-graduation-cap mr-3"></i>Graduate Students
-            </h1>
+            </h2>
             <p class="mt-3 text-lg text-gray-600 dark:text-gray-400">
                 Manage student graduations and alumni records
             </p>
