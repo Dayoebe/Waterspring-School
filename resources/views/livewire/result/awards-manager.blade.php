@@ -1,0 +1,176 @@
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-white mb-2 flex items-center">
+            <i class="fas fa-trophy mr-3"></i>
+            Top Performers
+        </h2>
+        <p class="text-orange-100">
+            Awards are calculated only after every required subject result is complete.
+            Annual awards combine First, Second, and Third Term.
+        </p>
+    </div>
+
+    <!-- Class Filter & View Type -->
+    <div class="bg-white rounded-2xl shadow-lg p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center gap-4">
+                <label class="text-sm font-medium text-gray-700">Class:</label>
+                <select wire:model.live="selectedClassId"
+                    class="flex-1 border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-orange-500">
+                    @if(!$isRestrictedTeacherResultViewer)
+                        <option value="">All Classes (School-Wide)</option>
+                    @endif
+                    @foreach($classes as $class)
+                        <option value="{{ $class->id }}">{{ $class->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium text-gray-700">View:</label>
+                <div class="flex-1 flex gap-2">
+                    <button wire:click="$set('viewType', 'termly')"
+                        class="flex-1 py-2 px-4 rounded-xl font-medium transition-all {{ $viewType === 'termly' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        <i class="fas fa-calendar-day mr-2"></i>Termly
+                    </button>
+                    <button wire:click="$set('viewType', 'annual')"
+                        class="flex-1 py-2 px-4 rounded-xl font-medium transition-all {{ $viewType === 'annual' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                        <i class="fas fa-calendar-alt mr-2"></i>Annual
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if(!$academicYearId)
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+            <i class="fas fa-info-circle text-yellow-600 text-3xl mb-3"></i>
+            <p class="text-yellow-800 font-medium">Please select an academic year to view top performers</p>
+        </div>
+    @elseif($viewType === 'termly' && !$semesterId)
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+            <i class="fas fa-info-circle text-yellow-600 text-3xl mb-3"></i>
+            <p class="text-yellow-800 font-medium">Please select a term to view termly top performers</p>
+        </div>
+    @elseif($topPerformersData->isEmpty())
+        <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center">
+            <i class="fas fa-shield-alt text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2">Awards Not Ready</h3>
+            <p class="text-gray-500">{{ $statusMessage ?: 'No eligible completed results are available for the selected period.' }}</p>
+        </div>
+    @else
+        <!-- Top 3 Overall -->
+        @if(!empty($topPerformersData->get('top_3')))
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                    Top 3 Best Students (By Average)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    @foreach($topPerformersData->get('top_3', []) as $performer)
+                        @php($awardRank = $performer['rank'])
+                        <div class="border-2 {{ $awardRank === 1 ? 'border-yellow-400 bg-yellow-50' : ($awardRank === 2 ? 'border-gray-400 bg-gray-50' : 'border-orange-400 bg-orange-50') }} rounded-xl p-6 text-center">
+                            <div class="text-5xl mb-3">
+                                {{ $awardRank === 1 ? '🥇' : ($awardRank === 2 ? '🥈' : '🥉') }}
+                            </div>
+                            <img src="{{ $performer['student']['profile_photo_url'] }}"
+                                class="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-4 {{ $awardRank === 1 ? 'border-yellow-400' : ($awardRank === 2 ? 'border-gray-400' : 'border-orange-400') }}">
+                            <h4 class="font-bold text-lg text-gray-900">{{ $performer['student']['name'] }}</h4>
+                            <p class="text-sm text-gray-600 mb-2">{{ $performer['student']['class_name'] }}</p>
+                            <div class="bg-white rounded-lg p-3 mt-3">
+                                <div class="text-3xl font-bold text-blue-600">{{ $performer['average'] }}%</div>
+                                <div class="text-xs text-gray-500 mt-1">Average Score</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <!-- Other Top Performers -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Most A Grades -->
+            @if(!empty($topPerformersData->get('most_as')) && $topPerformersData->get('most_as.a_grades', 0) > 0)
+                <div class="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-xl p-6">
+                    <h4 class="font-bold text-lg text-green-900 mb-4 flex items-center">
+                        <i class="fas fa-star mr-2"></i>
+                        Most A Grades (75%+)
+                    </h4>
+                    <div class="flex items-center">
+                        <img src="{{ $topPerformersData->get('most_as.student.profile_photo_url') }}"
+                            class="w-16 h-16 rounded-full object-cover border-4 border-white mr-4">
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-900">{{ $topPerformersData->get('most_as.student.name') }}</div>
+                            <div class="text-sm text-gray-600">{{ $topPerformersData->get('most_as.student.class_name') }}</div>
+                            <div class="text-2xl font-bold text-green-600 mt-2">{{ $topPerformersData->get('most_as.a_grades') }} A's</div>
+                            @if(count($topPerformersData->get('most_as.joint_winners', [])) > 0)
+                                <div class="text-xs text-green-700 mt-2">
+                                    Joint with {{ collect($topPerformersData->get('most_as.joint_winners'))->pluck('name')->join(', ') }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Most Consistent -->
+            @if(!empty($topPerformersData->get('most_consistent')))
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-xl p-6">
+                    <h4 class="font-bold text-lg text-purple-900 mb-4 flex items-center">
+                        <i class="fas fa-equals mr-2"></i>
+                        {{ $viewType === 'annual' ? 'Most Consistent Across Terms' : 'Most Balanced Across Subjects' }}
+                    </h4>
+                    <div class="flex items-center">
+                        <img src="{{ $topPerformersData->get('most_consistent.student.profile_photo_url') }}"
+                            class="w-16 h-16 rounded-full object-cover border-4 border-white mr-4">
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-900">{{ $topPerformersData->get('most_consistent.student.name') }}</div>
+                            <div class="text-sm text-gray-600">{{ $topPerformersData->get('most_consistent.student.class_name') }}</div>
+                            <div class="text-2xl font-bold text-purple-600 mt-2">{{ $topPerformersData->get('most_consistent.average') }}% avg</div>
+                            <div class="text-xs text-purple-700">
+                                Variation: {{ $topPerformersData->get('most_consistent.consistency') }}
+                            </div>
+                            @if(count($topPerformersData->get('most_consistent.joint_winners', [])) > 0)
+                                <div class="text-xs text-purple-700 mt-2">
+                                    Joint with {{ collect($topPerformersData->get('most_consistent.joint_winners'))->pluck('name')->join(', ') }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Best in Each Subject -->
+        @if(!empty($topPerformersData->get('best_in_subjects')))
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-medal mr-2 text-indigo-600"></i>
+                    Best in Each Subject
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($topPerformersData->get('best_in_subjects', []) as $best)
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="font-bold text-indigo-600 mb-2">{{ $best['subject']['name'] }}</div>
+                            <div class="flex items-center">
+                                <img src="{{ $best['student']['profile_photo_url'] }}"
+                                    class="w-10 h-10 rounded-full object-cover mr-3">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-sm text-gray-900">{{ $best['student']['name'] }}</div>
+                                    <div class="text-xs text-gray-500">{{ $best['student']['class_name'] }}</div>
+                                </div>
+                                <div class="text-lg font-bold text-indigo-600">{{ $best['score'] }}%</div>
+                            </div>
+                            @if(count($best['joint_winners'] ?? []) > 0)
+                                <div class="text-xs text-indigo-700 mt-2">
+                                    Joint with {{ collect($best['joint_winners'])->pluck('name')->join(', ') }}
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    @endif
+</div>

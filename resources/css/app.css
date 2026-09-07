@@ -1,0 +1,110 @@
+@import "@fortawesome/fontawesome-free/css/all.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+    .animate__animated {
+        animation-duration: 700ms;
+        animation-fill-mode: both;
+    }
+
+    .animate__delay-1s {
+        animation-delay: 180ms;
+    }
+
+    .animate__fadeIn,
+    .animate__fadeInUp,
+    .animate__fadeInDown,
+    .animate__fadeInLeft,
+    .animate__fadeInRight {
+        animation-name: site-fade-in;
+    }
+
+    @keyframes site-fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .animate__animated {
+            animation: none !important;
+        }
+    }
+}
+
+@layer components{
+    .beautify-scrollbar::-webkit-scrollbar{
+        width: 5px;
+        height: 5px;
+        background-color: rgba(0, 0, 0, 0);
+    }
+
+    .beautify-scrollbar::-webkit-scrollbar-corner{
+            background-color: transparent;
+    }
+    .beautify-scrollbar::-webkit-scrollbar-thumb{
+        background-color: rgba(126, 143, 151, 0.5);
+    }
+
+    .card {
+        @apply  bg-white dark:bg-gray-800 rounded shadow border my-6
+    }
+
+    .card-header {
+        @apply px-4 md:px-7 py-2 border-b
+    }
+
+    .card-body {
+        @apply px-4 md:px-7 py-7
+    }
+
+    .card-title {
+        @apply md:text-lg capitalize font-semibold
+    }
+
+    /* Shared themed tokens used heavily across CBT views */
+    .bg-themed-primary { @apply bg-gray-100 dark:bg-gray-900; }
+    .bg-themed-secondary { @apply bg-white dark:bg-gray-800; }
+    .bg-themed-tertiary { @apply bg-gray-50 dark:bg-gray-700; }
+
+    .text-themed-primary { @apply text-gray-900 dark:text-gray-100; }
+    .text-themed-secondary { @apply text-gray-600 dark:text-gray-300; }
+    .text-themed-tertiary { @apply text-gray-500 dark:text-gray-400; }
+
+    .border-themed-primary { @apply border-gray-200 dark:border-gray-700; }
+    .border-themed-secondary { @apply border-gray-300 dark:border-gray-600; }
+
+    .bg-accent-themed-primary { @apply bg-indigo-600; }
+    .bg-accent-themed-secondary { @apply bg-indigo-700; }
+    .text-accent-themed-primary { @apply text-indigo-600 dark:text-indigo-400; }
+
+    .border-l-accent-themed-primary { @apply border-l-indigo-600; }
+
+    .hover\:bg-themed-secondary:hover { @apply bg-white dark:bg-gray-800; }
+    .hover\:bg-themed-tertiary:hover { @apply bg-gray-50 dark:bg-gray-700; }
+    .hover\:bg-accent-themed-primary:hover { @apply bg-indigo-600; }
+    .hover\:bg-accent-themed-secondary:hover { @apply bg-indigo-700; }
+
+    .hover\:text-themed-primary:hover { @apply text-gray-900 dark:text-gray-100; }
+    .hover\:text-themed-secondary:hover { @apply text-gray-600 dark:text-gray-300; }
+    .hover\:text-accent-themed-secondary:hover { @apply text-indigo-700 dark:text-indigo-300; }
+
+    .focus\:border-accent-themed-primary:focus { @apply border-indigo-600; }
+    .focus\:ring-accent-themed-primary:focus { @apply ring-indigo-500; }
+
+    .placeholder-themed-tertiary::placeholder { @apply text-gray-500 dark:text-gray-400; }
+
+    .divide-themed-primary > :not([hidden]) ~ :not([hidden]) {
+        @apply border-gray-200 dark:border-gray-700;
+    }
+
+} 

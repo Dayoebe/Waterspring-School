@@ -1,0 +1,280 @@
+<?php
+
+namespace App\Livewire\Result\View;
+
+use Livewire\Component;
+use Livewire\Attributes\On;
+use App\Models\{MyClass, Subject, Result};
+use App\Traits\ResolvesAccessibleStudentResults;
+use App\Support\StudentPeriodActivity;
+use App\Support\ClassExamActivity;
+class SubjectResults extends Component
+{
+    use ResolvesAccessibleStudentResults;
+
+    public $academicYearId;
+    public $semesterId;
+    public $selectedClass;
+    public $selectedSubject;
+    
+    public $subjects; // REMOVE = []
+    public $subjectResults; // REMOVE = []
+    public $subjectStats; // REMOVE = []
+    public $resultPeriodNotice = null;
+
+    public function mount()
+    {
+        $school = auth()->user()?->school;
+
+        $this->academicYearId = $school?->academic_year_id;
+        $this->semesterId = $school?->semester_id;
+        $this->subjects = collect(); // ADD THIS
+        $this->subjectResults = collect(); // ADD THIS
+        $this->subjectStats = []; // Keep as array for stats
+        $this->resultPeriodNotice = null;
+
+        abort_unless(
+            $this->canBrowseAllStudentResults() || $this->currentUserCanAccessSubjectResultTools(),
+            403
+        );
+    }
+
+    #[On('academic-period-changed')]
+    public function handlePeriodChange($data)
+    {
+        $this->academicYearId = $data['academicYearId'];
+        $this->semesterId = $data['semesterId'];
+        $this->reset(['selectedClass', 'selectedSubject']);
+        $this->subjectResults = collect(); // CHANGE from [] to collect()
+        $this->resultPeriodNotice = null;
+    }
+
+    public function updatedSelectedClass()
+    {
+        $classExists = MyClass::where('id', $this->selectedClass)
+            ->whereHas('classGroup', function ($query) {
+                $query->where('school_id', auth()->user()->school_id);
+            })
+            ->exists();
+
+        if (!$classExists) {
+            $this->subjects = collect();
+            $this->selectedClass = null;
+            return;
+        }
+
+        if (!$this->currentUserCanViewSubjectTeacherClass($this->selectedClass)) {
+            $this->subjects = collect();
+            $this->selectedClass = null;
+            return;
+        }
+
+        $participation = ClassExamActivity::participation(
+            (int) auth()->user()->school_id,
+            (int) $this->academicYearId,
+            (int) $this->semesterId,
+            (int) $this->selectedClass
+        );
+        if ($participation) {
+            $label = $participation->examination_name ?: str_replace('_', ' ', $participation->status);
+            $this->subjectResults = collect();
+            $this->subjectStats = [];
+            $this->resultPeriodNotice = "No internal result was issued: {$label}. {$participation->reason}";
+            return;
+        }
+
+        $this->subjects = $this->accessibleSubjectTeacherSubjectsQuery((int) $this->selectedClass)
+            ->get();
+        $this->reset(['selectedSubject']);
+        $this->subjectResults = collect(); // CHANGE from [] to collect()
+        $this->resultPeriodNotice = null;
+    }
+
+    public function loadResults()
+    {
+        if (!$this->selectedClass || !$this->selectedSubject) {
+            $this->dispatch('error', 'Please select both class and subject');
+            return;
+        }
+
+        $classExists = MyClass::where('id', $this->selectedClass)
+            ->whereHas('classGroup', function ($query) {
+                $query->where('school_id', auth()->user()->school_id);
+            })
+            ->exists();
+        if (!$classExists) {
+            $this->dispatch('error', 'Selected class is not in your current school.');
+            return;
+        }
+
+        if (!$this->currentUserCanViewSubjectTeacherClass($this->selectedClass)) {
+            $this->dispatch('error', 'You can only view subject results for classes assigned to you.');
+            return;
+        }
+
+        $subjectExists = $this->accessibleSubjectTeacherSubjectsQuery((int) $this->selectedClass)
+            ->where('subjects.id', $this->selectedSubject)
+            ->exists();
+        if (!$subjectExists) {
+            $this->dispatch('error', 'You can only view results for subjects assigned to you.');
+            return;
+        }
+
+        $studentRecordIds = \App\Models\StudentRecord::activeStudentRecordIdsForSchoolAcademicYear(
+            auth()->user()?->school_id,
+            $this->academicYearId,
+            (int) $this->selectedClass,
+            null,
+            true
+        );
+        $studentRecordIds = StudentPeriodActivity::filterIncluded(
+            $studentRecordIds,
+            (int) auth()->user()->school_id,
+            (int) $this->academicYearId,
+            (int) $this->semesterId
+        );
+
+        if ($studentRecordIds->isEmpty()) {
+            $this->dispatch('error', 'No students found for this class');
+            $this->subjectResults = collect(); // CHANGE from [] to collect()
+            $this->resultPeriodNotice = null;
+            return;
+        }
+
+        // Load results for this subject
+        $results = Result::where('subject_id', $this->selectedSubject)
+            ->where('academic_year_id', $this->academicYearId)
+            ->where('semester_id', $this->semesterId)
+            ->whereIn('student_record_id', $studentRecordIds)
+            ->whereHas('student.user', function ($query) {
+                $query->where('school_id', auth()->user()->school_id)
+                    ->whereNull('deleted_at');
+            })
+            ->with(['student.user' => function ($query) {
+                $query->where('school_id', auth()->user()->school_id)
+                    ->whereNull('deleted_at');
+            }])
+            ->get();
+
+        // Calculate statistics
+        if ($results->isNotEmpty()) {
+            $scores = $results->pluck('total_score')->filter();
+            
+            $this->subjectStats = [
+                'total_students' => $results->count(),
+                'highest_score' => $scores->max() ?? 0,
+                'lowest_score' => $scores->min() ?? 0,
+                'average_score' => $scores->avg() ? round($scores->avg(), 2) : 0,
+                'pass_rate' => $results->count() > 0 
+                    ? round(($results->filter(fn($r) => $r->total_score >= 50)->count() / $results->count()) * 100, 2) 
+                    : 0,
+                'grade_distribution' => $this->calculateGradeDistribution($results),
+            ];
+            $this->resultPeriodNotice = null;
+        } else {
+            $this->subjectStats = [];
+            $this->resultPeriodNotice = $this->buildResultPeriodNotice($studentRecordIds);
+        }
+
+        // Sort by score descending
+        $this->subjectResults = $results->sortByDesc('total_score')->values();
+
+        // Add ranking
+        $rank = 1;
+        $prevScore = null;
+        $studentsAtRank = 0;
+
+        foreach ($this->subjectResults as $result) {
+            if ($prevScore !== null && $result->total_score < $prevScore) {
+                $rank += $studentsAtRank;
+                $studentsAtRank = 1;
+            } else {
+                $studentsAtRank++;
+            }
+            $result->setAttribute('rank', $rank);
+            $prevScore = $result->total_score;
+        }
+    }
+
+    protected function calculateGradeDistribution($results)
+    {
+        $distribution = [
+            'A' => 0, 'B' => 0, 'C' => 0, 'D' => 0, 'E' => 0, 'F' => 0
+        ];
+
+        foreach ($results as $result) {
+            $grade = $this->calculateGrade($result->total_score);
+            $gradePrefix = substr($grade, 0, 1);
+            $distribution[$gradePrefix]++;
+        }
+
+        return $distribution;
+    }
+
+    protected function calculateGrade($score)
+    {
+        return match (true) {
+            $score >= 75 => 'A1',
+            $score >= 70 => 'B2',
+            $score >= 65 => 'B3',
+            $score >= 60 => 'C4',
+            $score >= 55 => 'C5',
+            $score >= 50 => 'C6',
+            $score >= 45 => 'D7',
+            $score >= 40 => 'E8',
+            default => 'F9',
+        };
+    }
+
+    protected function buildResultPeriodNotice($studentRecordIds): ?string
+    {
+        if (!$this->academicYearId || !$this->semesterId || !$this->selectedSubject || collect($studentRecordIds)->isEmpty()) {
+            return null;
+        }
+
+        $availableSemesterIds = Result::query()
+            ->whereIn('student_record_id', collect($studentRecordIds))
+            ->where('academic_year_id', $this->academicYearId)
+            ->where('subject_id', $this->selectedSubject)
+            ->where('semester_id', '!=', $this->semesterId)
+            ->distinct()
+            ->pluck('semester_id');
+
+        if ($availableSemesterIds->isEmpty()) {
+            return null;
+        }
+
+        $currentSemesterName = \App\Models\Semester::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->where('id', $this->semesterId)
+            ->value('name') ?? 'the active term';
+
+        $availableTerms = \App\Models\Semester::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->whereIn('id', $availableSemesterIds)
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($name) => trim($name))
+            ->values();
+
+        if ($availableTerms->isEmpty()) {
+            return null;
+        }
+
+        return 'No uploaded subject results were found for ' . trim($currentSemesterName) .
+            '. Results exist for ' . $availableTerms->join(', ') . '.';
+    }
+
+    public function render()
+    {
+        $classes = $this->accessibleSubjectTeacherClassesQuery()
+            ->orderBy('name')
+            ->get();
+    
+        return view('livewire.result.view.subject-results', compact('classes'))
+            ->layout('layouts.result', [
+                'title' => 'View Subject Results',
+                'page_heading' => 'View Subject Results'
+            ]);
+    }
+}

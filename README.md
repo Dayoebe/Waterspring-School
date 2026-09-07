@@ -1,4 +1,4 @@
-# Elites School Web Application
+# Watersprings School Web Application
 
 A modern school management web application built to help schools manage academic and administrative activities more efficiently.
 
@@ -30,7 +30,7 @@ This project is designed to support multi-role school operations, including supe
 
 ## Overview
 
-Elites School Web Application is a web-based platform created to simplify the day-to-day operations of a school environment.
+Watersprings School Web Application is a web-based platform created to simplify the day-to-day operations of a school environment.
 
 It is built to support academic structure, student administration, teacher workflows, and school-level management through a clean and scalable system.
 
@@ -165,3 +165,7 @@ school/
 ├── postcss.config.js
 ├── tailwind.config.js
 └── vite.config.mjs
+
+## Watersprings public website
+
+Public content, source references, validation and the deferred dashboard setup are documented in [the public-site migration notes](docs/watersprings-public-site.md). The installed dependencies require PHP 8.4.1 or newer.
