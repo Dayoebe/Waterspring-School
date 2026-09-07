@@ -67,7 +67,7 @@
         };
 
         const ensureInstallButton = () => {
-            if (installButton || isInstalled()) {
+            if (installButton || !document.body || isInstalled()) {
                 return;
             }
 
@@ -83,17 +83,19 @@
                     return;
                 }
 
+                const promptEvent = deferredInstallPrompt;
+                deferredInstallPrompt = null;
                 installButton.disabled = true;
 
                 try {
-                    deferredInstallPrompt.prompt();
-                    await deferredInstallPrompt.userChoice;
+                    await promptEvent.prompt();
+                    await promptEvent.userChoice;
                 } catch (error) {
                     console.warn('Install prompt failed.', error);
                 } finally {
-                    deferredInstallPrompt = null;
                     installButton.disabled = false;
                     hideInstallButton();
+                    showInstallButton();
                 }
             });
 
@@ -101,9 +103,15 @@
             showInstallButton();
         };
 
-        window.addEventListener('DOMContentLoaded', ensureInstallButton);
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', ensureInstallButton, { once: true });
+        } else {
+            ensureInstallButton();
+        }
 
         window.addEventListener('beforeinstallprompt', (event) => {
+            // Use our Install App button; Chrome may log that its automatic banner was suppressed.
+            // prompt() must remain inside the user click handler.
             event.preventDefault();
             deferredInstallPrompt = event;
             ensureInstallButton();
