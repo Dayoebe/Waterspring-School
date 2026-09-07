@@ -26,7 +26,7 @@
     $emailHref = trim($contactEmail);
 
     $themeLogoUrl = trim((string) data_get($settings, 'theme.logo_url', ''));
-    $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : ($publicSiteSchool?->logo_url ?? asset(config('app.logo', 'img/logo.png')));
+    $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : ($publicSiteSchool?->logo_url ?? asset(config('app.logo', 'images/watersprings/logo.png')));
 @endphp
 
 <header id="top"

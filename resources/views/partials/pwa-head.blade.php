@@ -1,7 +1,7 @@
 @php
     $pwaThemeColor = $pwaThemeColor ?? '#dc2626';
     $pwaTitle = $pwaTitle ?? config('app.name', 'School Portal');
-    $pwaIcon = $pwaIcon ?? asset(config('app.logo', 'logo.png'));
+    $pwaIcon = $pwaIcon ?? asset(config('app.logo', 'images/watersprings/logo.png'));
 @endphp
 
 <meta name="application-name" content="{{ $pwaTitle }}">

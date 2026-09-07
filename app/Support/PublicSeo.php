@@ -138,7 +138,7 @@ class PublicSeo
     {
         $image = self::plain((string) data_get($settings, 'theme.logo_url', ''));
 
-        return $image !== '' ? self::absoluteUrl($image) : asset(config('app.logo', 'logo.png'));
+        return $image !== '' ? self::absoluteUrl($image) : asset(config('app.logo', 'images/watersprings/logo.png'));
     }
 
     public static function absoluteUrl(?string $url): string
@@ -146,7 +146,7 @@ class PublicSeo
         $url = trim((string) $url);
 
         if ($url === '') {
-            return asset(config('app.logo', 'logo.png'));
+            return asset(config('app.logo', 'images/watersprings/logo.png'));
         }
 
         if (Str::startsWith($url, ['http://', 'https://'])) {

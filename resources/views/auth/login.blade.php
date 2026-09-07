@@ -9,7 +9,7 @@
     $contactPhonePrimary = (string) data_get($settings, 'contact.phone_primary', '');
     $contactEmail = (string) data_get($settings, 'contact.email', '');
     $themeLogoUrl = trim((string) data_get($settings, 'theme.logo_url', ''));
-    $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : asset(config('app.logo', 'logo.png'));
+    $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : asset(config('app.logo', 'images/watersprings/logo.png'));
 
     $portalHighlights = [
         'Secure login for parents, teachers, and students',

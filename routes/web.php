@@ -116,7 +116,6 @@ Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/academics', [PageController::class, 'academics'])->name('academics');
 Route::get('/why-watersprings', [PageController::class, 'whyWatersprings'])->name('why-watersprings');
-Route::redirect('/why-elites', '/why-watersprings', 301)->name('why-elites');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/admission', [PageController::class, 'admission'])->name('admission');
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');

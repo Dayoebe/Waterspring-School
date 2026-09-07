@@ -826,7 +826,7 @@
                                     <img class="h-10 w-10 rounded-full object-cover border border-gray-200"
                                         src="{{ $report['student']->user->profile_photo_url }}"
                                         alt="{{ $report['student']->user->name }}"
-                                        onerror="this.src='{{ asset('img/logo.png') }}'">
+                                        onerror="this.src='{{ asset('images/watersprings/logo.png') }}'">
                                 </div>
                                 <div class="ml-4">
                                     <div class="font-medium text-gray-900">

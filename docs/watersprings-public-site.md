@@ -2,7 +2,7 @@
 
 Public content was checked against the school's existing website on 7 September 2026.
 
-The seven public pages are Home, About, Academics, Why Watersprings, Admission, Gallery and Contact. `/why-elites` permanently redirects to `/why-watersprings`. Public authentication pages inherit the new identity. Dashboard records, permissions and school settings were not migrated.
+The seven public pages are Home, About, Academics, Why Watersprings, Admission, Gallery and Contact. Public authentication pages inherit the new identity. Dashboard branding and defaults have also been updated; academic records and permissions were not changed by the branding cleanup.
 
 ## Content sources
 
@@ -52,8 +52,13 @@ Before enabling the local forms in the dashboard stage, configure Watersprings s
 - `php artisan view:cache` succeeded.
 - PHP syntax checks passed for changed PHP files; `node --check public/service-worker.js` passed.
 - All seven public pages, login/register/password recovery, sitemap endpoints, AI-readable endpoints, manifest and offline page returned HTTP 200.
-- `/why-elites` returned HTTP 301 to `/why-watersprings`.
-- Rendered responses were checked for old school names, Awka/Anambra, stock-photo URLs and unsupported sample claims.
+- Rendered responses were checked for unrelated school branding and stock-photo URLs and unsupported sample claims.
 - Chromium checks passed on all seven public pages at 390px and 1440px: no horizontal overflow, no broken images, exactly one H1 per page, and no JavaScript exceptions. Mobile navigation and FAQ disclosure controls worked.
 - Structured data parsed on all seven pages, and internal fragment links resolved.
 - Browser installation of the PWA and live form submission were not tested.
+
+## Application branding cleanup
+
+Application defaults now use the verified public-school configuration. Dashboard and report-card branding, logo references and command names use Watersprings. Obsolete logos and application icons were removed, and the service-worker cache version was advanced. School records and the existing uploaded Watersprings logo were preserved. The former school-comparison route was removed.
+
+Cleanup validation: build, Blade compilation, PHP syntax, Composer metadata and source-branding checks passed. HTTP checks passed for the seven public pages, login, dashboard, school management, manifest and AI summary, including local image URLs. The missing local storage symlink was restored so uploaded school logos render. Printed report templates were compiled, but no student reports were generated during this cleanup.

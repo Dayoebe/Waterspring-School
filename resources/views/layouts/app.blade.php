@@ -46,7 +46,7 @@
     // Always use school logo as favicon.
     $themeFavicon = trim((string) data_get($publicSettings, 'theme.favicon_url', '')) ?: $themeLogoMeta;
     if ($themeFavicon === '') {
-        $themeFavicon = asset(config('app.logo', 'logo.png'));
+        $themeFavicon = asset(config('app.logo', 'images/watersprings/logo.png'));
     }
     $themeFavicon = \App\Support\PublicSeo::absoluteUrl($themeFavicon);
 

@@ -17,7 +17,7 @@ class CreateSuperAdmin extends Command
      *
      * @var string
      */
-    protected $signature = 'Elites:create-super-admin';
+    protected $signature = 'watersprings:create-super-admin';
 
     /**
      * The console command description.

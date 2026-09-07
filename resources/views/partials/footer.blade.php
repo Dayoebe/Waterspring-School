@@ -26,7 +26,7 @@
     $phoneSecondaryHref = preg_replace('/[^0-9+]/', '', $contactPhoneSecondary);
 
     $themeLogoUrl = trim((string) data_get($settings, 'theme.logo_url', ''));
-    $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : ($publicSiteSchool?->logo_url ?? asset(config('app.logo', 'img/logo.png')));
+    $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : ($publicSiteSchool?->logo_url ?? asset(config('app.logo', 'images/watersprings/logo.png')));
 @endphp
 
 <footer class="relative mt-16 overflow-hidden border-t border-slate-200 bg-slate-950 text-slate-100">

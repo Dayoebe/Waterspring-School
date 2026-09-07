@@ -197,7 +197,7 @@
             window.__attendanceOfflineDraftBooted = true;
 
             const ROOT_ID = 'attendance-offline-root';
-            const STORAGE_PREFIX = 'elites:attendance:draft:v1';
+            const STORAGE_PREFIX = 'watersprings:attendance:draft:v1';
             const FIELD_SELECTOR = '#attendance-date, #attendance-class, #attendance-section, #attendance-notes, [data-attendance-status], [data-attendance-remark]';
 
             const getRoot = () => document.getElementById(ROOT_ID);

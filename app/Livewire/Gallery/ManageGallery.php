@@ -359,7 +359,7 @@ class ManageGallery extends Component
     {
         $credentials = $this->cloudinaryCredentials();
         $timestamp = time();
-        $folder = trim((string) config('services.cloudinary.folder', 'elites/gallery'), '/')
+        $folder = trim((string) config('services.cloudinary.folder', 'watersprings/gallery'), '/')
             . '/school-' . $schoolId;
 
         $uploadParams = [

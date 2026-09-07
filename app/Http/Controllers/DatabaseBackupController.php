@@ -194,7 +194,7 @@ class DatabaseBackupController extends Controller
 
     private function makeTemporaryDumpPath(string $extension): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'elites-db-');
+        $path = tempnam(sys_get_temp_dir(), 'watersprings-db-');
         if ($path === false) {
             throw new RuntimeException('Unable to create temporary file for database export.');
         }
@@ -272,7 +272,7 @@ class DatabaseBackupController extends Controller
             $connection = DB::connection($connectionName);
             $pdo = $connection->getPdo();
 
-            echo "-- Elites SQL dump\n";
+            echo "-- watersprings SQL dump\n";
             echo '-- Generated at: ' . now()->toDateTimeString() . "\n";
             echo '-- Database: `' . str_replace('`', '``', $databaseName) . "`\n";
             if ($dumpCommandError !== null && $dumpCommandError !== '') {

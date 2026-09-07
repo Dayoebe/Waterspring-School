@@ -9,7 +9,7 @@
     @include('partials.pwa-head', [
         'pwaThemeColor' => '#dc2626',
         'pwaTitle' => config('app.name', 'CBT System'),
-        'pwaIcon' => asset('logo.png'),
+        'pwaIcon' => asset('images/watersprings/logo.png'),
     ])
     <title>{{ config('app.name', 'CBT System') }} - Exam Mode</title>
 

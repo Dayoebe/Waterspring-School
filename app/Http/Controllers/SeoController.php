@@ -101,7 +101,6 @@ class SeoController extends Controller
             'Allow: /icons/',
             'Allow: /img/',
             'Allow: /images/',
-            'Allow: /logo.png',
             'Allow: /manifest.webmanifest',
             'Allow: /llms.txt',
             'Allow: /llms-full.txt',

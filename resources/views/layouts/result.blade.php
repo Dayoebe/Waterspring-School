@@ -7,36 +7,36 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <meta name="description"
-        content="Elite International College, Awka - Results management portal for secure, accurate academic records.">
+        content="Watersprings International School Akure - Results management portal for secure, accurate academic records.">
     <meta name="keywords"
-        content="Elite International College, Results, Academic Records, School Report, Result Management">
-    <meta name="author" content="Elite International College, Awka">
+        content="Watersprings International School, Results, Academic Records, School Report, Result Management">
+    <meta name="author" content="Watersprings International School Akure">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta name="googlebot" content="noindex, nofollow, noarchive">
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="canonical" href="{{ url()->current() }}">
-    <link rel="icon" href="{{ asset('logo.png') }}" type="image/png">
-    <link rel="shortcut icon" href="{{ asset(config('app.favicon', 'logo.png')) }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/watersprings/logo.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ asset(config('app.favicon', 'images/watersprings/logo.png')) }}" type="image/png">
     @include('partials.pwa-head', [
         'pwaThemeColor' => '#dc2626',
         'pwaTitle' => $title ?? config('app.name', 'School Portal'),
-        'pwaIcon' => asset('logo.png'),
+        'pwaIcon' => asset('images/watersprings/logo.png'),
     ])
 
-    <meta property="og:title" content="{{ $title ?? config('app.name', 'Elite International College, Awka') }}">
+    <meta property="og:title" content="{{ $title ?? config('app.name', 'Watersprings International School Akure') }}">
     <meta property="og:description" content="Results dashboard for uploads, analytics, and class/student performance tracking.">
-    <meta property="og:image" content="{{ asset('logo.png') }}">
+    <meta property="og:image" content="{{ asset('images/watersprings/logo.png') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Elite International College, Awka">
+    <meta property="og:site_name" content="Watersprings International School Akure">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $title ?? config('app.name', 'Elite International College, Awka') }}">
+    <meta name="twitter:title" content="{{ $title ?? config('app.name', 'Watersprings International School Akure') }}">
     <meta name="twitter:description" content="Results dashboard for uploads, analytics, and class/student performance tracking.">
-    <meta name="twitter:image" content="{{ asset('logo.png') }}">
+    <meta name="twitter:image" content="{{ asset('images/watersprings/logo.png') }}">
 
-    <title>{{ $title ?? config('app.name', 'Elite International College, Awka') }}</title>
+    <title>{{ $title ?? config('app.name', 'Watersprings International School Akure') }}</title>
 
     @vite('resources/css/app.css')
     <livewire:styles />

@@ -40,7 +40,7 @@ class ResetAllPromotions extends Command
                 $choices,
                 0
             );
-            // Extract actual ID from selected string like "Elite International College (ID: 1)"
+            // Extract actual ID from selected string like "Watersprings International School (ID: 1)"
             preg_match('/\(ID: (\d+)\)/', $selectedId, $matches);
             $school = $schools->find($matches[1] ?? null);
         }

@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="Official academic report for  {{ $class->name }} - {{ $academicYear->name }} - {{ $semester->name }} at Elites International College, Awka.">
-    <meta name="keywords" content="academic report, student results, Elites International College, Awka, school report, student performance">
-    <meta name="author" content="Elites International College, Awka"> 
+    <meta name="description" content="Official academic report for  {{ $class->name }} - {{ $academicYear->name }} - {{ $semester->name }} at Watersprings International School Akure.">
+    <meta name="keywords" content="academic report, student results, Watersprings International School Akure, school report, student performance">
+    <meta name="author" content="Watersprings International School Akure">
     <meta name="robots" content="noindex, nofollow, noarchive">
 
     
@@ -173,25 +173,24 @@
             <div class="print-container mx-auto print-border">
                 {{-- Watermark and School Logo on Report --}}
                 <div class="absolute inset-0 flex items-center justify-center opacity-10 -z-100">
-                    <img src="{{ asset('img/logo.png') }}" alt="Watermark" class="h-auto w-auto rotate-0">
+                    <img src="{{ asset('images/watersprings/logo.png') }}" alt="Watermark" class="h-auto w-auto rotate-0">
                 </div>
                 <div class="absolute bottom-4 right-4 opacity-80 -z-100">
                     <div
                         class="border-2 border-red-500 rounded-full h-20 w-20 flex items-center justify-center text-red-500 font-bold text-xs text-center p-2">
-                        ELITES <br>INTERNATIONAL <br> COLLEGE
+                        WATERSPRINGS <br>INTERNATIONAL <br> SCHOOL
                     </div>
                 </div>
 
               {{-- Header Section --}}
 <div class="flex-header">
     <div class="flex items-center border-b border-blue-900 pb-1 mb-1">
-        <img src="{{ asset('img/logo.png') }}" alt="School Logo" class="h-20 w-20 object-contain ml-10">
+        <img src="{{ asset('images/watersprings/logo.png') }}" alt="School Logo" class="h-20 w-20 object-contain ml-10">
         <div class="text-center flex-1">
-            <h1 class="text-2xl font-bold text-blue-900 uppercase leading-tight">ELITES INTERNATIONAL
-                COLLEGE, AWKA</h1>
-            <p class="text-sm uppercase tracking-wide text-gray-700">To Create a Brighter Future</p>
-            <p class="text-xs text-gray-600">Email: elitesinternationalcollege@gmail.com | Tel:
-                08066025508</p>
+            <h1 class="text-2xl font-bold text-blue-900 uppercase leading-tight">WATERSPRINGS INTERNATIONAL SCHOOL AKURE</h1>
+            <p class="text-sm uppercase tracking-wide text-gray-700">Under the leadership of God</p>
+            <p class="text-xs text-gray-600">Email: info@waterspringsschool.com.ng | Tel:
+                09139345577</p>
             <p class="font-semibold text-sm mt-1 uppercase text-blue-900">
                 {{ strtoupper($data['studentRecord']->getClassForYear($data['academicYearId'])->name ?? $data['studentRecord']->myClass->name) }} -
                 {{ strtoupper($data['semesterName']) }} {{ $data['academicYearName'] }} ACADEMIC REPORT

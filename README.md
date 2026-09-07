@@ -16,7 +16,7 @@ The public website has been adapted using the school's published information and
 | Gallery | `/gallery` | Photographs from the school's existing website |
 | Contact | `/contact` | Akure address, telephone numbers, email addresses, map and visit guidance |
 
-The old `/why-elites` URL redirects permanently to `/why-watersprings`. Login, registration and password recovery pages use the public school identity.
+Login, registration and password recovery pages use the public school identity.
 
 Public pages include canonical URLs, social metadata and structured data. Discovery endpoints include `/sitemap.xml`, `/sitemap-pages.xml`, `/sitemap-images.xml`, `/robots.txt`, `/llms.txt`, `/llms-full.txt` and `/ai.txt`. A web app manifest, service worker and offline page are included.
 
@@ -90,10 +90,10 @@ php artisan storage:link
 Create the first super-admin interactively:
 
 ```bash
-php artisan Elites:create-super-admin
+php artisan watersprings:create-super-admin
 ```
 
-The command retains its legacy name. Log in at `/login`, then configure the school and its academic structure. The schema does not populate a Watersprings school, classes or student records automatically.
+Log in at `/login`, then configure the school and its academic structure. The schema does not populate a Watersprings school, classes or student records automatically.
 
 Build the frontend and start the application:
 
@@ -106,9 +106,9 @@ Open `http://localhost:8000`. For frontend development, run `npm run dev` in a s
 
 ### Setup limitations
 
-- `database/seeders` is not included. The legacy `elite:init` command calls missing seeders, so use the manual setup above instead of `elite:init` or `migrate --seed`.
+- `database/seeders` is not included. The legacy `watersprings:init` command calls missing seeders, so use the manual setup above instead of `watersprings:init` or `migrate --seed`.
 - When no school records exist, Admission links to Watersprings' existing online application form and Contact provides direct contact channels. Existing local Livewire forms render when school records become available. Configure the correct school, entry classes, sections and message recipients before using those forms.
-- Legacy dashboard labels, command names and defaults remain in parts of the management platform. The public-site migration did not rebrand or configure the entire dashboard.
+- Dashboard branding and command names use Watersprings. Academic setup, school data and operational configuration still need to be completed.
 - `.env.example` uses `MAIL_MAILER=log` and synchronous queue processing. Local mail is written to logs; it is not delivered to recipients.
 
 ## Optional services and deployment

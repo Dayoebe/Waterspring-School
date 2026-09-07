@@ -16,14 +16,14 @@ class InitCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'elite:init';
+    protected $signature = 'watersprings:init';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Install elite';
+    protected $description = 'Install Watersprings';
 
     /**
      * No of attempts to be made to connect to the
@@ -40,24 +40,7 @@ class InitCommand extends Command
      */
     public function handle()
     {
-        $this->line("
-    
-
-
-          __        __   _                            
-  \ \      / /__| | ___ ___  _ __ ___   ___   
-   \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \  
-    \ V  V /  __/ | (_| (_) | | | | | |  __/  
-     \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  
-
-
-        ███████╗██╗     ██╗████████╗███████╗███████╗███████╗
-        ██╔════╝██║     ██║╚══██╔══╝██╔════╝██╔════╝██╔════╝
-        █████╗  ██║     ██║   ██║   █████╗  █████╗  ███████╗
-        ██╔══╝  ██║     ██║   ██║   ██╔══╝  ██╔══╝  ╚════██║
-        ███████╗███████╗██║   ██║   ███████╗███████╗███████║
-        ╚══════╝╚══════╝╚═╝   ╚═╝   ╚══════╝╚══════╝╚══════╝
-        ");
+        $this->info('Watersprings School setup');
         $this->info(
             'The installation would now begin.'
                 . PHP_EOL
@@ -132,7 +115,7 @@ class InitCommand extends Command
     {
         $this->line("Set up your app's environment details");
         $this->env = $this->choice(
-            'What environment are you installing elite on?',
+            'What environment are you installing Watersprings on?',
             ['local', 'production'],
             $this->env
         );
@@ -270,12 +253,12 @@ class InitCommand extends Command
         $this->line('Creating super admin account');
         switch ($this->env) {
             case 'local':
-                $this->info('Since you are trying out elite locally, we have already created a super admin account for you. Check the docs on what these credentials are if unsure');
+                $this->info('Since you are trying out Watersprings locally, we have already created a super admin account for you. Check the docs on what these credentials are if unsure');
                 break;
             default:
-                $this->info('If you choose to not create a super admin now for some reason, you can do so late by running php artisan Elites:create-super-admin');
+                $this->info('If you choose to not create a super admin now for some reason, you can do so late by running php artisan watersprings:create-super-admin');
                 if ($this->confirm('Do you wish to create a super admin account now?', true)) {
-                    $this->call('Elites:create-super-admin');
+                    $this->call('watersprings:create-super-admin');
                 } else {
                     $this->line('skipping...');
                 }

@@ -505,7 +505,7 @@
             window.__resultUploadOfflineDraftBooted = true;
 
             const ROOT_ID = 'result-upload-offline-root';
-            const STORAGE_PREFIX = 'elites:result-upload:draft:v1';
+            const STORAGE_PREFIX = 'watersprings:result-upload:draft:v1';
             const FIELD_SELECTOR = [
                 '#result-upload-class',
                 '#result-upload-student',

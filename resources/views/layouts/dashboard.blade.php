@@ -7,38 +7,38 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <meta name="description"
-        content="Elite International College, Awka - A top-tier secondary school dedicated to academic excellence, character development, and future leadership.">
+        content="Watersprings International School Akure — school administration and academic management.">
     <meta name="keywords"
-        content="Elite International College, Awka, Secondary School in Awka, Nigerian Schools, WAEC, NECO, Best School in Anambra, College Education, Private School Awka">
-    <meta name="author" content="Elite International College, Awka">
+        content="Watersprings International School Akure, school administration, academic records, staff portal">
+    <meta name="author" content="Watersprings International School Akure">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta name="googlebot" content="noindex, nofollow, noarchive">
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="canonical" href="{{ url()->current() }}">
-    <link rel="icon" href="{{ asset('logo.png') }}" type="image/png">
-    <link rel="shortcut icon" href="{{ asset(config('app.favicon', 'logo.png')) }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/watersprings/logo.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ asset(config('app.favicon', 'images/watersprings/logo.png')) }}" type="image/png">
     @include('partials.pwa-head', [
         'pwaThemeColor' => '#dc2626',
         'pwaTitle' => $title ?? config('app.name', 'School Portal'),
-        'pwaIcon' => asset('logo.png'),
+        'pwaIcon' => asset('images/watersprings/logo.png'),
     ])
 
-    <meta property="og:title" content="{{ $title ?? config('app.name', 'Elite International College, Awka') }}">
+    <meta property="og:title" content="{{ $title ?? config('app.name', 'Watersprings International School Akure') }}">
     <meta property="og:description"
-        content="Excellence in education, character, and leadership. Explore admissions, academics, and student life at Elite International College, Awka.">
-    <meta property="og:image" content="{{ asset('logo.png') }}">
+        content="Excellence in education, character, and leadership. Explore admissions, academics, and student life at Watersprings International School Akure.">
+    <meta property="og:image" content="{{ asset('images/watersprings/logo.png') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Elite International College, Awka">
+    <meta property="og:site_name" content="Watersprings International School Akure">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $title ?? config('app.name', 'Elite International College, Awka') }}">
+    <meta name="twitter:title" content="{{ $title ?? config('app.name', 'Watersprings International School Akure') }}">
     <meta name="twitter:description"
-        content="A leading secondary school in Anambra State focused on academic and moral excellence.">
-    <meta name="twitter:image" content="{{ asset('logo.png') }}">
+        content="Watersprings International School Akure — school administration and academic management.">
+    <meta name="twitter:image" content="{{ asset('images/watersprings/logo.png') }}">
 
-    <title>{{ $title ?? config('app.name', 'Elite International College, Awka') }}</title>
+    <title>{{ $title ?? config('app.name', 'Watersprings International School Akure') }}</title>
 
     @vite('resources/css/app.css')
     <livewire:styles />

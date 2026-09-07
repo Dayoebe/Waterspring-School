@@ -13,17 +13,17 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Watersprings International School Akure'),
 
     /**
      * Application logo.
      */
-    'logo' => env('LOGO_PATH'),
+    'logo' => env('LOGO_PATH', 'images/watersprings/logo.png'),
 
     /**
      * Application logo.
      */
-    'favicon' => env('FAVICON_PATH', 'favicon/favicon.ico'),
+    'favicon' => env('FAVICON_PATH', 'images/watersprings/logo.png'),
 
     /**
      * -----------------------------------------------------------------------
