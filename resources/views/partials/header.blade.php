@@ -1,19 +1,17 @@
 @php
-    $primaryNavItems = [
-        ['label' => 'Home', 'route' => 'home'],
-        ['label' => 'Admission', 'route' => 'admission'],
-        ['label' => 'Prospectus', 'route' => 'prospectus'],
-        ['label' => 'Gallery', 'route' => 'gallery'],
-        ['label' => 'Contact', 'route' => 'contact'],
+    $navGroups = [
+        'school' => ['label' => 'Our School', 'items' => [
+            ['label' => 'About Watersprings', 'route' => 'about', 'description' => 'Our story, values and leadership'],
+            ['label' => 'Academics', 'route' => 'academics', 'description' => 'Classes and learning stages'],
+            ['label' => 'Why Watersprings', 'route' => 'why-watersprings', 'description' => 'What makes our school special'],
+            ['label' => 'Gallery', 'route' => 'gallery', 'description' => 'A look at life in our school'],
+        ]],
+        'admissions' => ['label' => 'Admissions', 'items' => [
+            ['label' => 'Admission Guide', 'route' => 'admission', 'description' => 'How to apply, fees and requirements'],
+            ['label' => 'School Prospectus', 'route' => 'prospectus', 'description' => 'Your guide to learning and school life'],
+        ]],
     ];
-
-    $discoverNavItems = [
-        ['label' => 'About', 'route' => 'about'],
-        ['label' => 'Academics', 'route' => 'academics'],
-        ['label' => 'Why Watersprings', 'route' => 'why-watersprings'],
-    ];
-
-    $discoverRouteIsActive = request()->routeIs(...array_column($discoverNavItems, 'route'));
+    $activeGroup = collect($navGroups)->keys()->first(fn ($key) => request()->routeIs(...array_column($navGroups[$key]['items'], 'route')));
 
     $settings = $publicSiteSettings ?? [];
     $schoolName = (string) data_get($settings, 'school_name', config('app.name', 'School Portal'));
@@ -31,9 +29,10 @@
 @endphp
 
 <header id="top"
-    x-data="{ mobileOpen: false, mobileDiscoverOpen: {{ $discoverRouteIsActive ? 'true' : 'false' }}, discoverOpen: false, accountOpen: false, scrolled: false }"
+    x-data="{ mobileOpen: false, mobileGroup: @js($activeGroup), openGroup: null, accountOpen: false, scrolled: false }"
     @scroll.window="scrolled = window.scrollY > 8"
-    @keydown.escape.window="mobileOpen = false; mobileDiscoverOpen = false; discoverOpen = false; accountOpen = false"
+    @resize.window.debounce.150ms="mobileOpen = false; openGroup = null; accountOpen = false"
+    @keydown.escape.window="mobileOpen = false; openGroup = null; accountOpen = false"
     class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 backdrop-blur transition-all duration-300"
     :class="scrolled ? 'shadow-lg shadow-slate-900/5' : 'shadow-none'">
 
@@ -59,8 +58,8 @@
     </div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between py-3">
-            <a href="{{ route('home') }}" class="group flex min-w-0 max-w-[65%] items-center gap-3 lg:max-w-[28%] xl:max-w-[34%]">
+        <div class="flex items-center justify-between gap-4 py-3">
+            <a href="{{ route('home') }}" class="group flex min-w-0 max-w-[78%] items-center gap-3 lg:max-w-[34%] xl:max-w-[38%]">
                 <img src="{{ $logoUrl }}" alt="{{ $schoolName }} Logo" width="44" height="44" decoding="async"
                     class="h-10 w-10 rounded-full border border-amber-300 bg-white p-1 object-contain shadow-sm transition group-hover:scale-105 sm:h-11 sm:w-11">
                 <div class="min-w-0">
@@ -71,47 +70,28 @@
                 </div>
             </a>
 
-            <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-                @foreach ($primaryNavItems as $item)
-                    <a href="{{ route($item['route']) }}"
-                        @class([
-                            'rounded-xl px-4 py-2 text-sm font-semibold transition',
-                            'bg-sky-100 text-sky-700' => request()->routeIs($item['route']),
-                            'text-slate-700 hover:bg-slate-100 hover:text-slate-900' => !request()->routeIs($item['route']),
-                        ])>
-                        {{ $item['label'] }}
-                    </a>
-                @endforeach
-
-                <div class="relative" @mouseenter="discoverOpen = true" @mouseleave="discoverOpen = false">
-                    <button type="button" @click="discoverOpen = !discoverOpen" @keydown.arrow-down.prevent="discoverOpen = true; $nextTick(() => $refs.discoverFirst?.focus())"
-                        :aria-expanded="discoverOpen.toString()" aria-haspopup="true"
-                        @class([
-                            'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition',
-                            'bg-sky-100 text-sky-700' => $discoverRouteIsActive,
-                            'text-slate-700 hover:bg-slate-100 hover:text-slate-900' => !$discoverRouteIsActive,
-                        ])>
-                        <span>Discover</span>
-                        <i class="fas fa-chevron-down text-[10px] transition-transform duration-200" :class="discoverOpen ? 'rotate-180' : ''"></i>
-                    </button>
-
-                    <div x-show="discoverOpen" x-cloak x-transition.origin.top.right @click.outside="discoverOpen = false"
-                        class="absolute right-0 top-full z-50 pt-2">
-                        <div class="w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
-                            @foreach ($discoverNavItems as $index => $item)
-                                <a href="{{ route($item['route']) }}" @if ($index === 0) x-ref="discoverFirst" @endif
-                                    @class([
-                                        'flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition',
-                                        'bg-sky-50 text-sky-700' => request()->routeIs($item['route']),
-                                        'text-slate-700 hover:bg-slate-50 hover:text-slate-950' => !request()->routeIs($item['route']),
-                                    ])>
-                                    <span>{{ $item['label'] }}</span>
-                                    <i class="fas fa-arrow-right text-[10px] opacity-50"></i>
+            <nav class="hidden shrink-0 items-center gap-1 lg:flex" aria-label="Main navigation">
+                <a href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif class="rounded-xl px-3 py-3 text-sm font-semibold {{ request()->routeIs('home') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Home</a>
+                @foreach($navGroups as $key => $group)
+                    <div class="relative" @click.outside="if (openGroup === @js($key)) openGroup = null" @focusout="if (!$el.contains($event.relatedTarget)) { if (openGroup === @js($key)) openGroup = null; }"
+                        @keydown.escape.stop.prevent="openGroup = null; $refs.{{ $key }}Trigger.focus()">
+                        <button type="button" x-ref="{{ $key }}Trigger" @click="openGroup = openGroup === @js($key) ? null : @js($key); accountOpen = false"
+                            @keydown.arrow-down.prevent="openGroup = @js($key); $nextTick(() => $refs.{{ $key }}First.focus())"
+                            :aria-expanded="(openGroup === @js($key)).toString()" aria-controls="public-nav-{{ $key }}"
+                            class="inline-flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold {{ $activeGroup === $key ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">
+                            {{ $group['label'] }}<i aria-hidden="true" class="fas fa-chevron-down text-[10px] transition-transform" :class="openGroup === @js($key) ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div id="public-nav-{{ $key }}" x-show="openGroup === @js($key)" x-cloak x-transition.opacity.duration.100ms class="absolute left-0 top-full z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
+                            @foreach($group['items'] as $item)
+                                <a href="{{ route($item['route']) }}" @if($loop->first) x-ref="{{ $key }}First" @endif @if(request()->routeIs($item['route'])) aria-current="page" @endif
+                                    class="block rounded-xl px-4 py-3 {{ request()->routeIs($item['route']) ? 'bg-sky-50 text-sky-800' : 'text-slate-800 hover:bg-slate-50' }}">
+                                    <span class="block text-sm font-bold">{{ $item['label'] }}</span><span class="mt-1 block text-xs leading-relaxed text-slate-500">{{ $item['description'] }}</span>
                                 </a>
                             @endforeach
                         </div>
                     </div>
-                </div>
+                @endforeach
+                <a href="{{ route('contact') }}" @if(request()->routeIs('contact')) aria-current="page" @endif class="rounded-xl px-3 py-3 text-sm font-semibold {{ request()->routeIs('contact') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Contact</a>
             </nav>
 
             <div class="hidden items-center gap-2 lg:flex">
@@ -123,7 +103,7 @@
 
                 @auth
                     <div class="relative">
-                        <button type="button" @click="accountOpen = !accountOpen"
+                        <button type="button" @click="accountOpen = !accountOpen; openGroup = null" :aria-expanded="accountOpen.toString()" aria-controls="public-account-menu"
                             class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50">
                             <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}"
                                 class="h-7 w-7 rounded-full border border-slate-200 object-cover">
@@ -132,7 +112,7 @@
                                 :class="{ 'rotate-180': accountOpen }"></i>
                         </button>
 
-                        <div x-show="accountOpen" x-cloak @click.away="accountOpen = false" x-transition
+                        <div id="public-account-menu" x-show="accountOpen" x-cloak @click.away="accountOpen = false" x-transition
                             class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
                             <a href="{{ route('dashboard') }}"
                                 class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
@@ -164,45 +144,29 @@
 
             <button type="button" @click="mobileOpen = !mobileOpen"
                 class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-100 lg:hidden"
-                aria-label="Toggle menu">
+                aria-label="Toggle menu" :aria-expanded="mobileOpen.toString()" aria-controls="public-mobile-menu">
                 <i class="fas text-lg" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
             </button>
         </div>
     </div>
 
-    <div x-show="mobileOpen" x-cloak x-transition class="border-t border-slate-200 bg-white lg:hidden">
+    <nav id="public-mobile-menu" aria-label="Mobile navigation" x-show="mobileOpen" x-cloak class="max-h-[calc(100dvh-72px)] overflow-y-auto border-t border-slate-200 bg-white lg:hidden">
         <div class="mx-auto max-w-7xl space-y-2 px-4 py-3 sm:px-6">
-            @foreach ($primaryNavItems as $item)
-                <a href="{{ route($item['route']) }}"
-                    @class([
-                        'block rounded-xl px-4 py-3 text-sm font-semibold transition',
-                        'bg-sky-100 text-sky-700' => request()->routeIs($item['route']),
-                        'text-slate-700 hover:bg-slate-100' => !request()->routeIs($item['route']),
-                    ])>
-                    {{ $item['label'] }}
-                </a>
-            @endforeach
-
-            <div class="overflow-hidden rounded-xl border border-slate-200">
-                <button type="button" @click="mobileDiscoverOpen = !mobileDiscoverOpen"
-                    class="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    :aria-expanded="mobileDiscoverOpen.toString()">
-                    <span>Discover</span>
-                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="mobileDiscoverOpen ? 'rotate-180' : ''"></i>
-                </button>
-                <div x-show="mobileDiscoverOpen" x-collapse class="border-t border-slate-200 bg-slate-50 p-2">
-                    @foreach ($discoverNavItems as $item)
-                        <a href="{{ route($item['route']) }}"
-                            @class([
-                                'block rounded-lg px-4 py-3 text-sm font-semibold transition',
-                                'bg-sky-100 text-sky-700' => request()->routeIs($item['route']),
-                                'text-slate-600 hover:bg-white hover:text-slate-900' => !request()->routeIs($item['route']),
-                            ])>
-                            {{ $item['label'] }}
-                        </a>
-                    @endforeach
+            <a href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif class="block rounded-xl px-4 py-3 text-sm font-semibold {{ request()->routeIs('home') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Home</a>
+            @foreach($navGroups as $key => $group)
+                <div class="overflow-hidden rounded-xl border border-slate-200">
+                    <button type="button" @click="mobileGroup = mobileGroup === @js($key) ? null : @js($key)" :aria-expanded="(mobileGroup === @js($key)).toString()" aria-controls="public-mobile-{{ $key }}"
+                        class="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold {{ $activeGroup === $key ? 'bg-sky-50 text-sky-800' : 'text-slate-700' }}">
+                        {{ $group['label'] }}<i aria-hidden="true" class="fas fa-chevron-down text-xs transition-transform" :class="mobileGroup === @js($key) ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div id="public-mobile-{{ $key }}" x-show="mobileGroup === @js($key)" x-cloak class="border-t border-slate-200 bg-slate-50 p-2">
+                        @foreach($group['items'] as $item)
+                            <a href="{{ route($item['route']) }}" @if(request()->routeIs($item['route'])) aria-current="page" @endif class="block rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs($item['route']) ? 'bg-sky-100 text-sky-800' : 'text-slate-600 hover:bg-white' }}">{{ $item['label'] }}</a>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
+            @endforeach
+            <a href="{{ route('contact') }}" @if(request()->routeIs('contact')) aria-current="page" @endif class="block rounded-xl px-4 py-3 text-sm font-semibold {{ request()->routeIs('contact') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Contact</a>
 
             <div class="grid grid-cols-1 gap-2 pt-2">
                 <a href="{{ route('admission') }}"
@@ -243,5 +207,5 @@
                 @endauth
             </div>
         </div>
-    </div>
+    </nav>
 </header>
