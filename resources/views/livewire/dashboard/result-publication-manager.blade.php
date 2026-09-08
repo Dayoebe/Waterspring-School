@@ -109,6 +109,7 @@
         </div>
     </div>
 
+    @if($showExamParticipation)
     <div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5">
         <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -203,6 +204,8 @@
             </div>
         @endif
     </div>
+
+    @endif
 
     @if(!empty($termReadiness['missing_students']))
         <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">

@@ -106,7 +106,7 @@
 
             @if($canManageResultRelease && in_array('release-control', $availableTabs, true))
                 <div x-show="activeTab === 'release-control'" x-transition>
-                    <livewire:dashboard.result-publication-manager />
+                    <livewire:dashboard.result-publication-manager :show-exam-participation="true" />
                 </div>
             @endif
 

@@ -14,10 +14,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ResultPublicationManager extends Component
 {
+    #[Locked]
+    public bool $showExamParticipation = false;
+
     public ?int $academicYearId = null;
     public ?int $semesterId = null;
     public bool $termPublished = false;
@@ -32,9 +36,10 @@ class ResultPublicationManager extends Component
     public string $examParticipationNotes = '';
     public $examParticipations;
 
-    public function mount(): void
+    public function mount(bool $showExamParticipation = false): void
     {
         $this->authorizeSuperAdmin();
+        $this->showExamParticipation = $showExamParticipation;
 
         $school = auth()->user()?->school;
         $this->academicYearId = $school?->academic_year_id;
