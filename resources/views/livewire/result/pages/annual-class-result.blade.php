@@ -677,6 +677,9 @@
                                                     return $item['average'] - $item['average'] * 0.8; // Example improvement calculation
                                                 })
                                                 ->first();
+                                            $hasSubjectAnalysis = $strongestSubject !== null
+                                                && $weakestSubject !== null
+                                                && $mostImproved !== null;
                                         @endphp
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-6 py-4 whitespace-nowrap">
@@ -695,18 +698,30 @@
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                {{ $strongestSubject['subject']->name }}
-                                                ({{ $strongestSubject['average'] }})
+                                                @if ($hasSubjectAnalysis)
+                                                    {{ $strongestSubject['subject']->name }}
+                                                    ({{ $strongestSubject['average'] }})
+                                                @else
+                                                    <span class="text-gray-400">No scores</span>
+                                                @endif
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                {{ $weakestSubject['subject']->name }} ({{ $weakestSubject['average'] }})
+                                                @if ($hasSubjectAnalysis)
+                                                    {{ $weakestSubject['subject']->name }} ({{ $weakestSubject['average'] }})
+                                                @else
+                                                    <span class="text-gray-400">No scores</span>
+                                                @endif
                                             </td>
                                             <td class="px-6 py-4 text-sm">
-                                                {{ $mostImproved['subject']->name }}
-                                                @if ($weakestSubject['average'] > 0)
-                                                    (+{{ round(($mostImproved['average'] / $weakestSubject['average'] - 1) * 100) }}%)
+                                                @if ($hasSubjectAnalysis)
+                                                    {{ $mostImproved['subject']->name }}
+                                                    @if ($weakestSubject['average'] > 0)
+                                                        (+{{ round(($mostImproved['average'] / $weakestSubject['average'] - 1) * 100) }}%)
+                                                    @else
+                                                        (N/A)
+                                                    @endif
                                                 @else
-                                                    (N/A)
+                                                    <span class="text-gray-400">No scores</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -777,8 +792,9 @@
                             $count = 0;
                             
                             foreach ($semesters as $semester) {
-                                $result = collect($termReports[$semester->id] ?? [])
-                                    ->firstWhere('student.id', $report['student']->id)['results'][$subject->id] ?? null;
+                                $termReport = collect($termReports[$semester->id] ?? [])
+                                    ->firstWhere('student.id', $report['student']->id);
+                                $result = data_get($termReport, "results.{$subject->id}");
                                 
                                 $score = $result['total_score'] ?? null;
                                 $scores[$semester->id] = [
