@@ -2,23 +2,27 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\AdmissionRegistration;
+use App\Models\AttendanceRecord;
+use App\Models\ClassGroup;
+use App\Models\ContactMessage;
 use App\Models\Exam;
+use App\Models\FeeInvoice;
+use App\Models\MyClass;
 use App\Models\Notice;
 use App\Models\Result;
 use App\Models\School;
+use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\Subject;
 use App\Models\User;
-use App\Models\MyClass;
-use App\Models\Section;
-use App\Models\ClassGroup;
-use App\Support\TeacherResponsibilityBuilder;
 use App\Support\ResultPublicationStatus;
+use App\Support\TeacherResponsibilityBuilder;
 use App\Traits\RestrictsTeacherPortalAccess;
 use App\Traits\RestrictsTeacherResultViewing;
-use Livewire\Component;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
+use Livewire\Component;
 
 class DashboardStats extends Component
 {
@@ -26,27 +30,45 @@ class DashboardStats extends Component
     use RestrictsTeacherResultViewing;
 
     public $stats = [];
+
     public $snapshot = [];
+
     public $quickActions = [];
+
+    public $attentionItems = [];
+
+    public $availableActionCount = 0;
+
     public $teacherPanel = [];
+
     public $studentPanel = [];
+
     public $parentPanel = [];
+
     public $academicContext = [];
+
     public $roleLabel = 'User';
 
     public $loading = true;
+
     public $isStaff = false;
+
     public $isTeacher = false;
+
     public $isRestrictedTeacher = false;
+
     public $isStudent = false;
+
     public $isParent = false;
+
     public $isSuperAdmin = false;
 
     public function mount(): void
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             $this->loading = false;
+
             return;
         }
 
@@ -68,8 +90,9 @@ class DashboardStats extends Component
         $this->loadAcademicContext($user);
         $this->loadSnapshot($user);
         $this->loadQuickActions($user);
+        $this->loadAttentionItems($user);
 
-        if ($this->isStaff && !$this->isRestrictedTeacher) {
+        if ($this->isStaff && ! $this->isRestrictedTeacher) {
             $this->loadStats($user);
         }
 
@@ -166,14 +189,14 @@ class DashboardStats extends Component
                 ->count();
 
             if ($user->school?->academic_year_id && $user->school?->semester_id) {
-                $familyResultIsPublished = !($this->isStudent || $this->isParent)
+                $familyResultIsPublished = ! ($this->isStudent || $this->isParent)
                     || ResultPublicationStatus::termIsPublished(
                         (int) $schoolId,
                         (int) $user->school->academic_year_id,
                         (int) $user->school->semester_id
                     );
 
-                $termResults = !$familyResultIsPublished || $activeStudentRecordIds->isEmpty()
+                $termResults = ! $familyResultIsPublished || $activeStudentRecordIds->isEmpty()
                     ? 0
                     : Result::query()
                         ->where('academic_year_id', $user->school->academic_year_id)
@@ -189,6 +212,11 @@ class DashboardStats extends Component
             'upcoming_exams' => $upcomingExams,
             'published_exams' => $publishedExams,
             'term_results' => $termResults,
+            'active_students' => $activeStudentRecordIds->count(),
+            'attendance_rate' => $this->attendanceRateForToday($schoolId, $today),
+            'pending_admissions' => $this->pendingAdmissionsCount($user),
+            'overdue_invoices' => $this->overdueInvoicesCount($user),
+            'result_completion' => $this->resultCompletionRate($user, $activeStudentRecordIds),
         ];
     }
 
@@ -203,6 +231,15 @@ class DashboardStats extends Component
         $viewResultsDescription = $this->currentUserCanAccessClassOnlyResultTools()
             ? 'Review class-level published result records.'
             : 'Review only the subjects and classes assigned to you.';
+        $attendanceDescription = $this->isTeacher
+            ? 'Record attendance for the classes assigned to you.'
+            : 'Review and manage daily student attendance.';
+        $syllabiDescription = $this->isTeacher
+            ? 'Manage curriculum plans for your assigned classes and subjects.'
+            : 'Review and manage the school curriculum plans.';
+        $cbtDescription = $this->isTeacher
+            ? 'Create CBT papers for your assigned subjects and classes.'
+            : 'Create and manage computer-based assessments.';
 
         $actions = [
             [
@@ -315,7 +352,7 @@ class DashboardStats extends Component
             ],
             [
                 'title' => 'Manage CBT',
-                'description' => 'Create CBT papers only for your assigned subjects and classes.',
+                'description' => $cbtDescription,
                 'icon' => 'fas fa-cogs',
                 'route' => 'cbt.manage',
                 'group' => 'Assessment',
@@ -351,7 +388,7 @@ class DashboardStats extends Component
             ],
             [
                 'title' => 'Attendance',
-                'description' => 'Record attendance only for classes where you are the class teacher.',
+                'description' => $attendanceDescription,
                 'icon' => 'fas fa-user-check',
                 'route' => 'attendance.index',
                 'group' => 'Academic',
@@ -360,7 +397,7 @@ class DashboardStats extends Component
             ],
             [
                 'title' => 'Syllabi',
-                'description' => 'Work only on syllabi for the classes and subjects assigned to you.',
+                'description' => $syllabiDescription,
                 'icon' => 'fas fa-list-check',
                 'route' => 'syllabi.index',
                 'group' => 'Academic',
@@ -446,27 +483,227 @@ class DashboardStats extends Component
             ],
         ];
 
-        $this->quickActions = array_values(array_filter(
+        $availableActions = array_values(array_filter(
             $actions,
             fn (array $action): bool => $this->canAccessAction($user, $action)
         ));
+
+        $this->availableActionCount = count($availableActions);
+        $priorityRoutes = match (true) {
+            $this->isSuperAdmin => [
+                'admissions.registrations.index', 'result', 'attendance.index',
+                'fee-invoices.index', 'students.index', 'contacts.messages.index',
+            ],
+            $this->isTeacher => [
+                'dashboard.responsibilities', 'attendance.index', 'result',
+                'result.view.class', 'result.view.subject', 'cbt.manage', 'syllabi.index',
+            ],
+            $this->isParent => [
+                'result.view.student', 'parent.student-welfare', 'result.history',
+                'broadcasts.inbox', 'profile.edit',
+            ],
+            $this->isStudent => [
+                'cbt.exams', 'result.view.student', 'result.history',
+                'cbt.viewer', 'broadcasts.inbox', 'profile.edit',
+            ],
+            default => [
+                'dashboard.responsibilities', 'students.index', 'attendance.index',
+                'result', 'fee-invoices.index', 'notices.index',
+            ],
+        };
+
+        $this->quickActions = collect($availableActions)
+            ->sortBy(function (array $action) use ($priorityRoutes): int {
+                $position = array_search($action['route'], $priorityRoutes, true);
+
+                return $position === false ? 999 : $position;
+            })
+            ->take(6)
+            ->values()
+            ->all();
+    }
+
+    private function loadAttentionItems(User $user): void
+    {
+        if (! $this->isStaff || ! $user->school_id) {
+            $this->attentionItems = [];
+
+            return;
+        }
+
+        $schoolId = (int) $user->school_id;
+        $items = [];
+
+        $candidates = [
+            [
+                'count' => $this->pendingAdmissionsCount($user),
+                'title' => 'Admission applications waiting',
+                'description' => 'Review new applications and record the next decision.',
+                'route' => 'admissions.registrations.index',
+                'icon' => 'fas fa-user-plus',
+                'tone' => 'amber',
+                'permissions' => ['read admission registration'],
+            ],
+            [
+                'count' => ContactMessage::query()->where('school_id', $schoolId)->where('status', 'new')->count(),
+                'title' => 'Website enquiries unread',
+                'description' => 'Open new parent and prospective-family messages.',
+                'route' => 'contacts.messages.index',
+                'icon' => 'fas fa-envelope',
+                'tone' => 'sky',
+                'permissions' => ['read contact message'],
+            ],
+            [
+                'count' => $this->overdueInvoicesCount($user),
+                'title' => 'Fee invoices overdue',
+                'description' => 'Follow up invoices that still have an outstanding balance.',
+                'route' => 'fee-invoices.index',
+                'icon' => 'fas fa-receipt',
+                'tone' => 'rose',
+                'permissions' => ['read fee invoice'],
+            ],
+            [
+                'count' => $this->unapprovedResultCount($user),
+                'title' => 'Result entries awaiting approval',
+                'description' => 'Review current-term scores before publication.',
+                'route' => 'result.view.class',
+                'icon' => 'fas fa-clipboard-check',
+                'tone' => 'violet',
+                'permissions' => ['view result'],
+            ],
+            [
+                'count' => $this->absentStudentsToday($schoolId),
+                'title' => 'Students absent today',
+                'description' => 'Review today’s attendance records and follow up where needed.',
+                'route' => 'attendance.index',
+                'icon' => 'fas fa-user-clock',
+                'tone' => 'orange',
+                'permissions' => ['read attendance'],
+            ],
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate['count'] > 0 && $this->canAccessAction($user, $candidate)) {
+                $items[] = $candidate;
+            }
+        }
+
+        $this->attentionItems = array_slice($items, 0, 5);
+    }
+
+    private function pendingAdmissionsCount(User $user): int
+    {
+        if (! $user->school_id || ! $user->can('read admission registration')) {
+            return 0;
+        }
+
+        return AdmissionRegistration::query()
+            ->where('school_id', $user->school_id)
+            ->where('status', 'pending')
+            ->count();
+    }
+
+    private function overdueInvoicesCount(User $user): int
+    {
+        if (! $user->school_id || ! $user->can('read fee invoice')) {
+            return 0;
+        }
+
+        return FeeInvoice::query()
+            ->whereHas('user', fn ($query) => $query->where('school_id', $user->school_id))
+            ->whereDate('due_date', '<', today())
+            ->whereHas('feeInvoiceRecords', fn ($query) => $query->isDue())
+            ->count();
+    }
+
+    private function attendanceRateForToday(?int $schoolId, Carbon $today): ?int
+    {
+        if (! $schoolId || ! auth()->user()?->can('read attendance')) {
+            return null;
+        }
+
+        $records = AttendanceRecord::query()
+            ->whereHas('attendanceSession', fn ($query) => $query
+                ->where('school_id', $schoolId)
+                ->whereDate('attendance_date', $today))
+            ->get(['status']);
+
+        if ($records->isEmpty()) {
+            return null;
+        }
+
+        $present = $records->whereIn('status', ['present', 'late'])->count();
+
+        return (int) round(($present / $records->count()) * 100);
+    }
+
+    private function absentStudentsToday(int $schoolId): int
+    {
+        if (! auth()->user()?->can('read attendance')) {
+            return 0;
+        }
+
+        return AttendanceRecord::query()
+            ->where('status', 'absent')
+            ->whereHas('attendanceSession', fn ($query) => $query
+                ->where('school_id', $schoolId)
+                ->whereDate('attendance_date', today()))
+            ->count();
+    }
+
+    private function unapprovedResultCount(User $user): int
+    {
+        if (! $user->school?->academic_year_id || ! $user->school?->semester_id || ! $user->can('view result')) {
+            return 0;
+        }
+
+        $studentRecordIds = StudentRecord::activeStudentRecordIdsForSchoolAcademicYear(
+            $user->school_id,
+            $user->school->academic_year_id
+        );
+
+        return Result::query()
+            ->where('academic_year_id', $user->school->academic_year_id)
+            ->where('semester_id', $user->school->semester_id)
+            ->whereIn('student_record_id', $studentRecordIds)
+            ->where('approved', false)
+            ->count();
+    }
+
+    private function resultCompletionRate(User $user, $studentRecordIds): ?int
+    {
+        if (! $this->isStaff || ! $user->school?->academic_year_id || ! $user->school?->semester_id) {
+            return null;
+        }
+
+        $results = Result::query()
+            ->where('academic_year_id', $user->school->academic_year_id)
+            ->where('semester_id', $user->school->semester_id)
+            ->whereIn('student_record_id', $studentRecordIds)
+            ->get(['approved']);
+
+        if ($results->isEmpty()) {
+            return null;
+        }
+
+        return (int) round(($results->where('approved', true)->count() / $results->count()) * 100);
     }
 
     private function canAccessAction(User $user, array $action): bool
     {
-        if (empty($action['route']) || !Route::has($action['route'])) {
+        if (empty($action['route']) || ! Route::has($action['route'])) {
             return false;
         }
 
-        if ($this->isRestrictedTeacherPortalUser($user) && !$this->restrictedTeacherCanAccessRoute($action['route'], $user)) {
+        if ($this->isRestrictedTeacherPortalUser($user) && ! $this->restrictedTeacherCanAccessRoute($action['route'], $user)) {
             return false;
         }
 
-        if (!empty($action['roles']) && is_array($action['roles']) && !$user->hasAnyRole($action['roles'])) {
+        if (! empty($action['roles']) && is_array($action['roles']) && ! $user->hasAnyRole($action['roles'])) {
             return false;
         }
 
-        if (!empty($action['permissions']) && is_array($action['permissions']) && !$this->hasAnyPermission($user, $action['permissions'])) {
+        if (! empty($action['permissions']) && is_array($action['permissions']) && ! $this->hasAnyPermission($user, $action['permissions'])) {
             return false;
         }
 
@@ -519,7 +756,7 @@ class DashboardStats extends Component
 
     private function getActiveStudentsCount(?int $schoolId): int
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return 0;
         }
 
@@ -531,7 +768,7 @@ class DashboardStats extends Component
 
     private function getInactiveStudentsCount(?int $schoolId, ?int $activeStudentsCount = null): int
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return 0;
         }
 
@@ -547,7 +784,7 @@ class DashboardStats extends Component
 
     private function getGraduatedStudentsCount(?int $schoolId): int
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return 0;
         }
 
@@ -565,8 +802,9 @@ class DashboardStats extends Component
     private function loadStudentPanel(User $user): void
     {
         $studentRecord = $user->studentRecord;
-        if (!$studentRecord) {
+        if (! $studentRecord) {
             $this->studentPanel = [];
+
             return;
         }
 
@@ -590,7 +828,7 @@ class DashboardStats extends Component
                 (int) $currentSemesterId
             );
 
-        if (!$resultPublished) {
+        if (! $resultPublished) {
             $resultQuery->whereRaw('1 = 0');
         }
 
@@ -622,6 +860,7 @@ class DashboardStats extends Component
                 'hidden_count' => 0,
                 'children' => [],
             ];
+
             return;
         }
 

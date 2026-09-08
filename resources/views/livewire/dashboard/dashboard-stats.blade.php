@@ -45,82 +45,69 @@
                 default => 'Your dashboard shows the tools and information available to this account.',
             };
 
-            $actionGroups = collect($quickActions)
-                ->groupBy(fn ($action) => $action['group'] ?? 'Other');
-
-            $groupMeta = [
-                'Academic' => [
-                    'icon' => 'fas fa-book-open',
-                    'description' => 'Results, subject access, and academic records.',
-                    'card' => 'bg-slate-50 text-slate-700',
-                    'surface' => 'border-slate-200 bg-slate-50',
-                    'chip' => 'border border-slate-200 bg-slate-50 text-sky-700',
+            $pulseCards = $isStaff ? array_values(array_filter([
+                [
+                    'label' => 'Active Students',
+                    'value' => $snapshot['active_students'] ?? 0,
+                    'helper' => 'Currently enrolled this academic year',
+                    'icon' => 'fas fa-user-graduate',
                 ],
-                'Assessment' => [
-                    'icon' => 'fas fa-clipboard-check',
-                    'description' => 'Exams, CBT, uploads, and assessment workflows.',
-                    'card' => 'bg-slate-50 text-slate-700',
-                    'surface' => 'border-slate-200 bg-slate-50',
-                    'chip' => 'border border-slate-200 bg-slate-50 text-sky-700',
+                [
+                    'label' => 'Attendance Today',
+                    'value' => isset($snapshot['attendance_rate']) ? $snapshot['attendance_rate'] . '%' : 'Not taken',
+                    'helper' => 'Present and late students recorded today',
+                    'icon' => 'fas fa-user-check',
                 ],
-                'People' => [
-                    'icon' => 'fas fa-users',
-                    'description' => 'Student, teacher, and parent administration.',
-                    'card' => 'bg-slate-50 text-slate-700',
-                    'surface' => 'border-slate-200 bg-slate-50',
-                    'chip' => 'border border-slate-200 bg-slate-50 text-sky-700',
+                [
+                    'label' => 'Pending Admissions',
+                    'value' => $snapshot['pending_admissions'] ?? 0,
+                    'helper' => 'Applications awaiting a decision',
+                    'icon' => 'fas fa-user-plus',
                 ],
-                'Operations' => [
-                    'icon' => 'fas fa-compass',
-                    'description' => 'Settings, notices, finance, timetables, and analytics.',
-                    'card' => 'bg-slate-50 text-slate-700',
-                    'surface' => 'border-slate-200 bg-slate-50',
-                    'chip' => 'border border-slate-200 bg-slate-50 text-sky-700',
+                [
+                    'label' => 'Overdue Invoices',
+                    'value' => $snapshot['overdue_invoices'] ?? 0,
+                    'helper' => 'Invoices with an outstanding balance',
+                    'icon' => 'fas fa-receipt',
                 ],
-                'Account' => [
-                    'icon' => 'fas fa-user-shield',
-                    'description' => 'Your profile, password, and account security.',
-                    'card' => 'bg-slate-50 text-slate-700',
-                    'surface' => 'border-slate-200 bg-slate-50',
-                    'chip' => 'border border-slate-200 bg-slate-50 text-slate-700',
+                [
+                    'label' => 'Result Approval',
+                    'value' => isset($snapshot['result_completion']) ? $snapshot['result_completion'] . '%' : 'Not started',
+                    'helper' => 'Current-term entries approved',
+                    'icon' => 'fas fa-chart-line',
                 ],
-            ];
-
-            $pulseCards = array_values(array_filter([
+            ], fn ($card) => !in_array($card['label'], ['Pending Admissions', 'Overdue Invoices'], true)
+                || ($card['label'] === 'Pending Admissions' && $user->can('read admission registration'))
+                || ($card['label'] === 'Overdue Invoices' && $user->can('read fee invoice')))) : array_values(array_filter([
                 [
                     'label' => 'Active Notices',
                     'value' => $snapshot['active_notices'] ?? 0,
                     'helper' => 'Current school announcements',
                     'icon' => 'fas fa-bullhorn',
-                    'tone' => 'bg-slate-50 text-slate-950',
                 ],
                 [
                     'label' => 'Ongoing Exams',
                     'value' => $snapshot['ongoing_exams'] ?? 0,
                     'helper' => 'Exam windows active right now',
                     'icon' => 'fas fa-hourglass-half',
-                    'tone' => 'bg-slate-50 text-slate-700',
                 ],
                 [
                     'label' => 'Upcoming Exams',
                     'value' => $snapshot['upcoming_exams'] ?? 0,
                     'helper' => 'Scheduled next in the exam calendar',
                     'icon' => 'fas fa-calendar-alt',
-                    'tone' => 'bg-slate-50 text-slate-950',
                 ],
                 [
                     'label' => 'Published Exams',
                     'value' => $snapshot['published_exams'] ?? 0,
                     'helper' => 'Exams with visible results',
                     'icon' => 'fas fa-check-circle',
-                    'tone' => 'bg-slate-50 text-slate-700',
                 ],
                 [
                     'label' => 'Term Results',
                     'value' => $snapshot['term_results'] ?? 0,
                     'helper' => 'Current-term result entries',
                     'icon' => 'fas fa-chart-line',
-                    'tone' => 'bg-slate-50 text-slate-700',
                 ],
             ], fn ($card) => !($isStudent || $isParent) || $card['label'] !== 'Term Results' || ($card['value'] ?? 0) > 0));
 
@@ -289,6 +276,46 @@
                 </article>
             @endforeach
         </div>
+
+        @if ($isStaff)
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">Action centre</p>
+                        <h3 class="mt-2 text-2xl font-bold text-slate-900">Needs attention</h3>
+                        <p class="mt-2 text-sm text-slate-600">Open records that may need a decision or follow-up.</p>
+                    </div>
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        {{ count($attentionItems) }} active
+                    </span>
+                </div>
+
+                @if ($attentionItems !== [])
+                    <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        @foreach ($attentionItems as $item)
+                            <a href="{{ route($item['route']) }}" wire:navigate
+                                class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-300 hover:bg-sky-50">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-sky-700 shadow-sm">
+                                    <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex items-center justify-between gap-3">
+                                        <strong class="text-sm text-slate-900">{{ $item['title'] }}</strong>
+                                        <span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{{ $item['count'] }}</span>
+                                    </span>
+                                    <span class="mt-1 block text-xs leading-5 text-slate-600">{{ $item['description'] }}</span>
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="mt-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                        <i class="fas fa-circle-check" aria-hidden="true"></i>
+                        <span>No urgent records need attention right now.</span>
+                    </div>
+                @endif
+            </section>
+        @endif
 
         @if ($isTeacher && $teacherPanel !== [])
             <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -459,53 +486,31 @@
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick access</p>
                         <h3 class="mt-2 text-2xl font-bold text-slate-900">Your tools</h3>
                         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                            Open the tools you use to manage your school day.
+                            Your most useful actions for today. Use the sidebar to open every module.
                         </p>
                     </div>
                     <div class="rounded-2xl {{ $roleTheme['panel'] }} px-4 py-3 text-sm font-medium text-slate-700">
-                        {{ count($quickActions) }} action{{ count($quickActions) === 1 ? '' : 's' }} available
+                        Showing {{ count($quickActions) }} of {{ $availableActionCount }}
                     </div>
                 </div>
 
                 @if ($quickActions !== [])
-                    <div class="mt-6 space-y-8">
-                        @foreach ($groupMeta as $groupKey => $group)
-                            @php($actions = $actionGroups->get($groupKey, collect()))
-                            @if ($actions->isEmpty())
-                                @continue
-                            @endif
-
-                            <div class="rounded-xl border p-5 shadow-sm {{ $group['surface'] }}">
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                                    <div>
-                                        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $group['chip'] }}">
-                                            <i class="{{ $group['icon'] }}"></i>
-                                            <span>{{ $groupKey }}</span>
-                                        </div>
-                                        <p class="mt-3 text-sm leading-6 text-slate-600">{{ $group['description'] }}</p>
+                    <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        @foreach ($quickActions as $action)
+                            <a
+                                href="{{ route($action['route']) }}"
+                                class="dashboard-action-card group rounded-xl bg-slate-50 p-5 text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl"
+                                wire:navigate
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm">
+                                        <i class="{{ $action['icon'] }} text-lg"></i>
                                     </div>
-                                    <span class="text-sm font-medium text-slate-500">{{ $actions->count() }} available</span>
+                                    <i class="fas fa-arrow-right text-sm text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-sky-700"></i>
                                 </div>
-
-                                <div class="mt-4 grid gap-4 md:grid-cols-2">
-                                    @foreach ($actions as $action)
-                                        <a
-                                            href="{{ route($action['route']) }}"
-                                            class="dashboard-action-card group rounded-xl p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl {{ $group['card'] }}"
-                                            wire:navigate
-                                        >
-                                            <div class="flex items-start justify-between gap-4">
-                                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-slate-700 shadow-sm">
-                                                    <i class="{{ $action['icon'] }} text-lg"></i>
-                                                </div>
-                                                <i class="fas fa-arrow-right text-sm text-slate-700 transition group-hover:translate-x-0.5 group-hover:text-slate-700"></i>
-                                            </div>
-                                            <h4 class="mt-5 text-lg font-semibold">{{ $action['title'] }}</h4>
-                                            <p class="mt-2 text-sm leading-6 text-slate-700">{{ $action['description'] }}</p>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
+                                <h4 class="mt-5 text-lg font-semibold">{{ $action['title'] }}</h4>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">{{ $action['description'] }}</p>
+                            </a>
                         @endforeach
                     </div>
                 @else

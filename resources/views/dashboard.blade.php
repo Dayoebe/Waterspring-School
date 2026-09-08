@@ -34,9 +34,4 @@
         </div>
     @endif
 
-    @if ($isStaff || $user->can('read notice'))
-        <div class="mb-6">
-            @livewire('notices.list-notices-table')
-        </div>
-    @endif
 @endsection
