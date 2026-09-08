@@ -176,7 +176,7 @@
     <body class="bg-gray-100 mx-5">
         @yield('body')
         <livewire:common.display-status />
-        <livewire:scripts />
+        @include('partials.livewire-scripts')
         @stack('scripts')
     </body>
 @elseif ($isPublicMode || !auth()->check())
@@ -194,13 +194,13 @@
         </div>
 
         @livewire('common.display-status')
-        <livewire:scripts />
+        @include('partials.livewire-scripts')
         @stack('scripts')
     </body>
 @else
     <body class="dashboard-ui font-sans">
         @include('partials.dashboard-shell', ['dashboardTitle' => $__env->yieldContent('page_heading', 'Dashboard')])
-        <livewire:scripts />
+        @include('partials.livewire-scripts')
         @stack('scripts')
     </body>
 @endif

@@ -295,7 +295,7 @@
         {{ $slot }}
     </main>
 
-    @livewireScripts
+    @include('partials.livewire-scripts')
     
     {{-- Enhanced Security Script - PRODUCTION READY - FIXED VERSION --}}
     <script>

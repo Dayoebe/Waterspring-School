@@ -61,7 +61,7 @@
         <div class="flex items-center justify-between gap-4 py-3">
             <a href="{{ route('home') }}" class="group flex min-w-0 max-w-[78%] items-center gap-3 lg:max-w-[34%] xl:max-w-[38%]">
                 <img src="{{ $logoUrl }}" alt="{{ $schoolName }} Logo" width="44" height="44" decoding="async"
-                    class="h-10 w-10 rounded-full border border-amber-300 bg-white p-1 object-contain shadow-sm transition group-hover:scale-105 sm:h-11 sm:w-11">
+                    class="h-10 w-10 shrink-0 rounded-full border border-amber-300 bg-white p-1 object-contain shadow-sm transition group-hover:scale-105 sm:h-11 sm:w-11">
                 <div class="min-w-0">
                     <p class="truncate text-sm font-black leading-tight text-slate-900 sm:text-base">
                         {{ $schoolName }}
@@ -94,7 +94,7 @@
                 <a href="{{ route('contact') }}" @if(request()->routeIs('contact')) aria-current="page" @endif class="rounded-xl px-3 py-3 text-sm font-semibold {{ request()->routeIs('contact') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Contact</a>
             </nav>
 
-            <div class="hidden items-center gap-2 lg:flex">
+            <div class="hidden shrink-0 items-center gap-2 whitespace-nowrap lg:flex">
                 <a href="{{ route('admission') }}"
                     class="site-primary-bg inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white transition hover:opacity-90">
                     <i class="fas fa-user-plus text-xs"></i>

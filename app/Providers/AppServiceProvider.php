@@ -51,7 +51,7 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.app', 'partials.header', 'partials.footer', 'livewire.site.*', 'auth.login', 'auth.register', 'auth.forgot-password', 'auth.reset-password'], function ($view): void {
             $school = SiteSettings::resolveSchool();
-            $isPublic = request()->routeIs('home', 'about', 'academics', 'why-watersprings', 'admission', 'gallery', 'contact', 'login', 'register', 'password.request', 'password.email', 'password.reset', 'password.update');
+            $isPublic = request()->routeIs('home', 'about', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact', 'login', 'register', 'password.request', 'password.email', 'password.reset', 'password.update');
             $settings = $isPublic ? SiteSettings::forPublicSite() : SiteSettings::forSchool($school?->id);
 
             $view->with('publicSiteSchool', $school)

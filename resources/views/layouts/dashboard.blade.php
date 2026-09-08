@@ -54,7 +54,7 @@
         'dashboardSlot' => $slot,
     ])
 
-    <livewire:scripts />
+    @include('partials.livewire-scripts')
     @stack('scripts')
 </body>
 

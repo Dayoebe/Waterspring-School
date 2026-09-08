@@ -59,7 +59,7 @@ Dashboard layouts, forms, tables, and navigation share a responsive light/dark d
 
 | Dependency | Project requirement |
 | --- | --- |
-| PHP | **8.4.1 or newer** for the current locked dependencies; `composer.json` still declares the older `^8.1` constraint |
+| PHP | **PHP 8.2 or newer**; dependencies are resolved against PHP **8.2.12**, matching local XAMPP |
 | Composer | Composer 2 |
 | Database | MySQL or MariaDB with PHP's `pdo_mysql` extension |
 | Node.js | Node 20 or 22 is compatible with the locked Vite version |
@@ -68,6 +68,8 @@ Dashboard layouts, forms, tables, and navigation share a responsive light/dark d
 The application uses Laravel 10, Livewire 3, Tailwind CSS 3, Vite 6 and Font Awesome. Livewire provides Alpine at runtime; the application JavaScript intentionally does not start a second Alpine instance.
 
 The initial migration imports [database/schema/baseline-schema.sql](database/schema/baseline-schema.sql), which uses MySQL/MariaDB syntax. SQLite is not a supported fresh-install path for this baseline. Use `composer check-platform-reqs` to check PHP and extension requirements against the installed packages.
+
+Composer’s `config.platform.php` is pinned to `8.2.12` so installing or updating from a newer CLI PHP does not select packages incompatible with the web server. On local XAMPP, validate with `/opt/lampp/bin/php /usr/local/bin/composer check-platform-reqs`. Keep platform checks enabled.
 
 ## Local setup
 
@@ -174,3 +176,9 @@ A `phpunit.xml` configuration exists, but this repository currently has no `test
 ## License and attribution
 
 Distributed under the [MIT License](LICENSE). Preserve the existing license and upstream attribution. School content and photographs were sourced from the Watersprings website; source references are recorded in [the migration notes](docs/watersprings-public-site.md).
+
+### XAMPP browser access
+
+Use `http://localhost/WaterSpring/public/` for this checkout, or point a virtual host directly at `public/`. The public `.htaccess` forwards application routes to Laravel. The Apache user must be able to write to `storage/` and `bootstrap/cache/`; the local setup grants this with filesystem ACLs rather than world-writable permissions.
+
+Livewire scripts and update requests use the application’s base path, so both a virtual host and XAMPP subdirectory access work.
