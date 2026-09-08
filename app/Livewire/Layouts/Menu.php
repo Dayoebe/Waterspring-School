@@ -2,10 +2,14 @@
 
 namespace App\Livewire\Layouts;
 
+use App\Models\AcademicYear;
+use App\Models\Semester;
+use App\Models\User;
 use App\Traits\RestrictsTeacherPortalAccess;
 use App\Traits\RestrictsTeacherResultViewing;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 class Menu extends Component
@@ -19,21 +23,18 @@ class Menu extends Component
     {
         $this->menu = array_merge(
             $this->overviewMenu(),
-            $this->learningMenu(),
-            $this->schoolManagementMenu(),
+            $this->peopleMenu(),
             $this->academicsMenu(),
-            $this->assessmentMenu(),
-            $this->financeMenu(),
-            $this->engagementMenu(),
-            $this->plannedFeaturesMenu(),
-            $this->accountMenu(),
+            $this->operationsMenu(),
+            $this->communicationMenu(),
+            $this->administrationMenu(),
         );
     }
 
     protected function overviewMenu(): array
     {
         return [
-            ['header' => 'Overview'],
+            ['header' => 'Workspace'],
             [
                 'type' => 'menu-item',
                 'icon' => 'fas fa-tachometer-alt',
@@ -44,29 +45,14 @@ class Menu extends Component
             [
                 'type' => 'menu-item',
                 'icon' => 'fas fa-briefcase',
-                'text' => 'Responsibilities',
+                'text' => 'My Responsibilities',
                 'route' => 'dashboard.responsibilities',
                 'permissions' => ['view dashboard'],
             ],
             [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-chart-bar',
-                'text' => 'Analytics',
-                'route' => 'analytics.index',
-                'permissions' => ['read analytics dashboard'],
-            ],
-        ];
-    }
-
-    protected function learningMenu(): array
-    {
-        return [
-            ['header' => 'Learning'],
-            [
-                'type' => 'menu-item',
                 'text' => 'My Learning',
                 'icon' => 'fas fa-graduation-cap',
-                'submenu' => [
+                'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
                         'text' => 'View Student Results',
@@ -81,159 +67,68 @@ class Menu extends Component
                         'roles' => ['student', 'parent'],
                         'permissions' => ['view result'],
                     ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Portal Notices',
-                        'route' => 'broadcasts.inbox',
-                        'permissions' => ['view own broadcasts'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Child Attendance & Discipline',
-                        'route' => 'parent.student-welfare',
-                        'roles' => ['parent'],
-                        'permissions' => ['read own child attendance', 'read own child discipline'],
-                    ],
-                ],
+                ])),
             ],
         ];
     }
 
-    protected function schoolManagementMenu(): array
+    protected function peopleMenu(): array
     {
         return [
-            ['header' => 'School Management'],
+            ['header' => 'People'],
             [
-                'type' => 'menu-item',
-                'text' => 'Schools',
-                'icon' => 'fas fa-school',
-                'permissions' => ['read school', 'create school', 'manage school settings'],
-                'submenu' => [
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'View Schools',
-                        'route' => 'schools.index',
-                        'permissions' => ['read school'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Create School',
-                        'route' => 'schools.index',
-                        'params' => ['mode' => 'create'],
-                        'permissions' => ['create school'],
-                    ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Website Settings',
-                'icon' => 'fas fa-sliders-h',
-                'route' => 'schools.settings',
-                'permissions' => ['manage school settings'],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Admins',
-                'icon' => 'fas fa-user-shield',
-                'permissions' => ['read admin', 'create admin'],
-                'submenu' => [
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'View Admins',
-                        'route' => 'admins.index',
-                        'permissions' => ['read admin'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Create Admin',
-                        'route' => 'admins.index',
-                        'params' => ['mode' => 'create'],
-                        'permissions' => ['create admin'],
-                    ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Users & Roles',
-                'icon' => 'fas fa-users-gear',
-                'route' => 'users.roles',
-                'permissions' => ['manage user roles'],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Teachers',
-                'icon' => 'fas fa-chalkboard-teacher',
-                'permissions' => ['read teacher', 'create teacher'],
-                'submenu' => [
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'View Teachers',
-                        'route' => 'teachers.index',
-                        'permissions' => ['read teacher'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Create Teacher',
-                        'route' => 'teachers.create',
-                        'permissions' => ['create teacher'],
-                    ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Students',
+                'text' => 'Students & Parents',
                 'icon' => 'fas fa-user-graduate',
-                'permissions' => ['read student', 'create student', 'promote student', 'read promotion'],
-                'submenu' => [
+                'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
-                        'text' => 'Registered Students',
+                        'text' => 'All Students',
                         'route' => 'students.index',
                         'permissions' => ['read student'],
+                        'section' => 'Students & Admissions',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Admission Registrations',
+                        'text' => 'Admission Applications',
                         'route' => 'admissions.registrations.index',
                         'permissions' => ['read admission registration'],
+                        'section' => 'Students & Admissions',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Create Student',
+                        'text' => 'Add Student',
                         'route' => 'students.create',
+                        'params' => ['mode' => 'create'],
                         'permissions' => ['create student'],
+                        'section' => 'Students & Admissions',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Promote Students',
                         'route' => 'students.promote',
                         'permissions' => ['promote student', 'read promotion'],
+                        'section' => 'Students & Admissions',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Graduate Students',
                         'route' => 'students.graduate',
                         'permissions' => ['graduate student'],
+                        'section' => 'Students & Admissions',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Graduation History',
                         'route' => 'students.graduations',
                         'permissions' => ['view graduations'],
+                        'section' => 'Students & Admissions',
                     ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Parents',
-                'icon' => 'fas fa-users',
-                'permissions' => ['read parent', 'create parent'],
-                'submenu' => [
                     [
                         'type' => 'menu-item',
-                        'text' => 'View Parents',
+                        'text' => 'Parents',
                         'route' => 'parents.index',
                         'permissions' => ['read parent'],
+                        'section' => 'Parents',
                     ],
                     [
                         'type' => 'menu-item',
@@ -241,31 +136,69 @@ class Menu extends Component
                         'route' => 'parents.index',
                         'params' => ['mode' => 'create'],
                         'permissions' => ['create parent'],
+                        'section' => 'Parents',
                     ],
-                ],
+                ])),
             ],
             [
-                'type' => 'menu-item',
-                'text' => 'Account Applications',
-                'icon' => 'fas fa-user-plus',
-                'permissions' => ['read applicant'],
-                'can' => ['viewAny', [\App\Models\User::class, 'applicant']],
-                'submenu' => [
+                'text' => 'Staff & Access',
+                'icon' => 'fas fa-users-gear',
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Teachers',
+                        'route' => 'teachers.index',
+                        'permissions' => ['read teacher'],
+                        'section' => 'Teachers',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Add Teacher',
+                        'route' => 'teachers.create',
+                        'params' => ['mode' => 'create'],
+                        'permissions' => ['create teacher'],
+                        'section' => 'Teachers',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Administrators',
+                        'route' => 'admins.index',
+                        'permissions' => ['read admin'],
+                        'section' => 'Administrators & Access',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Add Administrator',
+                        'route' => 'admins.index',
+                        'params' => ['mode' => 'create'],
+                        'permissions' => ['create admin'],
+                        'section' => 'Administrators & Access',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Users & Roles',
+                        'icon' => 'fas fa-users-gear',
+                        'route' => 'users.roles',
+                        'permissions' => ['manage user roles'],
+                        'section' => 'Administrators & Access',
+                    ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Pending Applications',
                         'route' => 'account-applications.index',
                         'permissions' => ['read applicant'],
-                        'can' => ['viewAny', [\App\Models\User::class, 'applicant']],
+                        'can' => ['viewAny', [User::class, 'applicant']],
+                        'section' => 'Account Applications',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Rejected Applications',
                         'route' => 'account-applications.rejected-applications',
                         'permissions' => ['read applicant'],
-                        'can' => ['viewAny', [\App\Models\User::class, 'applicant']],
+                        'can' => ['viewAny', [User::class, 'applicant']],
+                        'section' => 'Account Applications',
                     ],
-                ],
+                ])),
             ],
         ];
     }
@@ -278,160 +211,233 @@ class Menu extends Component
         return [
             ['header' => 'Academics'],
             [
-                'type' => 'menu-item',
-                'text' => 'Academic Calendar',
-                'icon' => 'fas fa-calendar-alt',
-                'permissions' => ['read academic year', 'read semester'],
-                'submenu' => [
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Academic Years',
-                        'route' => 'academic-years.index',
-                        'permissions' => ['read academic year'],
-                        'can' => ['viewAny', \App\Models\AcademicYear::class],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Terms',
-                        'route' => 'semesters.index',
-                        'permissions' => ['read semester'],
-                        'can' => ['viewAny', \App\Models\Semester::class],
-                    ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Classes',
-                'icon' => 'fas fa-chalkboard',
-                'permissions' => ['read class', 'read class group'],
-                'submenu' => [
+                'text' => 'Classes & Subjects',
+                'icon' => 'fas fa-book-open',
+                'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
                         'text' => 'All Classes',
                         'route' => 'classes.index',
                         'permissions' => ['read class'],
+                        'section' => 'Classes',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Class Groups',
                         'route' => 'class-groups.index',
                         'permissions' => ['read class group'],
+                        'section' => 'Classes',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Sections',
                         'route' => 'sections.index',
                         'permissions' => ['read section', 'create section'],
+                        'section' => 'Classes',
                     ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Subjects',
-                'icon' => 'fas fa-book-open',
-                'permissions' => ['read subject', 'create subject', 'update subject'],
-                'submenu' => [
                     [
                         'type' => 'menu-item',
-                        'text' => 'View Subjects',
+                        'text' => 'All Subjects',
                         'route' => 'subjects.index',
                         'permissions' => ['read subject'],
+                        'section' => 'Subjects & Syllabi',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Create Subject',
+                        'text' => 'Add Subject',
                         'route' => 'subjects.create',
                         'permissions' => ['create subject'],
+                        'section' => 'Subjects & Syllabi',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Assign Teacher',
+                        'text' => 'Assign Subject Teachers',
                         'route' => 'subjects.assign-teacher',
                         'permissions' => ['update subject'],
+                        'section' => 'Subjects & Syllabi',
                     ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Syllabi',
-                'icon' => 'fas fa-list-check',
-                'route' => 'syllabi.index',
-                'permissions' => ['read syllabus', 'create syllabus'],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Timetables',
-                'icon' => 'fas fa-clock',
-                'permissions' => ['read timetable', 'read custom timetable item'],
-                'submenu' => [
                     [
                         'type' => 'menu-item',
-                        'text' => 'View Timetables',
+                        'text' => 'Syllabi & Curriculum',
+                        'icon' => 'fas fa-list-check',
+                        'route' => 'syllabi.index',
+                        'permissions' => ['read syllabus', 'create syllabus'],
+                        'section' => 'Subjects & Syllabi',
+                    ],
+                ])),
+            ],
+            [
+                'text' => 'Calendar & Timetables',
+                'icon' => 'fas fa-calendar-alt',
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Academic Years',
+                        'route' => 'academic-years.index',
+                        'permissions' => ['read academic year'],
+                        'can' => ['viewAny', AcademicYear::class],
+                        'section' => 'Academic Calendar',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Terms',
+                        'route' => 'semesters.index',
+                        'permissions' => ['read semester'],
+                        'can' => ['viewAny', Semester::class],
+                        'section' => 'Academic Calendar',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'All Timetables',
                         'route' => 'timetables.index',
                         'permissions' => ['read timetable'],
+                        'section' => 'Timetables',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Create Timetable',
+                        'text' => 'Add Timetable',
                         'route' => 'timetables.create',
                         'permissions' => ['create timetable'],
+                        'section' => 'Timetables',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Custom Items',
+                        'text' => 'Timetable Activities',
                         'route' => 'custom-timetable-items.index',
                         'permissions' => ['read custom timetable item'],
+                        'section' => 'Timetables',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Create Custom Item',
+                        'text' => 'Add Timetable Activity',
                         'route' => 'custom-timetable-items.create',
                         'permissions' => ['create custom timetable item'],
+                        'section' => 'Timetables',
                     ],
-                ],
+                ])),
             ],
             [
-                'type' => 'menu-item',
-                'text' => 'Attendance & Discipline',
-                'icon' => 'fas fa-user-check',
-                'permissions' => ['read attendance', 'read discipline incident', 'read own child attendance', 'read own child discipline'],
-                'submenu' => [
+                'text' => 'Exams & Results',
+                'icon' => 'fas fa-chart-line',
+                'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
-                        'text' => 'Daily Attendance',
-                        'route' => 'attendance.index',
-                        'permissions' => ['read attendance'],
+                        'text' => 'Manage Exams',
+                        'route' => 'exams.index',
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'permissions' => ['read exam'],
+                        'section' => 'Exams',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Discipline Incidents',
-                        'route' => 'discipline.index',
-                        'permissions' => ['read discipline incident'],
+                        'text' => 'Exam Records',
+                        'route' => 'exam-records.index',
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'permissions' => ['read exam record'],
+                        'section' => 'Exams',
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Child Welfare View',
-                        'route' => 'parent.student-welfare',
-                        'permissions' => ['read own child attendance', 'read own child discipline'],
+                        'text' => 'Grading Systems',
+                        'route' => 'grade-systems.index',
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'permissions' => ['read grade system', 'create grade system'],
+                        'section' => 'Exams',
                     ],
-                ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Exam Papers',
+                        'route' => 'exam-papers.viewer',
+                        'roles' => ['student', 'parent'],
+                        'permissions' => ['view exam paper'],
+                        'section' => 'Exams',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-tachometer-alt',
+                        'text' => 'Results Dashboard',
+                        'route' => 'result',
+                        'permissions' => ['upload result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-user-edit',
+                        'text' => 'Enter Student Results',
+                        'route' => 'result.upload.individual',
+                        'permissions' => ['upload result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-users-cog',
+                        'text' => 'Upload Results in Bulk',
+                        'route' => 'result.upload.bulk',
+                        'permissions' => ['upload result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ],
+                    $canAccessClassOnlyResultTools ? [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-users',
+                        'text' => 'Class Results',
+                        'route' => 'result.view.class',
+                        'permissions' => ['view result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ] : null,
+                    $canAccessSubjectResultTools ? [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-book',
+                        'text' => 'Subject Results',
+                        'route' => 'result.view.subject',
+                        'permissions' => ['view result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ] : null,
+                    $canAccessClassOnlyResultTools ? [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-user-graduate',
+                        'text' => 'Student Results',
+                        'route' => 'result.view.student',
+                        'permissions' => ['view result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ] : null,
+                    $canAccessClassOnlyResultTools ? [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-history',
+                        'text' => 'Academic History',
+                        'route' => 'result.history',
+                        'permissions' => ['view result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ] : null,
+                    $canAccessClassOnlyResultTools ? [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-calendar-alt',
+                        'text' => 'Annual Class Results',
+                        'route' => 'result.annual',
+                        'permissions' => ['view result'],
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'section' => 'Results',
+                    ] : null,
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Result Checker',
+                        'route' => 'exams.result-checker',
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'permissions' => ['check result'],
+                        'section' => 'Results',
+                    ],
+                ])),
             ],
-        ];
-    }
-
-    protected function assessmentMenu(): array
-    {
-        $canAccessClassOnlyResultTools = $this->currentUserCanAccessClassOnlyResultTools();
-        $canAccessSubjectResultTools = $this->currentUserCanAccessSubjectResultTools();
-
-        return [
-            ['header' => 'Assessment & Results'],
             [
-                'type' => 'menu-item',
-                'text' => 'CBT',
-                'icon' => 'fas fa-laptop-code',
-                'permissions' => ['take cbt exam', 'view cbt result', 'manage cbt'],
-                'submenu' => [
+                'text' => 'Computer-Based Tests',
+                'icon' => 'fas fa-laptop',
+                'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
                         'text' => 'Take CBT Exams',
@@ -453,136 +459,43 @@ class Menu extends Component
                         'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
                         'permissions' => ['manage cbt'],
                     ],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Exams',
-                'icon' => 'fas fa-file-signature',
-                'permissions' => ['read exam', 'read exam record', 'check result', 'view exam paper', 'read grade system'],
-                'submenu' => array_values(array_filter([
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Manage Exams',
-                        'route' => 'exams.index',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['read exam'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Exam Records',
-                        'route' => 'exam-records.index',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['read exam record'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Result Checker',
-                        'route' => 'exams.result-checker',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['check result'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Grade Systems',
-                        'route' => 'grade-systems.index',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['read grade system', 'create grade system'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Exam Papers',
-                        'route' => 'exam-papers.viewer',
-                        'roles' => ['student', 'parent'],
-                        'permissions' => ['view exam paper'],
-                    ],
                 ])),
-            ],
-            [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-chart-line',
-                'text' => 'Results',
-                'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                'permissions' => ['upload result', 'view result'],
-                'submenu' => array_values(array_filter([
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-tachometer-alt',
-                        'text' => 'Results Dashboard',
-                        'route' => 'result',
-                        'permissions' => ['upload result'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-user-edit',
-                        'text' => 'Individual Upload',
-                        'route' => 'result.upload.individual',
-                        'permissions' => ['upload result'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-users-cog',
-                        'text' => 'Bulk Upload',
-                        'route' => 'result.upload.bulk',
-                        'permissions' => ['upload result'],
-                    ],
-                    $canAccessClassOnlyResultTools ? [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-users',
-                        'text' => 'Class Results',
-                        'route' => 'result.view.class',
-                        'permissions' => ['view result'],
-                    ] : null,
-                    $canAccessSubjectResultTools ? [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-book',
-                        'text' => 'Subject Results',
-                        'route' => 'result.view.subject',
-                        'permissions' => ['view result'],
-                    ] : null,
-                    $canAccessClassOnlyResultTools ? [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-user-graduate',
-                        'text' => 'Student Results',
-                        'route' => 'result.view.student',
-                        'permissions' => ['view result'],
-                    ] : null,
-                    $canAccessClassOnlyResultTools ? [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-history',
-                        'text' => 'Student History',
-                        'route' => 'result.history',
-                        'permissions' => ['view result'],
-                    ] : null,
-                    $canAccessClassOnlyResultTools ? [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-calendar-alt',
-                        'text' => 'Annual Class Results',
-                        'route' => 'result.annual',
-                        'permissions' => ['view result'],
-                    ] : null,
-                ])),
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Teacher Result Entry',
-                'icon' => 'fas fa-pen',
-                'route' => 'results.index',
-                'permissions' => ['upload result'],
             ],
         ];
     }
 
-    protected function financeMenu(): array
+    protected function operationsMenu(): array
     {
         return [
-            ['header' => 'Finance'],
+            ['header' => 'School Operations'],
             [
-                'type' => 'menu-item',
-                'text' => 'Fees',
-                'icon' => 'fas fa-dollar-sign',
-                'permissions' => ['read fee', 'read fee invoice', 'read fee category'],
-                'submenu' => [
+                'text' => 'Attendance & Discipline',
+                'icon' => 'fas fa-user-check',
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Daily Attendance',
+                        'route' => 'attendance.index',
+                        'permissions' => ['read attendance'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Discipline Incidents',
+                        'route' => 'discipline.index',
+                        'permissions' => ['read discipline incident'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'My Child’s Attendance & Discipline',
+                        'route' => 'parent.student-welfare',
+                        'permissions' => ['read own child attendance', 'read own child discipline'],
+                    ],
+                ])),
+            ],
+            [
+                'text' => 'Fees & Payments',
+                'icon' => 'fas fa-wallet',
+                'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
                         'text' => 'Fee Invoices',
@@ -619,86 +532,93 @@ class Menu extends Component
                         'route' => 'fee-categories.create',
                         'permissions' => ['create fee category'],
                     ],
-                ],
+                ])),
             ],
         ];
     }
 
-    protected function engagementMenu(): array
+    protected function communicationMenu(): array
     {
         return [
-            ['header' => 'Communication & Media'],
+            ['header' => 'Communication'],
             [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-bullhorn',
-                'text' => 'Notices',
-                'route' => 'notices.index',
-                'permissions' => ['read notice', 'create notice', 'update notice'],
+                'text' => 'Messages & Notices',
+                'icon' => 'fas fa-comments',
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-bullhorn',
+                        'text' => 'School Notices',
+                        'route' => 'notices.index',
+                        'permissions' => ['read notice', 'create notice', 'update notice'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-paper-plane',
+                        'text' => 'Send Announcements',
+                        'route' => 'broadcasts.manage',
+                        'permissions' => ['read broadcast message', 'create broadcast message'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'My Announcements',
+                        'route' => 'broadcasts.inbox',
+                        'permissions' => ['view own broadcasts'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-envelope',
+                        'text' => 'Website Enquiries',
+                        'route' => 'contacts.messages.index',
+                        'permissions' => ['read contact message'],
+                    ],
+                ])),
             ],
             [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-envelope',
-                'text' => 'Contact Messages',
-                'route' => 'contacts.messages.index',
-                'permissions' => ['read contact message'],
-            ],
-            [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-paper-plane',
-                'text' => 'Broadcast Messaging',
-                'route' => 'broadcasts.manage',
-                'permissions' => ['read broadcast message', 'create broadcast message'],
-            ],
-            [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-images',
-                'text' => 'Gallery Manager',
-                'route' => 'gallery.manage',
-                'permissions' => ['manage gallery'],
-            ],
-            [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-photo-video',
-                'text' => 'Media Library',
-                'route' => 'media-library.index',
-                'permissions' => ['manage media library'],
+                'text' => 'Website & Media',
+                'icon' => 'fas fa-globe',
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Website Settings',
+                        'icon' => 'fas fa-sliders-h',
+                        'route' => 'schools.settings',
+                        'permissions' => ['manage school settings'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-images',
+                        'text' => 'School Gallery',
+                        'route' => 'gallery.manage',
+                        'permissions' => ['manage gallery'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-photo-video',
+                        'text' => 'Media Library',
+                        'route' => 'media-library.index',
+                        'permissions' => ['manage media library'],
+                    ],
+                ])),
             ],
         ];
     }
 
-    protected function plannedFeaturesMenu(): array
+    protected function administrationMenu(): array
     {
         return [
-            ['header' => 'Planned Features'],
+            ['header' => 'Administration'],
             [
-                'type' => 'menu-item',
-                'text' => 'Teaching & Learning',
-                'icon' => 'fas fa-book-reader',
-                'permissions' => ['view dashboard'],
-                'submenu' => [
-                    ['type' => 'menu-item', 'text' => 'Assignments', 'coming_soon' => true],
-                    ['type' => 'menu-item', 'text' => 'Lesson Plans', 'coming_soon' => true],
-                    ['type' => 'menu-item', 'text' => 'Digital Library', 'coming_soon' => true],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Operations',
-                'icon' => 'fas fa-sitemap',
-                'permissions' => ['view dashboard'],
-                'submenu' => [
-                    ['type' => 'menu-item', 'text' => 'Transport', 'coming_soon' => true],
-                    ['type' => 'menu-item', 'text' => 'Hostel', 'coming_soon' => true],
-                    ['type' => 'menu-item', 'text' => 'Clinic', 'coming_soon' => true],
-                    ['type' => 'menu-item', 'text' => 'Inventory', 'coming_soon' => true],
-                ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Reports & Insights',
+                'text' => 'Reports & Analytics',
                 'icon' => 'fas fa-chart-pie',
-                'permissions' => ['read analytics dashboard'],
-                'submenu' => [
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-chart-bar',
+                        'text' => 'Analytics Overview',
+                        'route' => 'analytics.index',
+                        'permissions' => ['read analytics dashboard'],
+                    ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Executive Report',
@@ -717,28 +637,46 @@ class Menu extends Component
                         'route' => 'reports.performance-trends',
                         'permissions' => ['read analytics dashboard'],
                     ],
-                ],
+                ])),
             ],
-        ];
-    }
-
-    protected function accountMenu(): array
-    {
-        return [
-            ['header' => 'Account'],
             [
-                'type' => 'menu-item',
+                'text' => 'School Settings',
+                'icon' => 'fas fa-school',
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'All Schools',
+                        'route' => 'schools.index',
+                        'permissions' => ['read school'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Add School',
+                        'route' => 'schools.index',
+                        'params' => ['mode' => 'create'],
+                        'permissions' => ['create school'],
+                    ],
+                ])),
+            ],
+            [
+                'text' => 'My Account',
                 'icon' => 'fas fa-user',
-                'text' => 'Profile',
-                'route' => 'profile.edit',
-                'permissions' => ['manage own profile'],
-            ],
-            [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-key',
-                'text' => 'Change Password',
-                'route' => 'password.change',
-                'permissions' => ['change own password'],
+                'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-user',
+                        'text' => 'Profile',
+                        'route' => 'profile.edit',
+                        'permissions' => ['manage own profile'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-key',
+                        'text' => 'Change Password',
+                        'route' => 'password.change',
+                        'permissions' => ['change own password'],
+                    ],
+                ])),
             ],
         ];
     }
@@ -747,41 +685,41 @@ class Menu extends Component
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
-        if (empty($item['coming_soon']) && !empty($item['route']) && !Route::has($item['route'])) {
+        if (empty($item['coming_soon']) && ! empty($item['route']) && ! Route::has($item['route'])) {
             return false;
         }
 
         if ($this->isRestrictedTeacherPortalUser($user)) {
-            if (!empty($item['coming_soon'])) {
+            if (! empty($item['coming_soon'])) {
                 return false;
             }
 
-            if (!empty($item['route']) && !$this->restrictedTeacherCanAccessRoute($item['route'], $user)) {
+            if (! empty($item['route']) && ! $this->restrictedTeacherCanAccessRoute($item['route'], $user)) {
                 return false;
             }
         }
 
-        if (!empty($item['permissions']) && is_array($item['permissions']) && !$this->hasAnyPermission($item['permissions'])) {
+        if (! empty($item['permissions']) && is_array($item['permissions']) && ! $this->hasAnyPermission($item['permissions'])) {
             return false;
         }
 
-        if (!empty($item['roles']) && is_array($item['roles']) && !$user->hasAnyRole($item['roles'])) {
+        if (! empty($item['roles']) && is_array($item['roles']) && ! $user->hasAnyRole($item['roles'])) {
             return false;
         }
 
-        if (array_key_exists('can', $item) && !$this->passesCanCheck($item['can'])) {
+        if (array_key_exists('can', $item) && ! $this->passesCanCheck($item['can'])) {
             return false;
         }
 
-        if (!empty($item['can_any']) && is_array($item['can_any']) && !$this->passesAnyCanChecks($item['can_any'])) {
+        if (! empty($item['can_any']) && is_array($item['can_any']) && ! $this->passesAnyCanChecks($item['can_any'])) {
             return false;
         }
 
-        if (!empty($item['submenu']) && is_array($item['submenu']) && $this->visibleSubmenu($item['submenu']) === []) {
+        if (! empty($item['submenu']) && is_array($item['submenu']) && $this->visibleSubmenu($item['submenu']) === []) {
             return false;
         }
 
@@ -797,7 +735,7 @@ class Menu extends Component
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -814,7 +752,7 @@ class Menu extends Component
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -843,8 +781,87 @@ class Menu extends Component
         return false;
     }
 
+    /** Build the searchable navigation from authorized destinations only. */
+    public function navigationSections(): array
+    {
+        $sections = [];
+        $header = 'Workspace';
+        $seen = [];
+        $visibleRoutes = collect($this->menu)
+            ->flatMap(fn (array $item) => $item['submenu'] ?? [$item])
+            ->filter(fn (array $item) => $this->isVisible($item))
+            ->pluck('route')->filter()->all();
+
+        foreach ($this->menu as $item) {
+            if (isset($item['header'])) {
+                $header = $item['header'];
+
+                continue;
+            }
+
+            if (! $this->isVisible($item)) {
+                continue;
+            }
+
+            $item['id'] = Str::slug($item['text']);
+            if (isset($item['submenu'])) {
+                $children = [];
+                foreach ($this->visibleSubmenu($item['submenu']) as $child) {
+                    $child = $this->navigationLink($child, $visibleRoutes, $item['text']);
+                    if (isset($seen[$child['route_url']])) {
+                        continue;
+                    }
+                    $seen[$child['route_url']] = true;
+                    $children[] = $child;
+                }
+                if ($children === []) {
+                    continue;
+                }
+                $item['submenu'] = $children;
+                $item['active'] = collect($children)->contains('active', true);
+                $item['route_url'] = null;
+                $item['search'] = implode(' ', array_column($children, 'search'));
+            } else {
+                $item = $this->navigationLink($item, $visibleRoutes);
+                if (isset($seen[$item['route_url']])) {
+                    continue;
+                }
+                $seen[$item['route_url']] = true;
+            }
+            $sections[$header]['header'] = $header;
+            $sections[$header]['items'][] = $item;
+        }
+
+        return array_values($sections);
+    }
+
+    protected function navigationLink(array $item, array $visibleRoutes, string $group = ''): array
+    {
+        $parameters = array_merge($item['params'] ?? [], $item['query'] ?? []);
+        $item['route_url'] = route($item['route'], $parameters);
+        $item['search'] = implode(' ', [$group, $item['section'] ?? '', $item['text'], str_replace(['.', '-'], ' ', $item['route'])]);
+        $currentRoute = Route::currentRouteName();
+        $currentMode = request()->query('mode', 'list');
+        $expectedMode = $parameters['mode'] ?? 'list';
+        $item['active'] = $currentRoute === $item['route']
+            && ($expectedMode === $currentMode || ($expectedMode === 'list' && in_array($currentMode, ['edit', 'view'], true)));
+
+        // Some Livewire forms can also be opened from their directory via ?mode=create.
+        if ($currentMode === 'create' && $expectedMode === 'create' && str_ends_with($item['route'], '.create')) {
+            $item['active'] = in_array($currentRoute, [$item['route'], substr($item['route'], 0, -7).'.index'], true);
+        }
+
+        // Keep the directory highlighted while viewing or editing one of its records.
+        if (! in_array($currentRoute, $visibleRoutes, true) && str_ends_with($item['route'], '.index') && $expectedMode === 'list') {
+            $prefix = substr($item['route'], 0, -6);
+            $item['active'] = Str::is([$prefix.'.show', $prefix.'.edit', $prefix.'.create'], $currentRoute ?? '');
+        }
+
+        return $item;
+    }
+
     public function render()
     {
-        return view('livewire.layouts.menu');
+        return view('livewire.layouts.menu', ['sections' => $this->navigationSections()]);
     }
 }

@@ -20,3 +20,13 @@ The redesign was checked in Chrome at 390px and 1440px on 23 representative mana
 Blade compilation and the production Vite build pass. A read-only route audit also exposed and fixed an array-count rendering error on student promotions and route ordering that intercepted administrator and grade-system create pages.
 
 The browser checks used a super-administrator account and the local database. They do not establish coverage of every role, populated record detail, upload, payment, or mutation workflow.
+
+## Finding dashboard pages
+
+The sidebar groups tools by task: students and parents, staff and access, classes and subjects, calendar and timetables, exams and results, computer-based tests, attendance and discipline, fees and payments, messages and notices, website and media, reports and analytics, school settings, and your account. Related links sit one level below each group; only one group is expanded at a time.
+
+Use the menu search to find a page by its name or task. Matching groups open automatically, and clearing the search restores the normal navigation. Only authorized destinations are included in both the menu and its search. The current page stays highlighted, including record detail and edit screens.
+
+Unavailable feature placeholders and duplicate result-entry links were removed from navigation. Implemented reports now appear under Reports & Analytics. Student and teacher creation links open their forms directly.
+
+Menu visibility was checked with both super-administrator role names, administrator, principal, teacher, student, and parent fixtures. Active links were checked on directory, create, and detail URLs. Browser checks exercise grouping, search, clearing/no-result states, and navigation to the student form on desktop and mobile.

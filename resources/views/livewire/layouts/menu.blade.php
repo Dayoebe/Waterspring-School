@@ -1,106 +1,149 @@
-<div class="dashboard-navigation" :class="menuOpen ? 'is-expanded' : 'is-collapsed'">
+@php
+    $navigationItems = collect($sections)->flatMap(fn ($section) => $section['items']);
+    $activeGroup = $navigationItems->first(fn ($item) => !empty($item['submenu']) && $item['active'])['id'] ?? null;
+    $navigationSearch = $navigationItems
+        ->flatMap(fn ($item) => $item['submenu'] ?? [$item])
+        ->pluck('search')->values()->all();
+@endphp
+<div
+    class="dashboard-navigation"
+    :class="menuOpen ? 'is-expanded' : 'is-collapsed'"
+    x-data="{
+        menuQuery: '',
+        openGroup: @js($activeGroup),
+        searchEntries: @js($navigationSearch),
+        get searching() { return this.menuQuery.trim().length > 0; },
+        matches(value) {
+            const haystack = String(value || '').toLocaleLowerCase();
+            return this.menuQuery.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean).every(token => haystack.includes(token));
+        },
+        matchesAny(values) { return values.some(value => this.matches(value)); },
+        get hasMatches() { return this.matchesAny(this.searchEntries); },
+        toggleGroup(id) {
+            if (!this.menuOpen) {
+                this.menuOpen = true;
+                this.openGroup = id;
+                return;
+            }
+            this.openGroup = this.openGroup === id ? null : id;
+        }
+    }"
+    x-init="$watch('menuOpen', value => { if (!value) menuQuery = ''; })"
+>
     <button type="button" class="dashboard-nav-backdrop" x-show="menuOpen && !desktop" x-cloak @click="menuOpen = false" aria-label="Close navigation"></button>
     <nav id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Main navigation" :inert="!menuOpen && !desktop">
-            @php
-                $sections = [];
-                $currentHeader = null;
-                $currentItems = [];
+        <div class="dashboard-nav-search-area">
+            <button type="button" class="dashboard-nav-link dashboard-nav-search-toggle" x-show="!menuOpen" x-cloak @click="menuOpen = true; $nextTick(() => $refs.menuSearch.focus())" aria-label="Search menu" title="Search menu">
+                <i class="fas fa-search" aria-hidden="true"></i>
+            </button>
+            <div x-show="menuOpen">
+                <label for="dashboard-menu-search" class="dashboard-nav-search-label">Find a page</label>
+                <div class="dashboard-nav-search">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <input
+                        id="dashboard-menu-search"
+                        x-ref="menuSearch"
+                        x-model="menuQuery"
+                        type="search"
+                        placeholder="Search menu..."
+                        autocomplete="off"
+                        spellcheck="false"
+                        aria-controls="dashboard-menu-items"
+                        @keydown.escape="if (menuQuery) { $event.stopPropagation(); menuQuery = ''; }"
+                    >
+                    <button type="button" x-show="menuQuery.length" x-cloak @click="menuQuery = ''; $refs.menuSearch.focus()" aria-label="Clear menu search" title="Clear search">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                foreach ($menu ?? [] as $item) {
-                    if (isset($item['header'])) {
-                        if ($currentItems !== []) {
-                            $sections[] = [
-                                'header' => $currentHeader,
-                                'items' => $currentItems,
-                            ];
-                            $currentItems = [];
-                        }
-
-                        if (!$this->isVisible($item)) {
-                            $currentHeader = null;
-                            continue;
-                        }
-
-                        $currentHeader = $item['header'];
-                        continue;
-                    }
-
-                    if (!$this->isVisible($item)) {
-                        continue;
-                    }
-
-                    if (isset($item['submenu']) && is_array($item['submenu'])) {
-                        $item['submenu'] = $this->visibleSubmenu($item['submenu']);
-                        if ($item['submenu'] === []) {
-                            continue;
-                        }
-                    }
-
-                    $currentItems[] = $item;
-                }
-
-                if ($currentItems !== []) {
-                    $sections[] = [
-                        'header' => $currentHeader,
-                        'items' => $currentItems,
-                    ];
-                }
-                $menuQueryKeys = collect($sections)->flatMap(fn ($section) => $section['items'])
-                    ->flatMap(fn ($item) => isset($item['submenu']) ? $item['submenu'] : [$item])
-                    ->flatMap(fn ($item) => array_keys(array_merge($item['params'] ?? [], $item['query'] ?? [])))->unique()->all();
-                $activeMenuQuery = request()->only($menuQueryKeys);
-            @endphp
-        @foreach ($sections as $section)
-            <section class="dashboard-nav-section">
-                @if (!empty($section['header']))
-                    <h2 class="dashboard-nav-label" x-show="menuOpen">{{ $section['header'] }}</h2>
-                @endif
-                @foreach ($section['items'] as $menuItem)
-                    @if (!isset($menuItem['submenu']))
-                        @php
-                            $isComingSoon = !empty($menuItem['coming_soon']) || empty($menuItem['route']);
-                            $isActive = !$isComingSoon && Route::currentRouteName() === $menuItem['route'] && array_merge($menuItem['params'] ?? [], $menuItem['query'] ?? []) == $activeMenuQuery;
-                            $routeUrl = !$isComingSoon ? route($menuItem['route'], $menuItem['params'] ?? []) : null;
-                            if ($routeUrl && !empty($menuItem['query'])) $routeUrl .= '?' . http_build_query($menuItem['query']);
-                        @endphp
-                        @if ($isComingSoon)
-                            <div class="dashboard-nav-link is-disabled" title="{{ $menuItem['text'] }} — coming soon">
-                                <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
-                                <span x-show="menuOpen">{{ $menuItem['text'] }}</span><small x-show="menuOpen">Soon</small>
-                            </div>
-                        @else
-                            <a class="dashboard-nav-link {{ $isActive ? 'is-active' : '' }}" href="{{ $routeUrl }}" title="{{ $menuItem['text'] }}" @if($isActive) aria-current="page" @endif wire:navigate>
-                                <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i><span x-show="menuOpen">{{ $menuItem['text'] }}</span>
-                            </a>
-                        @endif
-                    @else
-                        @php
-                            $isActive = in_array(Route::currentRouteName(), array_column($menuItem['submenu'], 'route'), true);
-                        @endphp
-                        <div x-data="{ submenu: {{ $isActive ? 'true' : 'false' }} }">
-                            <button type="button" class="dashboard-nav-link {{ $isActive ? 'is-parent-active' : '' }}" @click="if (!menuOpen) { menuOpen = true; submenu = true; } else { submenu = !submenu; }" :aria-expanded="(submenu && menuOpen).toString()" title="{{ $menuItem['text'] }}">
-                                <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i><span x-show="menuOpen">{{ $menuItem['text'] }}</span>
-                                <i x-show="menuOpen" class="fas fa-chevron-down dashboard-nav-chevron" :class="submenu ? 'is-rotated' : ''" aria-hidden="true"></i>
-                            </button>
-                            <div class="dashboard-subnav" x-show="submenu && menuOpen" x-cloak>
-                                @foreach ($menuItem['submenu'] as $submenuItem)
-                                    @php
-                                        $comingSoon = !empty($submenuItem['coming_soon']) || empty($submenuItem['route']);
-                                        $active = !$comingSoon && Route::currentRouteName() === $submenuItem['route'] && array_merge($submenuItem['params'] ?? [], $submenuItem['query'] ?? []) == $activeMenuQuery;
-                                        $url = !$comingSoon ? route($submenuItem['route'], $submenuItem['params'] ?? []) : null;
-                                        if ($url && !empty($submenuItem['query'])) $url .= '?' . http_build_query($submenuItem['query']);
-                                    @endphp
-                                    @if ($comingSoon)
-                                        <span class="dashboard-subnav-link is-disabled">{{ $submenuItem['text'] }} <small>Soon</small></span>
-                                    @else
-                                        <a class="dashboard-subnav-link {{ $active ? 'is-active' : '' }}" href="{{ $url }}" @if($active) aria-current="page" @endif wire:navigate>{{ $submenuItem['text'] }}</a>
-                                    @endif
-                                @endforeach
-                            </div>
-                        </div>
+        <div id="dashboard-menu-items">
+            @foreach ($sections as $section)
+                @php
+                    $sectionSearch = collect($section['items'])->flatMap(fn ($item) => $item['submenu'] ?? [$item])->pluck('search')->values()->all();
+                @endphp
+                <section class="dashboard-nav-section" x-show="matchesAny(@js($sectionSearch))">
+                    @if (!empty($section['header']))
+                        <h2 class="dashboard-nav-label" x-show="menuOpen">{{ $section['header'] }}</h2>
                     @endif
-                @endforeach
-            </section>
-        @endforeach
+                    @foreach ($section['items'] as $menuItem)
+                        @if (empty($menuItem['submenu']))
+                            @if (!empty($menuItem['route_url']))
+                                <a
+                                    class="dashboard-nav-link {{ $menuItem['active'] ? 'is-active' : '' }}"
+                                    href="{{ $menuItem['route_url'] }}"
+                                    title="{{ $menuItem['text'] }}"
+                                    x-show="matches(@js($menuItem['search']))"
+                                    @if($menuItem['active']) aria-current="page" @endif
+                                    wire:navigate
+                                >
+                                    <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
+                                    <span x-show="menuOpen">{{ $menuItem['text'] }}</span>
+                                </a>
+                            @else
+                                <div class="dashboard-nav-link is-disabled" title="{{ $menuItem['text'] }} — coming soon" x-show="matches(@js($menuItem['search']))">
+                                    <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
+                                    <span x-show="menuOpen">{{ $menuItem['text'] }}</span>
+                                    <small x-show="menuOpen">Soon</small>
+                                </div>
+                            @endif
+                        @else
+                            @php
+                                $groupId = 'dashboard-nav-' . $menuItem['id'];
+                                $groupSearch = array_column($menuItem['submenu'], 'search');
+                                $submenuSections = [];
+                                foreach ($menuItem['submenu'] as $submenuItem) {
+                                    $label = $submenuItem['section'] ?? '';
+                                    $lastIndex = array_key_last($submenuSections);
+                                    if ($lastIndex === null || $submenuSections[$lastIndex]['label'] !== $label) {
+                                        $submenuSections[] = ['label' => $label, 'items' => []];
+                                    }
+                                    $submenuSections[array_key_last($submenuSections)]['items'][] = $submenuItem;
+                                }
+                            @endphp
+                            <div class="dashboard-nav-group" x-show="matchesAny(@js($groupSearch))">
+                                <button
+                                    id="{{ $groupId }}-button"
+                                    type="button"
+                                    class="dashboard-nav-link {{ $menuItem['active'] ? 'is-parent-active' : '' }}"
+                                    @click="toggleGroup(@js($menuItem['id']))"
+                                    :aria-expanded="(menuOpen && (searching || openGroup === @js($menuItem['id']))).toString()"
+                                    aria-controls="{{ $groupId }}"
+                                    title="{{ $menuItem['text'] }}"
+                                >
+                                    <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
+                                    <span x-show="menuOpen">{{ $menuItem['text'] }}</span>
+                                    <i x-show="menuOpen" class="fas fa-chevron-down dashboard-nav-chevron" :class="(searching || openGroup === @js($menuItem['id'])) ? 'is-rotated' : ''" aria-hidden="true"></i>
+                                </button>
+                                <div id="{{ $groupId }}" class="dashboard-subnav" x-show="menuOpen && (searching || openGroup === @js($menuItem['id']))" aria-labelledby="{{ $groupId }}-button" x-cloak>
+                                    @foreach ($submenuSections as $submenuSection)
+                                        <div class="dashboard-subnav-section" x-show="matchesAny(@js(array_column($submenuSection['items'], 'search')))">
+                                            @if ($submenuSection['label'] !== '')
+                                                <h3 class="dashboard-subnav-label">{{ $submenuSection['label'] }}</h3>
+                                            @endif
+                                            @foreach ($submenuSection['items'] as $submenuItem)
+                                                @if (!empty($submenuItem['route_url']))
+                                                    <a class="dashboard-subnav-link {{ $submenuItem['active'] ? 'is-active' : '' }}" href="{{ $submenuItem['route_url'] }}" x-show="matches(@js($submenuItem['search']))" @if($submenuItem['active']) aria-current="page" @endif wire:navigate>{{ $submenuItem['text'] }}</a>
+                                                @else
+                                                    <span class="dashboard-subnav-link is-disabled" x-show="matches(@js($submenuItem['search']))">{{ $submenuItem['text'] }} <small>Soon</small></span>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
+                </section>
+            @endforeach
+        </div>
+
+        <div class="dashboard-nav-empty" x-show="menuOpen && searching && !hasMatches" x-cloak role="status" aria-live="polite">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <strong>No matching pages</strong>
+            <p>Try a page name, such as students, fees, or results.</p>
+            <button type="button" @click="menuQuery = ''; $refs.menuSearch.focus()">Clear search</button>
+        </div>
     </nav>
 </div>
