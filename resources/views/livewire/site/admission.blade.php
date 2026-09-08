@@ -51,7 +51,7 @@
                     <article class="rounded-2xl border border-sky-100 bg-white p-6"><h3 class="text-xl font-bold text-sky-900">Apply</h3><p class="mt-3 text-slate-600">The school accepts online applications. Contact the office if you need help or a copy of the admission form.</p></article>
                     <article class="rounded-2xl border border-sky-100 bg-white p-6"><h3 class="text-xl font-bold text-sky-900">Speak with admissions</h3><p class="mt-3 text-slate-600">Confirm available places, current fees and the next steps for your child’s entry class with the school.</p></article>
                 </div>
-                <a href="{{ $publicSiteSettings['prospectus_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-6 inline-block font-bold text-sky-700 hover:underline">Read the school prospectus ↗</a>
+                <a href="{{ route('prospectus') }}" class="mt-6 inline-block font-bold text-sky-700 hover:underline">Read the school prospectus →</a>
             </div>
         </section>
 

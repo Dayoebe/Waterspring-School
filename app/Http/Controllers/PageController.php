@@ -1,37 +1,46 @@
 <?php
-namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+namespace App\Http\Controllers;
 
 class PageController extends Controller
 {
-    public function home() {
+    public function home()
+    {
         return view('livewire.site.home');
     }
 
-    public function about() {
+    public function about()
+    {
         return view('livewire.site.about');
     }
 
-    public function academics() {
+    public function academics()
+    {
         return view('livewire.site.academics');
     }
 
-    public function whyWatersprings() {
+    public function whyWatersprings()
+    {
         return view('livewire.site.why-watersprings');
     }
 
-    public function contact() {
+    public function contact()
+    {
         return view('livewire.site.contact');
     }
 
-    public function admission() {
+    public function admission()
+    {
         return view('livewire.site.admission');
     }
 
-    public function gallery() {
+    public function gallery()
+    {
         return view('livewire.site.gallery');
     }
 
-    // Add more as needed...
+    public function prospectus()
+    {
+        return view('livewire.site.prospectus');
+    }
 }

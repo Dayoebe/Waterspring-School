@@ -62,3 +62,13 @@ Before enabling the local forms in the dashboard stage, configure Watersprings s
 Application defaults now use the verified public-school configuration. Dashboard and report-card branding, logo references and command names use Watersprings. Obsolete logos and application icons were removed, and the service-worker cache version was advanced. School records and the existing uploaded Watersprings logo were preserved. The former school-comparison route was removed.
 
 Cleanup validation: build, Blade compilation, PHP syntax, Composer metadata and source-branding checks passed. HTTP checks passed for the seven public pages, login, dashboard, school management, manifest and AI summary, including local image URLs. The missing local storage symlink was restored so uploaded school logos render. Printed report templates were compiled, but no student reports were generated during this cleanup.
+
+## Public prospectus page
+
+`/prospectus` presents the supplied Watersprings Prospectus PDF as a public HTML page, using the existing website layout. Navigation, the footer and Admission link to it. It includes the welcome and CEO messages, facilities, mission and vision, ethos, curriculum and class ages, daily timetable, uniform quantities, attendance policy, bus service, clubs and contact details. The original Google Drive PDF remains linked for its illustrated layout.
+
+Source: https://drive.google.com/file/d/1zcJks1g7HmKV2X8OcNnLNosQG0oM2bUB/view (20-page prospectus, Drive modified date September 2024). Text was retrieved through Google Drive; uniform quantities were verified visually on PDF pages 15–16. Text is lightly edited for web readability. The prospectus’s attendance policy and drop-off timetable give different arrival wording; both are retained, with a prompt to confirm class arrangements with the school.
+
+The page is registered in public metadata, structured data, sitemap and AI-readable page discovery. The service-worker cache version was advanced. No login is required and dashboard navigation is unaffected.
+
+Validation: Blade compilation, scoped PHP formatting, production build and service-worker syntax checks passed. Guest browser checks passed at 390px, 1024px and 1440px: one H1, no dashboard shell, no horizontal overflow, working contents links, loaded images and valid structured data. Home, Admission, the page sitemap and `llms.txt` expose the new page. No forms were submitted.

@@ -109,3 +109,14 @@
     }
 
 } 
+
+/* Public prospectus reading layout. */
+.prospectus-page .prospectus-section { scroll-margin-top: 7rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid #e2e8f0; border-radius: 1rem; background: #fff; }
+.prospectus-page .prospectus-kicker { margin-bottom: .6rem; color: #0369a1; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.prospectus-page .prospectus-section > h2 { font-size: clamp(1.5rem, 2.5vw, 1.9rem); line-height: 1.2; font-weight: 800; letter-spacing: -.025em; }
+.prospectus-page .prospectus-copy { margin-top: 1.25rem; color: #475569; line-height: 1.85; }
+.prospectus-page .prospectus-copy > * + * { margin-top: 1rem; }
+.prospectus-page .prospectus-copy h3 { padding-top: .5rem; color: #0f172a; font-size: 1.1rem; font-weight: 700; }
+.prospectus-page .prospectus-copy ul { list-style: disc; padding-left: 1.25rem; }
+.prospectus-page .prospectus-copy li { margin-bottom: .45rem; }
+.prospectus-page a:focus-visible { outline: 3px solid #0284c7; outline-offset: 4px; }

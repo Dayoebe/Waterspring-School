@@ -2,6 +2,7 @@
     $primaryNavItems = [
         ['label' => 'Home', 'route' => 'home'],
         ['label' => 'Admission', 'route' => 'admission'],
+        ['label' => 'Prospectus', 'route' => 'prospectus'],
         ['label' => 'Gallery', 'route' => 'gallery'],
         ['label' => 'Contact', 'route' => 'contact'],
     ];

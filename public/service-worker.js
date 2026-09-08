@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'watersprings-pwa-v2';
+const CACHE_VERSION = 'watersprings-pwa-v3';
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;

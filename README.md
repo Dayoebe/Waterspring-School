@@ -13,6 +13,7 @@ The public website has been adapted using the school's published information and
 | Academics | `/academics` | Early Years & Foundation Stage, Key Stages 1 and 2, clubs and the archived college announcement |
 | Why Watersprings | `/why-watersprings` | Learning environment, individual care and school values |
 | Admission | `/admission` | Application guidance, fee categories and prospectus access |
+| Prospectus | `/prospectus` | School prospectus: curriculum, facilities, uniforms, attendance, transport and clubs |
 | Gallery | `/gallery` | Photographs from the school's existing website |
 | Contact | `/contact` | Akure address, telephone numbers, email addresses, map and visit guidance |
 
@@ -30,6 +31,8 @@ Public pages include canonical URLs, social metadata and structured data. Discov
 `SiteSettings::forPublicSite()` reads the public configuration independently of dashboard school settings. Dashboard settings do not currently control the Watersprings public content or gallery.
 
 See [public-site migration notes](docs/watersprings-public-site.md) for content sources, implementation details and validation. The college flyer is an archived **2025/2026** announcement; current places, fees and admission dates must be confirmed with the school.
+
+The public Prospectus page (`/prospectus`) presents the school’s PDF content as accessible web sections, including curriculum, uniforms, the daily timetable, attendance, transport and clubs. The original PDF remains available from the page.
 
 ## Management platform
 

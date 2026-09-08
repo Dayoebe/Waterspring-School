@@ -100,6 +100,7 @@
                     <li><a href="{{ route('about') }}" class="transition hover:text-white">About Us</a></li>
                     <li><a href="{{ route('why-watersprings') }}" class="transition hover:text-white">Why Watersprings</a></li>
                     <li><a href="{{ route('admission') }}" class="transition hover:text-white">Admission</a></li>
+                    <li><a href="{{ route('prospectus') }}" class="transition hover:text-white">Prospectus</a></li>
                     <li><a href="{{ route('gallery') }}" class="transition hover:text-white">Gallery</a></li>
                     <li><a href="{{ route('contact') }}" class="transition hover:text-white">Contact</a></li>
                 </ul>

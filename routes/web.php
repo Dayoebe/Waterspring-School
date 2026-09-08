@@ -118,6 +118,7 @@ Route::get('/academics', [PageController::class, 'academics'])->name('academics'
 Route::get('/why-watersprings', [PageController::class, 'whyWatersprings'])->name('why-watersprings');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/admission', [PageController::class, 'admission'])->name('admission');
+Route::get('/prospectus', [PageController::class, 'prospectus'])->name('prospectus');
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
 
 /*

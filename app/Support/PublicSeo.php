@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\GalleryItem;
 use App\Models\School;
+use App\Models\SiteSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -18,7 +19,7 @@ class PublicSeo
     {
         $pages = [];
 
-        foreach (['home', 'about', 'academics', 'why-watersprings', 'admission', 'gallery', 'contact'] as $routeName) {
+        foreach (['home', 'about', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
             $pages[$routeName] = self::pageMeta($routeName, $settings);
         }
 
@@ -30,7 +31,7 @@ class PublicSeo
      */
     public static function pageMeta(?string $routeName, array $settings): array
     {
-        $routeName = in_array($routeName, ['home', 'about', 'academics', 'why-watersprings', 'admission', 'gallery', 'contact'], true)
+        $routeName = in_array($routeName, ['home', 'about', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
             ? $routeName
             : 'home';
 
@@ -73,6 +74,15 @@ class PublicSeo
                 'summary' => 'Admission information, registration flow, requirements, and contact support for families applying to '.$siteName.'.',
                 'changefreq' => 'weekly',
                 'priority' => '0.9',
+                'schemaType' => 'WebPage',
+            ],
+            'prospectus' => [
+                'label' => 'Prospectus',
+                'title' => 'School Prospectus | '.$siteName,
+                'description' => 'Read the Watersprings school prospectus: curriculum, classes, facilities, uniforms, attendance, school transport and clubs.',
+                'summary' => 'A guide to early years and primary school life, including the daily timetable, uniform guidance, bus service and contact details.',
+                'changefreq' => 'monthly',
+                'priority' => '0.8',
                 'schemaType' => 'WebPage',
             ],
             'gallery' => [
@@ -395,7 +405,7 @@ class PublicSeo
 
         try {
             if (Schema::hasTable('site_settings')) {
-                $latestSetting = \App\Models\SiteSetting::query()->max('updated_at');
+                $latestSetting = SiteSetting::query()->max('updated_at');
                 if ($latestSetting) {
                     $timestamps[] = Carbon::parse($latestSetting)->timestamp;
                 }
