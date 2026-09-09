@@ -6,6 +6,7 @@ use App\Livewire\Layouts\Menu;
 use App\Models\School;
 use App\Models\User;
 use App\Support\PermissionMatrix;
+use App\Traits\RestrictsTeacherPortalAccess;
 use Illuminate\Console\Command;
 use Illuminate\Routing\Route as IlluminateRoute;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,8 @@ use Throwable;
 
 class AuditRoleAccess extends Command
 {
+    use RestrictsTeacherPortalAccess;
+
     protected $signature = 'permissions:audit-access
         {--guard=web : Auth guard used for role checks}
         {--role=* : Limit the audit to one or more role names}
@@ -43,6 +46,7 @@ class AuditRoleAccess extends Command
 
         if ($requestedRoles !== [] && $roleNames === []) {
             $this->error('None of the requested roles exist in PermissionMatrix.');
+
             return self::FAILURE;
         }
 
@@ -54,6 +58,7 @@ class AuditRoleAccess extends Command
         $auditRoutes = $this->menuRouteNames();
         if ($auditRoutes === []) {
             $this->error('No menu routes found for auditing.');
+
             return self::FAILURE;
         }
 
@@ -62,6 +67,7 @@ class AuditRoleAccess extends Command
         } catch (Throwable $e) {
             report($e);
             $this->error('Database connection failed. Start MySQL and run the audit again.');
+
             return self::FAILURE;
         }
         $tempUsers = [];
@@ -78,9 +84,10 @@ class AuditRoleAccess extends Command
                     ->where('guard_name', $guard)
                     ->first();
 
-                if (!$dbRole) {
+                if (! $dbRole) {
                     $this->warn("Role not found in DB for guard [{$guard}]: {$roleName}. Run permissions:sync-matrix.");
                     $totalMismatches++;
+
                     continue;
                 }
 
@@ -101,17 +108,18 @@ class AuditRoleAccess extends Command
                     $routeAudit = $this->auditRouteAccessForUser($user, $routeName);
                     $hasVisibleTwin = $this->hasVisibleEntryForRoute($entries, $routeName);
 
-                    if ($entry['visible'] && !$routeAudit['allowed']) {
+                    if ($entry['visible'] && ! $routeAudit['allowed']) {
                         $roleMismatches[] = "VISIBLE but denied: [{$routeName}] {$routeAudit['reason']}";
+
                         continue;
                     }
 
                     if (
-                        !$entry['visible']
+                        ! $entry['visible']
                         && $routeAudit['allowed']
                         && $this->entryHasAccessConstraint($entry)
-                        && !$hasVisibleTwin
-                        && !$entry['has_params']
+                        && ! $hasVisibleTwin
+                        && ! $entry['has_params']
                     ) {
                         $roleMismatches[] = "HIDDEN but allowed: [{$routeName}] menu and route rules are inconsistent";
                     }
@@ -132,11 +140,12 @@ class AuditRoleAccess extends Command
 
                 $this->line('');
                 if ($roleMismatches === []) {
-                    $this->info("Role [{$roleName}]: OK (" . count($entries) . ' menu routes audited)');
+                    $this->info("Role [{$roleName}]: OK (".count($entries).' menu routes audited)');
+
                     continue;
                 }
 
-                $this->error("Role [{$roleName}] mismatches: " . count($roleMismatches));
+                $this->error("Role [{$roleName}] mismatches: ".count($roleMismatches));
                 foreach ($roleMismatches as $message) {
                     $this->line("  - {$message}");
                 }
@@ -151,7 +160,7 @@ class AuditRoleAccess extends Command
                 $guardInstance->logout();
             }
 
-            if (!$this->option('keep-users')) {
+            if (! $this->option('keep-users')) {
                 foreach ($tempUsers as $tempUser) {
                     try {
                         $tempUser->syncRoles([]);
@@ -166,10 +175,12 @@ class AuditRoleAccess extends Command
         $this->line('');
         if ($totalMismatches > 0) {
             $this->error("Access audit finished with {$totalMismatches} mismatch(es).");
+
             return self::FAILURE;
         }
 
         $this->info('Access audit passed for all requested roles.');
+
         return self::SUCCESS;
     }
 
@@ -185,15 +196,16 @@ class AuditRoleAccess extends Command
         )));
 
         sort($names);
+
         return $names;
     }
 
     protected function createAuditUser(string $roleName, ?int $schoolId): User
     {
-        $email = 'audit+' . Str::slug($roleName, '-') . '+' . Str::lower(Str::random(8)) . '@example.test';
+        $email = 'audit+'.Str::slug($roleName, '-').'+'.Str::lower(Str::random(8)).'@example.test';
 
         $user = User::query()->create([
-            'name' => 'Access Audit ' . ucfirst(str_replace(['-', '_'], ' ', $roleName)),
+            'name' => 'Access Audit '.ucfirst(str_replace(['-', '_'], ' ', $roleName)),
             'email' => $email,
             'password' => Hash::make(Str::random(32)),
             'school_id' => $schoolId,
@@ -221,23 +233,23 @@ class AuditRoleAccess extends Command
         $entries = [];
 
         foreach ($items as $item) {
-            if (!is_array($item) || isset($item['header'])) {
+            if (! is_array($item) || isset($item['header'])) {
                 continue;
             }
 
-            if (!empty($item['route']) && is_string($item['route'])) {
+            if (! empty($item['route']) && is_string($item['route'])) {
                 $entries[] = [
                     'route' => $item['route'],
                     'text' => (string) ($item['text'] ?? $item['route']),
                     'visible' => $menuComponent->isVisible($item),
-                    'has_params' => !empty($item['params']),
+                    'has_params' => ! empty($item['params']),
                     'permissions' => is_array($item['permissions'] ?? null) ? $item['permissions'] : [],
                     'can' => $item['can'] ?? null,
                     'can_any' => $item['can_any'] ?? null,
                 ];
             }
 
-            if (!empty($item['submenu']) && is_array($item['submenu'])) {
+            if (! empty($item['submenu']) && is_array($item['submenu'])) {
                 $entries = array_merge($entries, $this->extractMenuEntries($menuComponent, $item['submenu']));
             }
         }
@@ -247,9 +259,9 @@ class AuditRoleAccess extends Command
 
     protected function entryHasAccessConstraint(array $entry): bool
     {
-        return !empty($entry['permissions'])
-            || !empty($entry['can'])
-            || !empty($entry['can_any']);
+        return ! empty($entry['permissions'])
+            || ! empty($entry['can'])
+            || ! empty($entry['can_any']);
     }
 
     protected function hasVisibleEntryForRoute(array $entries, string $routeName): bool
@@ -258,7 +270,7 @@ class AuditRoleAccess extends Command
             if (
                 is_array($entry)
                 && ($entry['route'] ?? null) === $routeName
-                && !empty($entry['visible'])
+                && ! empty($entry['visible'])
             ) {
                 return true;
             }
@@ -278,7 +290,7 @@ class AuditRoleAccess extends Command
     protected function auditRouteAccessForUser(User $user, string $routeName): array
     {
         $route = Route::getRoutes()->getByName($routeName);
-        if (!$route instanceof IlluminateRoute) {
+        if (! $route instanceof IlluminateRoute) {
             return [
                 'allowed' => false,
                 'reason' => 'route not found',
@@ -291,10 +303,16 @@ class AuditRoleAccess extends Command
         $permissionChecks = $this->extractPermissionChecks($middleware);
         $permissionAllowed = $this->passesPermissionChecksForUser($user, $permissionChecks);
 
+        $roleChecks = $this->extractRoleChecks($middleware);
+        $roleAllowed = $this->passesRoleChecksForUser($user, $roleChecks);
+
         $canChecks = $this->extractCanChecks($middleware);
         $canAllowed = $this->passesCanChecksForUser($user, $canChecks);
 
-        if (!$permissionAllowed) {
+        $teacherPortalAllowed = ! in_array('restrict.teacher.portal', $middleware, true)
+            || $this->restrictedTeacherCanAccessRoute($routeName, $user);
+
+        if (! $permissionAllowed) {
             return [
                 'allowed' => false,
                 'reason' => 'permission middleware denied',
@@ -303,10 +321,28 @@ class AuditRoleAccess extends Command
             ];
         }
 
-        if (!$canAllowed) {
+        if (! $canAllowed) {
             return [
                 'allowed' => false,
                 'reason' => 'policy/ability middleware denied',
+                'permission_allowed' => true,
+                'permission_checks' => $permissionChecks,
+            ];
+        }
+
+        if (! $roleAllowed) {
+            return [
+                'allowed' => false,
+                'reason' => 'role middleware denied',
+                'permission_allowed' => true,
+                'permission_checks' => $permissionChecks,
+            ];
+        }
+
+        if (! $teacherPortalAllowed) {
+            return [
+                'allowed' => false,
+                'reason' => 'teacher portal middleware denied',
                 'permission_allowed' => true,
                 'permission_checks' => $permissionChecks,
             ];
@@ -328,7 +364,7 @@ class AuditRoleAccess extends Command
         $checks = [];
 
         foreach ($middleware as $entry) {
-            if (!is_string($entry) || !str_starts_with($entry, 'permission:')) {
+            if (! is_string($entry) || ! str_starts_with($entry, 'permission:')) {
                 continue;
             }
 
@@ -368,7 +404,7 @@ class AuditRoleAccess extends Command
                 }
             }
 
-            if (!$groupAllowed) {
+            if (! $groupAllowed) {
                 return false;
             }
         }
@@ -388,7 +424,42 @@ class AuditRoleAccess extends Command
                 }
             }
 
-            if (!$groupAllowed) {
+            if (! $groupAllowed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return array<int, array<int, string>>
+     */
+    protected function extractRoleChecks(array $middleware): array
+    {
+        $checks = [];
+
+        foreach ($middleware as $entry) {
+            if (! is_string($entry) || ! str_starts_with($entry, 'role:')) {
+                continue;
+            }
+
+            $raw = trim(substr($entry, strlen('role:')));
+            $rolePart = trim((string) explode(',', $raw)[0]);
+            $roles = array_values(array_filter(array_map('trim', explode('|', $rolePart))));
+
+            if ($roles !== []) {
+                $checks[] = $roles;
+            }
+        }
+
+        return $checks;
+    }
+
+    protected function passesRoleChecksForUser(User $user, array $checks): bool
+    {
+        foreach ($checks as $roles) {
+            if (! $user->hasAnyRole($roles)) {
                 return false;
             }
         }
@@ -404,7 +475,7 @@ class AuditRoleAccess extends Command
         $checks = [];
 
         foreach ($middleware as $entry) {
-            if (!is_string($entry) || !str_starts_with($entry, 'can:')) {
+            if (! is_string($entry) || ! str_starts_with($entry, 'can:')) {
                 continue;
             }
 
@@ -419,7 +490,7 @@ class AuditRoleAccess extends Command
             }
 
             $ability = array_shift($parts);
-            if (!is_string($ability) || $ability === '') {
+            if (! is_string($ability) || $ability === '') {
                 continue;
             }
 
@@ -448,10 +519,11 @@ class AuditRoleAccess extends Command
                 };
             } catch (Throwable $e) {
                 report($e);
+
                 return false;
             }
 
-            if (!$allowed) {
+            if (! $allowed) {
                 return false;
             }
         }

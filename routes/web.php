@@ -362,13 +362,13 @@ Route::prefix('teacher')->middleware(['auth', 'verified', 'restrict.teacher.port
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->prefix('cbt')->name('cbt.')->group(function () {
     Route::get('/exams', CbtExamSelection::class)
-        ->middleware('permission:take cbt exam')
+        ->middleware(['role:student', 'permission:take cbt exam'])
         ->name('exams');
     Route::get('/exam/{assessment}', CbtExamInterface::class)
-        ->middleware('permission:take cbt exam')
+        ->middleware(['role:student', 'permission:take cbt exam'])
         ->name('exam.take');
     Route::get('/results', CbtViewer::class)
-        ->middleware('permission:view cbt result')
+        ->middleware(['role:student', 'permission:view cbt result'])
         ->name('viewer');
 
     Route::get('/manage', CbtManagement::class)
@@ -738,7 +738,7 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
                 });
 
                 Route::get('exam-papers', [ExamPaperPortalController::class, 'index'])
-                    ->middleware('permission:view exam paper')
+                    ->middleware(['role:student|parent', 'permission:view exam paper'])
                     ->name('exam-papers.viewer');
                 Route::get('exam-papers/{examPaper}/print', [ExamPaperController::class, 'print'])
                     ->middleware('permission:read exam paper|view exam paper')
