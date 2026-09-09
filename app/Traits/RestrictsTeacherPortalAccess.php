@@ -24,6 +24,7 @@ trait RestrictsTeacherPortalAccess
         return [
             'dashboard',
             'dashboard.responsibilities',
+            'assignments.*',
             'exams.index',
             'exams.create',
             'exams.store',
@@ -53,7 +54,7 @@ trait RestrictsTeacherPortalAccess
     {
         $user = $this->resolveTeacherPortalUser($user);
 
-        if (!$this->isRestrictedTeacherPortalUser($user)) {
+        if (! $this->isRestrictedTeacherPortalUser($user)) {
             return true;
         }
 

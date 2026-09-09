@@ -4,15 +4,15 @@ namespace App\Models;
 
 use App\Support\SchoolContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -40,7 +40,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'birthday' => 'date', 
+        'birthday' => 'date',
         'locked' => 'boolean',
     ];
 
@@ -82,7 +82,7 @@ class User extends Authenticatable
      */
     public function scopeActiveStudents($query)
     {
-        return $query->whereHas('studentRecord', function($q) {
+        return $query->whereHas('studentRecord', function ($q) {
             $q->active();
         });
     }
@@ -92,7 +92,7 @@ class User extends Authenticatable
      */
     public function scopeGraduatedStudents($query)
     {
-        return $query->whereHas('studentRecord', function($q) {
+        return $query->whereHas('studentRecord', function ($q) {
             $q->where('is_graduated', true);
         });
     }
@@ -102,43 +102,45 @@ class User extends Authenticatable
     {
         return $this->belongsTo(School::class);
     }
+
     public function subjects()
-{
-    return $this->belongsToMany(Subject::class, 'subject_teacher', 'user_id', 'subject_id')
-        ->withPivot('my_class_id', 'school_id', 'is_general')
-        ->withTimestamps();
-}
+    {
+        return $this->belongsToMany(Subject::class, 'subject_teacher', 'user_id', 'subject_id')
+            ->withPivot('my_class_id', 'school_id', 'is_general')
+            ->withTimestamps();
+    }
 
-public function teachingSubjects()
-{
-    return $this->subjects();
-}
+    public function teachingSubjects()
+    {
+        return $this->subjects();
+    }
 
-// Add these relationship methods to your User.php model:
+    // Add these relationship methods to your User.php model:
 
-/**
- * Get the account application for this user (if applicant)
- */
-public function accountApplication()
-{
-    return $this->hasOne(AccountApplication::class);
-}
+    /**
+     * Get the account application for this user (if applicant)
+     */
+    public function accountApplication()
+    {
+        return $this->hasOne(AccountApplication::class);
+    }
 
-/**
- * Get the parent record for this user (if parent)
- */
-public function parentRecord()
-{
-    return $this->hasOne(ParentRecord::class);
-}
+    /**
+     * Get the parent record for this user (if parent)
+     */
+    public function parentRecord()
+    {
+        return $this->hasOne(ParentRecord::class);
+    }
 
-/**
- * Get the teacher record for this user (if teacher)
- */
-public function teacherRecord()
-{
-    return $this->hasOne(TeacherRecord::class);
-}
+    /**
+     * Get the teacher record for this user (if teacher)
+     */
+    public function teacherRecord()
+    {
+        return $this->hasOne(TeacherRecord::class);
+    }
+
     public function studentRecord()
     {
         return $this->hasOne(StudentRecord::class);
@@ -146,7 +148,7 @@ public function teacherRecord()
 
     public function feeInvoices()
     {
-        return $this->hasMany(FeeInvoice::class, 'user_id'); 
+        return $this->hasMany(FeeInvoice::class, 'user_id');
     }
 
     public function parents()
@@ -162,6 +164,11 @@ public function teacherRecord()
     public function broadcastMessageRecipients()
     {
         return $this->hasMany(BroadcastMessageRecipient::class);
+    }
+
+    public function createdAssignments()
+    {
+        return $this->hasMany(Assignment::class, 'teacher_id');
     }
 
     public function receivedBroadcastMessages()
@@ -184,7 +191,7 @@ public function teacherRecord()
     public function getProfilePhotoUrlAttribute()
     {
         return $this->profile_photo_path
-            ? asset('storage/' . $this->profile_photo_path)
+            ? asset('storage/'.$this->profile_photo_path)
             : asset('images/default-avatar.png');
     }
 

@@ -211,6 +211,13 @@ class Menu extends Component
         return [
             ['header' => 'Academics'],
             [
+                'type' => 'menu-item',
+                'text' => 'Assignments',
+                'icon' => 'fas fa-clipboard-list',
+                'route' => 'assignments.index',
+                'permissions' => ['view assignment'],
+            ],
+            [
                 'text' => 'Classes & Subjects',
                 'icon' => 'fas fa-book-open',
                 'submenu' => array_values(array_filter([

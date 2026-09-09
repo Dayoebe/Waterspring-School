@@ -186,6 +186,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->middleware('permission:view dashboard')
         ->name('dashboard.responsibilities');
 
+    Route::get('/dashboard/assignments', \App\Livewire\Assignments\AssignmentHub::class)
+        ->middleware('permission:view assignment')
+        ->name('assignments.index');
+
     Route::get('/dashboard/analytics', \App\Livewire\Dashboard\AnalyticsDashboard::class)
         ->middleware('permission:read analytics dashboard')
         ->name('analytics.index');

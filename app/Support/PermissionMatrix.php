@@ -101,6 +101,9 @@ class PermissionMatrix
             'delete grade system',
             'upload result',
             'view result',
+            'view assignment',
+            'manage assignment',
+            'grade assignment',
 
             'read timetable',
             'create timetable',
@@ -182,6 +185,9 @@ class PermissionMatrix
             'check result',
             'upload result',
             'view result',
+            'view assignment',
+            'manage assignment',
+            'grade assignment',
 
             'read timetable',
             'read custom timetable item',
@@ -209,6 +215,8 @@ class PermissionMatrix
             'view exam paper',
             'take cbt exam',
             'view cbt result',
+            'view assignment',
+            'submit assignment',
             'view own broadcasts',
         ];
 
@@ -219,6 +227,8 @@ class PermissionMatrix
             'view result',
             'view exam paper',
             'view cbt result',
+            'view assignment',
+            'view child assignment',
             'read own child attendance',
             'read own child discipline',
             'view own broadcasts',
@@ -358,6 +368,12 @@ class PermissionMatrix
             'delete grade system',
             'upload result',
             'view result',
+
+            'view assignment',
+            'manage assignment',
+            'submit assignment',
+            'grade assignment',
+            'view child assignment',
 
             'read timetable',
             'create timetable',

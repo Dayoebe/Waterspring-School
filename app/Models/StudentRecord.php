@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Result;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -16,15 +15,16 @@ use Illuminate\Support\Facades\DB;
 class StudentRecord extends Model
 {
     protected $appends = ['student_subjects_count'];
+
     use HasFactory;
 
     protected $fillable = [
-        'admission_number', 
-        'admission_date', 
-        'my_class_id', 
-        'section_id', 
+        'admission_number',
+        'admission_date',
+        'my_class_id',
+        'section_id',
         'user_id',
-        'is_graduated'
+        'is_graduated',
     ];
 
     protected $casts = [
@@ -76,7 +76,7 @@ class StudentRecord extends Model
         $schoolId = auth()->user()?->school_id;
         $academicYearId = auth()->user()?->school?->academic_year_id;
 
-        if (!$schoolId) {
+        if (! $schoolId) {
             return $query->where('is_graduated', false)
                 ->whereHas('baseClass', function ($query) {
                     $query->instructional();
@@ -121,7 +121,7 @@ class StudentRecord extends Model
         ?int $sectionId = null,
         bool $includeGraduated = false
     ): Collection {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return collect();
         }
 
@@ -142,7 +142,7 @@ class StudentRecord extends Model
             ->join('users as u', 'u.id', '=', 'sr.user_id')
             ->where('u.school_id', $schoolId)
             ->whereNull('u.deleted_at')
-            ->when(!$includeGraduated, fn ($query) => $query->where('sr.is_graduated', false));
+            ->when(! $includeGraduated, fn ($query) => $query->where('sr.is_graduated', false));
 
         if ($academicYearId) {
             $query->leftJoin('academic_year_student_record as aysr', function ($join) use ($academicYearId) {
@@ -199,19 +199,19 @@ class StudentRecord extends Model
     {
         // Get current academic year
         $currentYearId = auth()->user()?->school?->academic_year_id;
-        
+
         if ($currentYearId) {
             // Check if there's a record in the pivot table
             $pivot = \DB::table('academic_year_student_record')
                 ->where('student_record_id', $this->id)
                 ->where('academic_year_id', $currentYearId)
                 ->first();
-            
+
             if ($pivot) {
                 return $this->belongsTo(MyClass::class, 'my_class_id')->where('id', $pivot->my_class_id);
             }
         }
-        
+
         // Fallback to original relationship
         return $this->belongsTo(MyClass::class);
     }
@@ -220,19 +220,19 @@ class StudentRecord extends Model
     {
         // Get current academic year
         $currentYearId = auth()->user()?->school?->academic_year_id;
-        
+
         if ($currentYearId) {
             // Check if there's a record in the pivot table
             $pivot = \DB::table('academic_year_student_record')
                 ->where('student_record_id', $this->id)
                 ->where('academic_year_id', $currentYearId)
                 ->first();
-            
+
             if ($pivot && $pivot->section_id) {
                 return $this->belongsTo(Section::class, 'section_id')->where('id', $pivot->section_id);
             }
         }
-        
+
         // Fallback to original relationship
         return $this->belongsTo(Section::class);
     }
@@ -240,32 +240,32 @@ class StudentRecord extends Model
     public function getAcademicYearClassAttribute()
     {
         $currentYearId = auth()->user()?->school?->academic_year_id;
-        
-        if (!$currentYearId) {
+
+        if (! $currentYearId) {
             return $this->myClass;
         }
-        
+
         $pivot = \DB::table('academic_year_student_record')
             ->where('student_record_id', $this->id)
             ->where('academic_year_id', $currentYearId)
             ->first();
-        
+
         return $pivot ? MyClass::find($pivot->my_class_id) : $this->myClass;
     }
 
     public function getAcademicYearSectionAttribute()
     {
         $currentYearId = auth()->user()?->school?->academic_year_id;
-        
-        if (!$currentYearId) {
+
+        if (! $currentYearId) {
             return $this->section;
         }
-        
+
         $pivot = \DB::table('academic_year_student_record')
             ->where('student_record_id', $this->id)
             ->where('academic_year_id', $currentYearId)
             ->first();
-        
+
         return $pivot && $pivot->section_id ? Section::find($pivot->section_id) : $this->section;
     }
 
@@ -275,7 +275,7 @@ class StudentRecord extends Model
             ->where('student_record_id', $this->id)
             ->where('academic_year_id', $academicYearId)
             ->first();
-        
+
         return $pivot ? MyClass::find($pivot->my_class_id) : $this->myClass;
     }
 
@@ -285,14 +285,15 @@ class StudentRecord extends Model
             ->where('student_record_id', $this->id)
             ->where('academic_year_id', $academicYearId)
             ->first();
-        
+
         return $pivot && $pivot->section_id ? Section::find($pivot->section_id) : $this->section;
     }
 
     public function assignSubjectsAutomatically()
     {
-        if (!$this->my_class_id) {
+        if (! $this->my_class_id) {
             $this->studentSubjects()->detach();
+
             return;
         }
 
@@ -332,7 +333,7 @@ class StudentRecord extends Model
         $record = $this->academicYears()
             ->where('academic_year_id', $academicYearId)
             ->first();
-        
+
         return $record ? MyClass::find($record->pivot->my_class_id) : null;
     }
 
@@ -341,9 +342,9 @@ class StudentRecord extends Model
         $record = $this->academicYears()
             ->where('academic_year_id', $academicYearId)
             ->first();
-        
-        return $record && $record->pivot->section_id 
-            ? Section::find($record->pivot->section_id) 
+
+        return $record && $record->pivot->section_id
+            ? Section::find($record->pivot->section_id)
             : null;
     }
 
@@ -353,14 +354,14 @@ class StudentRecord extends Model
             ->with(['semesters'])
             ->orderBy('start_year', 'desc')
             ->get();
-        
+
         $classIds = $records->pluck('pivot.my_class_id')->unique();
         $sectionIds = $records->pluck('pivot.section_id')->filter()->unique();
-        
+
         $classes = MyClass::whereIn('id', $classIds)->get()->keyBy('id');
         $sections = Section::whereIn('id', $sectionIds)->get()->keyBy('id');
-        
-        return $records->map(function($year) use ($classes, $sections) {
+
+        return $records->map(function ($year) use ($classes, $sections) {
             return [
                 'academic_year' => $year,
                 'class' => $classes->get($year->pivot->my_class_id),
@@ -380,7 +381,7 @@ class StudentRecord extends Model
     public function getResultsForAcademicYear($academicYearId)
     {
         return $this->results()
-            ->whereHas('semester', function($q) use ($academicYearId) {
+            ->whereHas('semester', function ($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId);
             })
             ->with(['semester', 'subject', 'exam'])
@@ -393,10 +394,10 @@ class StudentRecord extends Model
             ->with(['semesters.exams'])
             ->orderBy('start_year', 'asc')
             ->get()
-            ->map(function($year) {
+            ->map(function ($year) {
                 $classInfo = MyClass::find($year->pivot->my_class_id);
                 $sectionInfo = $year->pivot->section_id ? Section::find($year->pivot->section_id) : null;
-                
+
                 return [
                     'year' => $year->name,
                     'year_id' => $year->id,
@@ -412,9 +413,9 @@ class StudentRecord extends Model
     public function wasPromotedInYear($academicYearId)
     {
         return Promotion::where('academic_year_id', $academicYearId)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereJsonContains('students', $this->user_id)
-                      ->orWhereJsonContains('students', (string)$this->user_id);
+                    ->orWhereJsonContains('students', (string) $this->user_id);
             })
             ->exists();
     }
@@ -432,9 +433,9 @@ class StudentRecord extends Model
     public function getPromotionForYear($academicYearId)
     {
         return Promotion::where('academic_year_id', $academicYearId)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereJsonContains('students', $this->user_id)
-                      ->orWhereJsonContains('students', (string)$this->user_id);
+                    ->orWhereJsonContains('students', (string) $this->user_id);
             })
             ->with(['oldClass', 'newClass', 'oldSection', 'newSection'])
             ->first();
@@ -461,27 +462,27 @@ class StudentRecord extends Model
         $record = $this->academicYears()
             ->where('academic_year_id', $academicYearId)
             ->first();
-        
-        if (!$record) {
+
+        if (! $record) {
             return collect();
         }
-        
+
         $classId = $record->pivot->my_class_id;
         $sectionId = $record->pivot->section_id;
-        
+
         $query = Subject::query()
             ->where('is_legacy', false)
             ->whereHas('classes', fn ($query) => $query->where('my_classes.id', $classId));
-        
+
         if ($sectionId) {
-            $query->where(function($q) use ($sectionId) {
+            $query->where(function ($q) use ($sectionId) {
                 $q->where('is_general', true)
-                  ->orWhereHas('sections', function($q) use ($sectionId) {
-                      $q->where('sections.id', $sectionId);
-                  });
+                    ->orWhereHas('sections', function ($q) use ($sectionId) {
+                        $q->where('sections.id', $sectionId);
+                    });
             });
         }
-        
+
         return $query->get();
     }
 
@@ -507,6 +508,18 @@ class StudentRecord extends Model
         )->withPivot('my_class_id', 'section_id');
     }
 
+    public function assignments(): BelongsToMany
+    {
+        return $this->belongsToMany(Assignment::class, 'assignment_recipients')
+            ->withPivot('assigned_at')
+            ->withTimestamps();
+    }
+
+    public function assignmentSubmissions(): HasMany
+    {
+        return $this->hasMany(AssignmentSubmission::class);
+    }
+
     public function getFilteredSubjects()
     {
         return $this->studentSubjects()
@@ -524,7 +537,7 @@ class StudentRecord extends Model
         static::created(function ($studentRecord) {
             $studentRecord->assignSubjectsAutomatically();
         });
-    
+
         static::updated(function ($studentRecord) {
             if ($studentRecord->wasChanged(['my_class_id', 'section_id'])) {
                 $studentRecord->assignSubjectsAutomatically();
@@ -595,9 +608,9 @@ class StudentRecord extends Model
 
     public function scopeWithActiveUser($query)
     {
-        return $query->whereHas('user', function($q) {
+        return $query->whereHas('user', function ($q) {
             $q->whereNull('deleted_at');
-        })->with(['user' => function($query) {
+        })->with(['user' => function ($query) {
             $query->whereNull('deleted_at');
         }]);
     }
