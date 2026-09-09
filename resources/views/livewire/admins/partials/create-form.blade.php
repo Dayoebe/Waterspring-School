@@ -49,21 +49,15 @@
 
             <!-- Password -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
-                <input type="password" 
-                       wire:model="password" 
-                       class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-green-500"
-                       placeholder="Enter password">
+                <x-password-input label="Password *" wire:model="password"
+                    class="focus:ring-green-500" placeholder="Enter password" />
                 @error('password') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
             <!-- Confirm Password -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
-                <input type="password" 
-                       wire:model="password_confirmation" 
-                       class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-green-500"
-                       placeholder="Confirm password">
+                <x-password-input label="Confirm Password *" wire:model="password_confirmation"
+                    class="focus:ring-green-500" placeholder="Confirm password" />
             </div>
 
             <!-- Birthday -->

@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Admissions;
 
-use App\Models\AdmissionStatusHistory;
 use App\Models\AdmissionRegistration;
+use App\Models\AdmissionStatusHistory;
 use App\Models\MyClass;
 use App\Models\School;
 use App\Models\Section;
@@ -12,21 +12,26 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Throwable;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Throwable;
 
 class ManageAdmissionRegistrations extends Component
 {
     use WithPagination;
 
     public string $search = '';
+
     public string $statusFilter = 'all';
+
     public string $classFilter = '';
+
     public int $perPage = 15;
 
     public $classes = [];
+
     public ?AdmissionRegistration $selectedAdmission = null;
+
     public string $adminNote = '';
 
     protected $queryString = [
@@ -39,7 +44,7 @@ class ManageAdmissionRegistrations extends Component
 
     public function mount(): void
     {
-        if (!auth()->check() || !auth()->user()->can('read admission registration')) {
+        if (! auth()->check() || ! auth()->user()->can('read admission registration')) {
             abort(403);
         }
 
@@ -104,6 +109,7 @@ class ManageAdmissionRegistrations extends Component
         $admission = $this->admissionQuery()->findOrFail($admissionId);
         if ($admission->status === 'approved') {
             session()->flash('error', 'Approved admissions cannot be moved back to review.');
+
             return;
         }
 
@@ -120,6 +126,7 @@ class ManageAdmissionRegistrations extends Component
 
         if ($admission->status === 'approved') {
             session()->flash('error', 'Approved admissions cannot be rejected.');
+
             return;
         }
 
@@ -136,27 +143,32 @@ class ManageAdmissionRegistrations extends Component
 
         if ($admission->status === 'approved' && $admission->enrolled_user_id && $admission->enrolled_student_record_id) {
             session()->flash('error', 'This registration has already been approved and enrolled.');
+
             return;
         }
 
-        if (!$admission->my_class_id) {
+        if (! $admission->my_class_id) {
             session()->flash('error', 'This admission has no class assigned.');
+
             return;
         }
 
-        if (!$this->classBelongsToSchool($admission->my_class_id, $admission->school_id)) {
+        if (! $this->classBelongsToSchool($admission->my_class_id, $admission->school_id)) {
             session()->flash('error', 'Assigned class does not belong to selected school.');
+
             return;
         }
 
-        if ($admission->section_id && !$this->sectionBelongsToClass($admission->section_id, $admission->my_class_id)) {
+        if ($admission->section_id && ! $this->sectionBelongsToClass($admission->section_id, $admission->my_class_id)) {
             session()->flash('error', 'Assigned section does not belong to selected class.');
+
             return;
         }
 
         $school = School::find($admission->school_id);
-        if (!$school) {
+        if (! $school) {
             session()->flash('error', 'School record not found for this registration.');
+
             return;
         }
 
@@ -167,8 +179,9 @@ class ManageAdmissionRegistrations extends Component
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if (!$lockedAdmission->enrolled_user_id || !$lockedAdmission->enrolled_student_record_id) {
+                if (! $lockedAdmission->enrolled_user_id || ! $lockedAdmission->enrolled_student_record_id) {
                     $email = $this->resolveStudentEmail($lockedAdmission, $school);
+                    $defaultPassword = $this->studentLastName($lockedAdmission->student_name);
 
                     if (User::where('email', $email)->exists()) {
                         throw new \RuntimeException('Student email already exists. Update the admission email before approval.');
@@ -177,7 +190,7 @@ class ManageAdmissionRegistrations extends Component
                     $user = User::create([
                         'name' => $lockedAdmission->student_name,
                         'email' => $email,
-                        'password' => Hash::make('12345678'),
+                        'password' => Hash::make($defaultPassword),
                         'gender' => $lockedAdmission->gender,
                         'birthday' => $lockedAdmission->birthday,
                         'phone' => $lockedAdmission->guardian_phone,
@@ -228,11 +241,24 @@ class ManageAdmissionRegistrations extends Component
                 : 'Could not approve this registration right now. Please try again.';
 
             session()->flash('error', $message);
+
             return;
         }
 
         $this->refreshSelectedAdmission($admission->id);
-        session()->flash('success', 'Admission approved and student record created. Default password: 12345678');
+        session()->flash('success', 'Admission approved and student record created. The default password is the student\'s last name.');
+    }
+
+    protected function studentLastName(string $studentName): string
+    {
+        $parts = preg_split('/\s+/', trim($studentName)) ?: [];
+        $lastName = (string) end($parts);
+
+        if ($lastName === '') {
+            throw new \RuntimeException('A valid student name is required to create the default password.');
+        }
+
+        return $lastName;
     }
 
     protected function admissionQuery()
@@ -266,7 +292,7 @@ class ManageAdmissionRegistrations extends Component
             ->when($schoolId, function ($query) use ($schoolId) {
                 $query->whereHas('classGroup', fn ($q) => $q->where('school_id', $schoolId));
             })
-            ->when(!$schoolId, fn ($query) => $query->whereRaw('1 = 0'))
+            ->when(! $schoolId, fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('name')
             ->get();
     }
@@ -289,17 +315,17 @@ class ManageAdmissionRegistrations extends Component
 
     protected function resolveStudentEmail(AdmissionRegistration $admission, School $school): string
     {
-        if (!empty($admission->student_email) && trim($admission->student_email) !== '') {
+        if (! empty($admission->student_email) && trim($admission->student_email) !== '') {
             return strtolower(trim($admission->student_email));
         }
 
         $baseName = Str::slug($admission->student_name ?: 'student') ?: 'student';
         $schoolPart = Str::slug($school->initials ?: $school->name ?: 'school') ?: 'school';
-        $email = $baseName . '.' . strtolower($admission->reference_no) . '@' . $schoolPart . '.admission.local';
+        $email = $baseName.'.'.strtolower($admission->reference_no).'@'.$schoolPart.'.admission.local';
 
         $attempt = 1;
         while (User::where('email', $email)->exists()) {
-            $email = $baseName . '.' . strtolower($admission->reference_no) . '.' . $attempt . '@' . $schoolPart . '.admission.local';
+            $email = $baseName.'.'.strtolower($admission->reference_no).'.'.$attempt.'@'.$schoolPart.'.admission.local';
             $attempt++;
         }
 
@@ -312,7 +338,7 @@ class ManageAdmissionRegistrations extends Component
         $year = now()->format('y');
 
         do {
-            $number = $prefix . '/' . $year . '/' . mt_rand(100000, 999999);
+            $number = $prefix.'/'.$year.'/'.mt_rand(100000, 999999);
         } while (StudentRecord::where('admission_number', $number)->exists());
 
         return $number;
@@ -327,12 +353,12 @@ class ManageAdmissionRegistrations extends Component
 
     protected function refreshSelectedAdmission(?int $admissionId = null): void
     {
-        if (!$this->selectedAdmission && !$admissionId) {
+        if (! $this->selectedAdmission && ! $admissionId) {
             return;
         }
 
         $id = $admissionId ?: $this->selectedAdmission?->id;
-        if (!$id) {
+        if (! $id) {
             return;
         }
 
@@ -345,39 +371,39 @@ class ManageAdmissionRegistrations extends Component
 
     protected function assertCanManageAdmission(): void
     {
-        if (!auth()->user()?->can('update admission admin note')) {
+        if (! auth()->user()?->can('update admission admin note')) {
             abort(403);
         }
     }
 
     protected function assertCanReviewAdmission(): void
     {
-        if (!auth()->user()?->can('review admission registration')) {
+        if (! auth()->user()?->can('review admission registration')) {
             abort(403);
         }
     }
 
     protected function assertCanRejectAdmission(): void
     {
-        if (!auth()->user()?->can('reject admission registration')) {
+        if (! auth()->user()?->can('reject admission registration')) {
             abort(403);
         }
     }
 
     protected function assertCanApproveAdmission(): void
     {
-        if (!auth()->user()?->can('approve admission registration')) {
+        if (! auth()->user()?->can('approve admission registration')) {
             abort(403);
         }
 
-        if (!auth()->user()?->can('create student')) {
+        if (! auth()->user()?->can('create student')) {
             abort(403);
         }
     }
 
     protected function transitionStatus(AdmissionRegistration $admission, string $toStatus, ?string $note = null): void
     {
-        if (!in_array($toStatus, $this->allowedStatuses, true)) {
+        if (! in_array($toStatus, $this->allowedStatuses, true)) {
             return;
         }
 
@@ -417,7 +443,7 @@ class ManageAdmissionRegistrations extends Component
                 $q->where('my_class_id', $this->classFilter);
             })
             ->when($this->search !== '', function ($q) {
-                $search = '%' . trim($this->search) . '%';
+                $search = '%'.trim($this->search).'%';
                 $q->where(function ($inner) use ($search) {
                     $inner->where('reference_no', 'like', $search)
                         ->orWhere('student_name', 'like', $search)

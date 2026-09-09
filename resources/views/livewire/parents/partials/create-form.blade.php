@@ -131,18 +131,14 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
-                        <input wire:model="password" type="password" 
-                               class="w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-purple-500"
-                               placeholder="Enter password">
+                        <x-password-input label="Password *" wire:model="password"
+                            class="px-4 py-2.5 focus:ring-purple-500" placeholder="Enter password" />
                         @error('password') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
-                        <input wire:model="password_confirmation" type="password" 
-                               class="w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-purple-500"
-                               placeholder="Confirm password">
+                        <x-password-input label="Confirm Password *" wire:model="password_confirmation"
+                            class="px-4 py-2.5 focus:ring-purple-500" placeholder="Confirm password" />
                         @error('password_confirmation') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                     </div>
                 </div>

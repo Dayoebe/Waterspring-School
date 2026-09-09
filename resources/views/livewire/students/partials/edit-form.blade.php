@@ -25,8 +25,8 @@
                     @error('email') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">New Password (enter to overwrite current password)</label>
-                    <input type="password" wire:model="password" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                    <x-password-input label="New Password (enter to overwrite current password)" wire:model="password"
+                        class="px-4 py-3 focus:ring-amber-500" />
                     @error('password') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>

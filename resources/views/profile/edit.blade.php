@@ -185,23 +185,20 @@
                 @csrf
 
                 <div class="md:col-span-2">
-                    <label for="current_password" class="mb-1 block text-sm font-semibold text-slate-700">Current Password</label>
-                    <input id="current_password" name="current_password" type="password"
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                    <x-password-input label="Current Password" input-id="current_password" name="current_password"
+                        class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
                     @error('current_password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="password" class="mb-1 block text-sm font-semibold text-slate-700">New Password</label>
-                    <input id="password" name="password" type="password"
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                    <x-password-input label="New Password" input-id="password" name="password"
+                        class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
                     @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="password_confirmation" class="mb-1 block text-sm font-semibold text-slate-700">Confirm Password</label>
-                    <input id="password_confirmation" name="password_confirmation" type="password"
-                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                    <x-password-input label="Confirm Password" input-id="password_confirmation" name="password_confirmation"
+                        class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
                 </div>
 
                 <div class="md:col-span-2 flex justify-end">
@@ -213,4 +210,3 @@
         </section>
     </div>
 @endsection
-

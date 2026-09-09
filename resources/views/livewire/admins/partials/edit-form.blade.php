@@ -49,23 +49,15 @@
 
             <!-- Password -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    New Password <span class="text-xs text-gray-500">(leave blank to keep current)</span>
-                </label>
-                <input type="password" 
-                       wire:model="password" 
-                       class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-yellow-500"
-                       placeholder="Enter new password">
+                <x-password-input label="New Password (leave blank to keep current)" wire:model="password"
+                    class="focus:ring-yellow-500" placeholder="Enter new password" />
                 @error('password') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
             <!-- Confirm Password -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
-                <input type="password" 
-                       wire:model="password_confirmation" 
-                       class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-yellow-500"
-                       placeholder="Confirm new password">
+                <x-password-input label="Confirm New Password" wire:model="password_confirmation"
+                    class="focus:ring-yellow-500" placeholder="Confirm new password" />
             </div>
 
             <!-- Birthday -->
