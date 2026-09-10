@@ -668,5 +668,51 @@
                 </section>
             </div>
         </div>
+
+        @if ($featureGroups !== [])
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">Platform directory</p>
+                        <h3 class="mt-2 text-2xl font-bold text-slate-900">Explore your school management tools</h3>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                            Every module available to your account is organised below. Open a workspace directly without searching through the menu.
+                        </p>
+                    </div>
+                    <span class="w-fit rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800">
+                        {{ $availableActionCount }} available features
+                    </span>
+                </div>
+
+                <div class="mt-6 space-y-7">
+                    @foreach ($featureGroups as $group => $actions)
+                        <div>
+                            <div class="mb-3 flex items-center gap-3">
+                                <h4 class="text-sm font-bold uppercase tracking-wide text-slate-700">{{ $group }}</h4>
+                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ count($actions) }}</span>
+                                <span class="h-px flex-1 bg-slate-200"></span>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                @foreach ($actions as $action)
+                                    <a href="{{ route($action['route']) }}" wire:navigate
+                                        class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50 hover:shadow-md">
+                                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sky-700 shadow-sm">
+                                            <i class="{{ $action['icon'] }}" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="flex items-center justify-between gap-3">
+                                                <strong class="text-sm text-slate-900">{{ $action['title'] }}</strong>
+                                                <i class="fas fa-arrow-right text-xs text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-700" aria-hidden="true"></i>
+                                            </span>
+                                            <span class="mt-1 block text-xs leading-5 text-slate-600">{{ $action['description'] }}</span>
+                                        </span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
     @endif
 </div>

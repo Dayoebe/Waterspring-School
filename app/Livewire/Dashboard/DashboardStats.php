@@ -35,6 +35,8 @@ class DashboardStats extends Component
 
     public $quickActions = [];
 
+    public $featureGroups = [];
+
     public $attentionItems = [];
 
     public $availableActionCount = 0;
@@ -261,6 +263,24 @@ class DashboardStats extends Component
                 'permissions' => ['read student', 'create student', 'promote student'],
             ],
             [
+                'title' => 'Admissions',
+                'description' => 'Review applications and complete enrollment decisions.',
+                'icon' => 'fas fa-user-plus',
+                'route' => 'admissions.registrations.index',
+                'group' => 'People',
+                'roles' => $adminRoles,
+                'permissions' => ['read admission registration'],
+            ],
+            [
+                'title' => 'Parents',
+                'description' => 'Manage parent accounts and link children.',
+                'icon' => 'fas fa-people-roof',
+                'route' => 'parents.index',
+                'group' => 'People',
+                'roles' => $adminAndStaffRoles,
+                'permissions' => ['read parent', 'create parent'],
+            ],
+            [
                 'title' => 'Teachers',
                 'description' => 'Manage teacher profiles and assignments.',
                 'icon' => 'fas fa-chalkboard-teacher',
@@ -268,6 +288,24 @@ class DashboardStats extends Component
                 'group' => 'People',
                 'roles' => $adminAndStaffRoles,
                 'permissions' => ['read teacher', 'create teacher'],
+            ],
+            [
+                'title' => 'Staff Directory',
+                'description' => 'Organise staff departments, biographies, and team profiles.',
+                'icon' => 'fas fa-users-gear',
+                'route' => 'staff.index',
+                'group' => 'People',
+                'roles' => $adminRoles,
+                'permissions' => ['manage staff directory'],
+            ],
+            [
+                'title' => 'Classes',
+                'description' => 'Configure classes, groups, sections, and enrollment structure.',
+                'icon' => 'fas fa-school-flag',
+                'route' => 'classes.index',
+                'group' => 'Academic',
+                'roles' => $adminAndStaffRoles,
+                'permissions' => ['read class'],
             ],
             [
                 'title' => 'Subjects',
@@ -285,6 +323,23 @@ class DashboardStats extends Component
                 'route' => 'dashboard.responsibilities',
                 'group' => 'Academic',
                 'permissions' => ['view dashboard'],
+            ],
+            [
+                'title' => 'Assignments',
+                'description' => 'Publish class work, submit answers, and review performance.',
+                'icon' => 'fas fa-clipboard-list',
+                'route' => 'assignments.index',
+                'group' => 'Academic',
+                'permissions' => ['view assignment'],
+            ],
+            [
+                'title' => 'Academic Calendar',
+                'description' => 'Manage academic years and the active school term.',
+                'icon' => 'fas fa-calendar-days',
+                'route' => 'academic-years.index',
+                'group' => 'Academic',
+                'roles' => $adminRoles,
+                'permissions' => ['read academic year'],
             ],
             [
                 'title' => 'Exams',
@@ -396,6 +451,15 @@ class DashboardStats extends Component
                 'permissions' => ['read attendance'],
             ],
             [
+                'title' => 'Discipline & Welfare',
+                'description' => 'Record incidents, actions, and student welfare follow-up.',
+                'icon' => 'fas fa-shield-heart',
+                'route' => 'discipline.index',
+                'group' => 'Student Support',
+                'roles' => $adminAndStaffRoles,
+                'permissions' => ['read discipline incident'],
+            ],
+            [
                 'title' => 'Syllabi',
                 'description' => $syllabiDescription,
                 'icon' => 'fas fa-list-check',
@@ -412,6 +476,32 @@ class DashboardStats extends Component
                 'group' => 'Operations',
                 'roles' => $adminAndStaffRoles,
                 'permissions' => ['read notice', 'create notice', 'update notice'],
+            ],
+            [
+                'title' => 'Messages',
+                'description' => 'Send targeted portal and email messages to the school community.',
+                'icon' => 'fas fa-paper-plane',
+                'route' => 'broadcasts.manage',
+                'group' => 'Communication',
+                'roles' => $adminRoles,
+                'permissions' => ['read broadcast message', 'create broadcast message'],
+            ],
+            [
+                'title' => 'My Messages',
+                'description' => 'Read announcements and messages sent to your account.',
+                'icon' => 'fas fa-inbox',
+                'route' => 'broadcasts.inbox',
+                'group' => 'Communication',
+                'permissions' => ['view own broadcasts'],
+            ],
+            [
+                'title' => 'Contact Inbox',
+                'description' => 'Review and respond to enquiries from the school website.',
+                'icon' => 'fas fa-envelope-open-text',
+                'route' => 'contacts.messages.index',
+                'group' => 'Communication',
+                'roles' => $adminRoles,
+                'permissions' => ['read contact message'],
             ],
             [
                 'title' => 'Fees',
@@ -468,6 +558,24 @@ class DashboardStats extends Component
                 'permissions' => ['read analytics dashboard'],
             ],
             [
+                'title' => 'Website Gallery',
+                'description' => 'Manage photos and media shown on the public website.',
+                'icon' => 'fas fa-images',
+                'route' => 'gallery.manage',
+                'group' => 'Website',
+                'roles' => $adminRoles,
+                'permissions' => ['manage gallery'],
+            ],
+            [
+                'title' => 'Website Settings',
+                'description' => 'Update school identity, contact details, and public content.',
+                'icon' => 'fas fa-sliders',
+                'route' => 'schools.settings',
+                'group' => 'Website',
+                'roles' => $adminRoles,
+                'permissions' => ['manage school settings'],
+            ],
+            [
                 'title' => 'Profile',
                 'description' => 'Update personal account information.',
                 'icon' => 'fas fa-user',
@@ -489,6 +597,16 @@ class DashboardStats extends Component
         ));
 
         $this->availableActionCount = count($availableActions);
+        $groupOrder = ['People', 'Academic', 'Assessment', 'Student Support', 'Communication', 'Operations', 'Website', 'Account'];
+        $this->featureGroups = collect($availableActions)
+            ->groupBy('group')
+            ->sortBy(function ($actions, $group) use ($groupOrder): int {
+                $position = array_search($group, $groupOrder, true);
+
+                return $position === false ? 999 : $position;
+            })
+            ->map(fn ($actions) => $actions->values()->all())
+            ->all();
         $priorityRoutes = match (true) {
             $this->isSuperAdmin => [
                 'admissions.registrations.index', 'result', 'attendance.index',
