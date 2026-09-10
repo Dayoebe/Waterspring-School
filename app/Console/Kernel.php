@@ -15,9 +15,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->command('assignments:send-reminders --hours=24')
+            ->hourly()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->command('results:cleanup')
-        ->weeklyOn(0, '3:00')
-        ->onOneServer(); // If using multiple servers
+            ->weeklyOn(0, '3:00')
+            ->onOneServer(); // If using multiple servers
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Models\AssignmentQuestion;
 use App\Models\AssignmentSubmission;
 use App\Models\MyClass;
 use App\Models\Subject;
+use App\Services\AssignmentNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -227,6 +228,7 @@ class AssignmentHub extends Component
                 'attachment_path' => $path,
                 'attachment_name' => $this->assignmentFile?->getClientOriginalName(),
                 'published_at' => now(),
+                'notifications_enabled' => $this->notifyRecipients,
             ]);
             foreach ($this->questions as $index => $question) {
                 $assignment->questions()->create([
@@ -370,8 +372,9 @@ class AssignmentHub extends Component
             $path = $this->submissionFile->store('assignment-submissions/'.auth()->user()->school_id, 'local');
             $name = $this->submissionFile->getClientOriginalName();
         }
-        DB::transaction(function () use ($assignment, $studentRecord, $path, $name): void {
-            $requiresReview = $assignment->questions->contains(fn ($question) => ! $question->isAutomaticallyMarked());
+        $submission = DB::transaction(function () use ($assignment, $studentRecord, $path, $name): AssignmentSubmission {
+            $requiresReview = $assignment->questions->isEmpty()
+                || $assignment->questions->contains(fn ($question) => ! $question->isAutomaticallyMarked());
             $submission = AssignmentSubmission::query()->updateOrCreate(
                 ['assignment_id' => $assignment->id, 'student_record_id' => $studentRecord->id],
                 ['response_text' => trim($this->submissionText) ?: null, 'attachment_path' => $path, 'attachment_name' => $name,
@@ -392,7 +395,14 @@ class AssignmentHub extends Component
             if ($assignment->questions->isNotEmpty()) {
                 $submission->update(['score' => $automaticScore]);
             }
+
+            return $submission;
         });
+        $notifications = app(AssignmentNotificationService::class);
+        $notifications->sendSubmissionReceived($submission);
+        if ($submission->status === 'graded') {
+            $notifications->sendGradePublished($submission);
+        }
         $this->reset('submissionFile');
         session()->flash('success', 'Your assignment was submitted successfully.');
     }
@@ -439,6 +449,7 @@ class AssignmentHub extends Component
         $this->validate(['gradeFeedback' => ['nullable', 'string', 'max:10000']]);
         $submission->update(['score' => $score, 'feedback' => trim($this->gradeFeedback) ?: null,
             'status' => 'graded', 'graded_by' => auth()->id(), 'graded_at' => now()]);
+        app(AssignmentNotificationService::class)->sendGradePublished($submission->fresh());
         $this->reset(['gradingSubmissionId', 'gradeScore', 'gradeFeedback', 'manualAnswerScores', 'manualAnswerFeedback']);
         session()->flash('success', 'Submission graded successfully.');
     }

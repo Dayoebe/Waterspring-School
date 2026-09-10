@@ -17,13 +17,14 @@ class Assignment extends Model
     protected $fillable = [
         'school_id', 'academic_year_id', 'semester_id', 'my_class_id', 'subject_id',
         'teacher_id', 'title', 'instructions', 'due_at', 'max_score',
-        'attachment_path', 'attachment_name', 'published_at',
+        'attachment_path', 'attachment_name', 'published_at', 'notifications_enabled',
     ];
 
     protected $casts = [
         'due_at' => 'datetime',
         'published_at' => 'datetime',
         'max_score' => 'decimal:2',
+        'notifications_enabled' => 'boolean',
     ];
 
     public function school(): BelongsTo

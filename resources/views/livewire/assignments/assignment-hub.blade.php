@@ -42,8 +42,8 @@
                     <label class="flex cursor-pointer items-start gap-3">
                         <input type="checkbox" wire:model="notifyRecipients" class="mt-1 rounded border-sky-300 text-sky-700 focus:ring-sky-600">
                         <span>
-                            <span class="block text-sm font-bold text-sky-950">Notify affected students and parents by email</span>
-                            <span class="mt-1 block text-xs leading-5 text-sky-800">Enabled by default. Turn this off to publish the assignment without sending email notifications.</span>
+                            <span class="block text-sm font-bold text-sky-950">Enable assignment email notifications</span>
+                            <span class="mt-1 block text-xs leading-5 text-sky-800">Enabled by default. Turn this off to suppress publication, deadline, overdue, submission, and grading emails for this assignment.</span>
                         </span>
                     </label>
                 </div>
