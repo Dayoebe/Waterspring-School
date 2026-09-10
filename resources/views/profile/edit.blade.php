@@ -167,6 +167,18 @@
                         <p class="mt-1 text-xs text-slate-500">Accepted image files up to 3MB.</p>
                         @error('profile_photo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
+
+                    @if($user->staffProfile)
+                        <div class="md:col-span-2 border-t border-slate-200 pt-5">
+                            <h3 class="text-lg font-bold text-slate-900">Professional staff profile</h3>
+                            <p class="mt-1 text-sm text-slate-500">These professional details may appear in the public team directory. Personal contact details remain private.</p>
+                        </div>
+                        <div><label for="staff_job_title" class="mb-1 block text-sm font-semibold text-slate-700">Job title</label><input id="staff_job_title" name="staff_job_title" value="{{ old('staff_job_title', $user->staffProfile->job_title) }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
+                        <div><label class="mb-1 block text-sm font-semibold text-slate-700">Department</label><input value="{{ $user->staffProfile->department?->name }}" disabled class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500"></div>
+                        <div class="md:col-span-2"><label for="staff_bio" class="mb-1 block text-sm font-semibold text-slate-700">Biography</label><textarea id="staff_bio" name="staff_bio" rows="5" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('staff_bio', $user->staffProfile->bio) }}</textarea></div>
+                        <div class="md:col-span-2"><label for="staff_qualifications" class="mb-1 block text-sm font-semibold text-slate-700">Qualifications</label><textarea id="staff_qualifications" name="staff_qualifications" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('staff_qualifications', $user->staffProfile->qualifications) }}</textarea></div>
+                        <div class="md:col-span-2"><label for="staff_responsibilities" class="mb-1 block text-sm font-semibold text-slate-700">Responsibilities</label><textarea id="staff_responsibilities" name="staff_responsibilities" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('staff_responsibilities', $user->staffProfile->responsibilities) }}</textarea></div>
+                    @endif
                 </div>
 
                 <div class="flex justify-end">

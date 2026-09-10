@@ -53,6 +53,9 @@
             <a href="{{ route('academics') }}#college" class="mt-5 inline-block font-semibold text-yellow-300 hover:underline">Read about the college →</a>
         </div>
     </section>
+    @if($featuredStaff->isNotEmpty())
+        <section class="bg-white py-14"><div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"><div class="flex items-end justify-between gap-4"><div><p class="text-sm font-bold uppercase tracking-widest text-sky-700">Our people</p><h2 class="mt-2 text-3xl font-black">Meet our team</h2></div><a href="{{ route('team') }}" class="font-bold text-sky-700 hover:underline">View everyone →</a></div><div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">@foreach($featuredStaff as $profile)<a href="{{ route('team.show', $profile) }}" class="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:shadow-lg"><img src="{{ $profile->user->profile_photo_url }}" alt="{{ $profile->user->name }}" class="aspect-[4/5] w-full rounded-xl object-cover"><h3 class="mt-4 font-black text-slate-900 group-hover:text-sky-700">{{ $profile->user->name }}</h3><p class="mt-1 text-sm font-semibold text-sky-700">{{ $profile->job_title }}</p><p class="mt-1 text-xs text-slate-500">{{ $profile->department?->name }}</p></a>@endforeach</div></div></section>
+    @endif
     @include('partials.watersprings-faq')
 </div>
 @endsection

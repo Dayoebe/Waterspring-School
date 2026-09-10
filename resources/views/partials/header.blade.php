@@ -4,6 +4,7 @@
             ['label' => 'About Watersprings', 'route' => 'about', 'description' => 'Our story, values and leadership'],
             ['label' => 'Academics', 'route' => 'academics', 'description' => 'Classes and learning stages'],
             ['label' => 'Why Watersprings', 'route' => 'why-watersprings', 'description' => 'What makes our school special'],
+            ['label' => 'Our Team', 'route' => 'team', 'description' => 'Meet our leadership, teachers and staff'],
             ['label' => 'Gallery', 'route' => 'gallery', 'description' => 'A look at life in our school'],
         ]],
         'admissions' => ['label' => 'Admissions', 'items' => [

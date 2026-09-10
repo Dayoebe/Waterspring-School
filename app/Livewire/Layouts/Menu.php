@@ -146,6 +146,13 @@ class Menu extends Component
                 'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
+                        'text' => 'Staff Directory',
+                        'route' => 'staff.index',
+                        'permissions' => ['manage staff directory'],
+                        'section' => 'Staff Directory',
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'text' => 'Teachers',
                         'route' => 'teachers.index',
                         'permissions' => ['read teacher'],

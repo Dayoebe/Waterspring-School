@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Teachers;
 
-use App\Models\User;
 use App\Models\Subject;
+use App\Models\User;
 use App\Support\TeacherResponsibilityBuilder;
 use Illuminate\Support\Collection;
 use Livewire\Component;
@@ -11,12 +11,19 @@ use Livewire\Component;
 class TeacherDetail extends Component
 {
     public User $teacher;
+
     public $activeTab = 'profile';
+
     public $availableSubjects = [];
+
     public $subjectSearch = '';
+
     public $assignedSubjects = [];
+
     public $teacherSubjects = [];
+
     public $subjectAssignmentGroups = [];
+
     public $teacherSummary = [
         'assigned_subjects' => 0,
         'teaching_classes' => 0,
@@ -36,10 +43,10 @@ class TeacherDetail extends Component
     public function getAvailableSubjects()
     {
         return Subject::query()
-            ->when($this->subjectSearch, function($q) {
-                $q->where(function($query) {
-                    $query->where('name', 'like', '%' . $this->subjectSearch . '%')
-                          ->orWhere('short_name', 'like', '%' . $this->subjectSearch . '%');
+            ->when($this->subjectSearch, function ($q) {
+                $q->where(function ($query) {
+                    $query->where('name', 'like', '%'.$this->subjectSearch.'%')
+                        ->orWhere('short_name', 'like', '%'.$this->subjectSearch.'%');
                 });
             })
             ->whereNotIn('id', $this->teacherSubjects)
@@ -52,8 +59,8 @@ class TeacherDetail extends Component
     {
         $subject = Subject::query()
             ->findOrFail($subjectId);
-        
-        if (!in_array($subjectId, $this->teacherSubjects)) {
+
+        if (! in_array($subjectId, $this->teacherSubjects)) {
             $this->teacher->subjects()->syncWithoutDetaching([
                 $subjectId => [
                     'school_id' => auth()->user()->school_id,
@@ -61,7 +68,7 @@ class TeacherDetail extends Component
                 ],
             ]);
             $this->loadTeacher((int) $this->teacher->id);
-            
+
             session()->flash('success', 'Subject assigned successfully');
         }
     }
@@ -70,7 +77,7 @@ class TeacherDetail extends Component
     {
         $this->teacher->subjects()->detach($subjectId);
         $this->loadTeacher((int) $this->teacher->id);
-        
+
         session()->flash('success', 'Subject removed successfully');
     }
 
@@ -84,19 +91,19 @@ class TeacherDetail extends Component
             'subjectAssignmentGroups' => $this->subjectAssignmentGroups,
             'teacherSummary' => $this->teacherSummary,
         ])
-        ->layout('layouts.dashboard', [
-            'breadcrumbs' => [
-                ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                ['href' => route('teachers.index'), 'text' => 'Teachers'],
-                ['href' => route('teachers.show', $this->teacher->id), 'text' => $this->teacher->name, 'active' => true],
-            ]
-        ])
-        ->title($this->teacher->name . "'s Profile");
+            ->layout('layouts.dashboard', [
+                'breadcrumbs' => [
+                    ['href' => route('dashboard'), 'text' => 'Dashboard'],
+                    ['href' => route('teachers.index'), 'text' => 'Teachers'],
+                    ['href' => route('teachers.show', $this->teacher->id), 'text' => $this->teacher->name, 'active' => true],
+                ],
+            ])
+            ->title($this->teacher->name."'s Profile");
     }
 
     protected function loadTeacher(int $teacherId): void
     {
-        $this->teacher = User::with(['subjects', 'subjects.myClass', 'school'])
+        $this->teacher = User::with(['subjects', 'subjects.myClass', 'school', 'staffProfile.department'])
             ->role('teacher')
             ->where('school_id', auth()->user()->school_id)
             ->findOrFail($teacherId);

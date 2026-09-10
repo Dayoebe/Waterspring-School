@@ -45,6 +45,9 @@
                         <i class="fas fa-edit mr-2"></i>Edit Profile
                     </a>
                 </div>
+                @if($teacher->staffProfile)
+                    <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6"><p class="text-xs font-bold uppercase tracking-widest text-teal-700">{{ $teacher->staffProfile->department?->name }}</p><h3 class="mt-2 text-xl font-black text-slate-900">{{ $teacher->staffProfile->job_title }}</h3>@if($teacher->staffProfile->bio)<p class="mt-4 whitespace-pre-line leading-7 text-slate-600">{{ $teacher->staffProfile->bio }}</p>@endif @if($teacher->staffProfile->qualifications)<h4 class="mt-5 font-bold text-slate-900">Qualifications</h4><p class="mt-2 whitespace-pre-line text-slate-600">{{ $teacher->staffProfile->qualifications }}</p>@endif @if($teacher->staffProfile->responsibilities)<h4 class="mt-5 font-bold text-slate-900">Responsibilities</h4><p class="mt-2 whitespace-pre-line text-slate-600">{{ $teacher->staffProfile->responsibilities }}</p>@endif</div>
+                @endif
             </div>
         </div>
     </div>

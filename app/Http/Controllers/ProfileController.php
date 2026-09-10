@@ -1,17 +1,22 @@
 <?php
+
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule; // Import Rule for validation
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+
+// Import Rule for validation
 
 class ProfileController extends Controller
 {
     /**
      * Show the form for changing the user's password.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function showChangePasswordForm()
     {
@@ -21,8 +26,7 @@ class ProfileController extends Controller
     /**
      * Handle the password change request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function changePassword(Request $request)
     {
@@ -33,7 +37,7 @@ class ProfileController extends Controller
 
         $user = auth()->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'Current password is incorrect']);
         }
 
@@ -47,20 +51,19 @@ class ProfileController extends Controller
     /**
      * Show the form for editing the user's profile.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function edit()
     {
         return view('profile.edit', [
-            'user' => auth()->user()?->loadMissing('roles:id,name', 'school:id,name,code'),
+            'user' => auth()->user()?->loadMissing('roles:id,name', 'school:id,name,code', 'staffProfile.department'),
         ]);
     }
 
     /**
      * Update the user's profile information.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function update(Request $request)
     {
@@ -79,6 +82,10 @@ class ProfileController extends Controller
             'religion' => ['nullable', 'string', 'max:255'],
             'blood_group' => ['nullable', 'string', 'max:12'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:3072'],
+            'staff_job_title' => ['nullable', 'string', 'max:255'],
+            'staff_bio' => ['nullable', 'string', 'max:5000'],
+            'staff_qualifications' => ['nullable', 'string', 'max:3000'],
+            'staff_responsibilities' => ['nullable', 'string', 'max:3000'],
         ]);
 
         $payload = [
@@ -106,6 +113,15 @@ class ProfileController extends Controller
         }
 
         $user->forceFill($payload)->save();
+
+        if ($user->staffProfile) {
+            $user->staffProfile->update([
+                'job_title' => $request->staff_job_title ?: $user->staffProfile->job_title,
+                'bio' => $request->staff_bio,
+                'qualifications' => $request->staff_qualifications,
+                'responsibilities' => $request->staff_responsibilities,
+            ]);
+        }
 
         return redirect()->route('profile.edit')->with('success', 'Profile updated successfully.');
     }

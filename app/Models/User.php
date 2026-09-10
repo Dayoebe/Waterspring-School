@@ -141,6 +141,11 @@ class User extends Authenticatable
         return $this->hasOne(TeacherRecord::class);
     }
 
+    public function staffProfile()
+    {
+        return $this->hasOne(StaffProfile::class);
+    }
+
     public function studentRecord()
     {
         return $this->hasOne(StudentRecord::class);

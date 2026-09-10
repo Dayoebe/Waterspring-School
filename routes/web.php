@@ -120,6 +120,8 @@ Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/admission', [PageController::class, 'admission'])->name('admission');
 Route::get('/prospectus', [PageController::class, 'prospectus'])->name('prospectus');
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
+Route::get('/team', [PageController::class, 'team'])->name('team');
+Route::get('/team/{staffProfile}', [PageController::class, 'staffProfile'])->whereNumber('staffProfile')->name('team.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -189,6 +191,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
     Route::get('/dashboard/assignments', \App\Livewire\Assignments\AssignmentHub::class)
         ->middleware('permission:view assignment')
         ->name('assignments.index');
+
+    Route::get('/dashboard/staff', \App\Livewire\Staff\ManageStaffDirectory::class)
+        ->middleware('permission:manage staff directory')
+        ->name('staff.index');
 
     Route::get('/dashboard/analytics', \App\Livewire\Dashboard\AnalyticsDashboard::class)
         ->middleware('permission:read analytics dashboard')

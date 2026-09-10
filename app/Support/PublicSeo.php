@@ -19,7 +19,7 @@ class PublicSeo
     {
         $pages = [];
 
-        foreach (['home', 'about', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
+        foreach (['home', 'about', 'team', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
             $pages[$routeName] = self::pageMeta($routeName, $settings);
         }
 
@@ -31,7 +31,7 @@ class PublicSeo
      */
     public static function pageMeta(?string $routeName, array $settings): array
     {
-        $routeName = in_array($routeName, ['home', 'about', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
+        $routeName = in_array($routeName, ['home', 'about', 'team', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
             ? $routeName
             : 'home';
 
@@ -40,6 +40,12 @@ class PublicSeo
         $defaultDescription = self::plain((string) data_get($settings, 'meta.description', 'School portal and services.'));
 
         $defaults = match ($routeName) {
+            'team' => [
+                'label' => 'Our Team', 'title' => 'Our Team | '.$siteName,
+                'description' => 'Meet the leadership, teachers and support staff of '.$siteName.'.',
+                'summary' => 'Professional profiles for the staff who lead, teach and support pupils at '.$siteName.'.',
+                'changefreq' => 'monthly', 'priority' => '0.8', 'schemaType' => 'CollectionPage',
+            ],
             'academics' => [
                 'label' => 'Academics',
                 'title' => 'Classes and Curriculum in Akure | '.$siteName,

@@ -2,43 +2,60 @@
 
 namespace App\Livewire\Teachers;
 
+use App\Models\StaffDepartment;
 use App\Models\User;
-use Livewire\Component;
-use Livewire\WithPagination;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class ManageTeachers extends Component
 {
-    use WithPagination, AuthorizesRequests, WithFileUploads;
+    use AuthorizesRequests, WithFileUploads, WithPagination;
 
     public $mode = 'list';
-    
+
     // Filters
     public $search = '';
+
     public $selectedStatus = '';
-    
+
     // Sorting & Pagination
     public $sortField = 'name';
+
     public $sortDirection = 'asc';
+
     public $perPage = 15;
-    
+
     // Teacher form
     public $teacherId = null;
+
     public $name = '';
+
     public $email = '';
+
     public $password = '';
+
     public $gender = '';
+
     public $birthday = '';
+
     public $phone = '';
+
     public $address = '';
+
     public $blood_group = '';
+
     public $religion = '';
+
     public $nationality = '';
+
     public $state = '';
+
     public $city = '';
+
     public $profile_photo = null;
 
     protected $queryString = [
@@ -60,7 +77,7 @@ class ManageTeachers extends Component
         $this->mode = $mode;
         $this->teacherId = $teacherId;
         $this->resetValidation();
-        
+
         if ($mode === 'edit' && $teacherId) {
             $this->loadTeacherForEdit();
         } elseif ($mode === 'create') {
@@ -75,12 +92,12 @@ class ManageTeachers extends Component
             ->findOrFail($this->teacherId);
 
         $this->authorize('update', [$teacher, 'teacher']);
-        
+
         $this->fill([
             'name' => $teacher->name,
             'email' => $teacher->email,
             'gender' => $teacher->gender ?? '',
-            'birthday' => $teacher->birthday ? 
+            'birthday' => $teacher->birthday ?
                 ($teacher->birthday instanceof Carbon ? $teacher->birthday->format('Y-m-d') : $teacher->birthday) : '',
             'phone' => $teacher->phone ?? '',
             'address' => $teacher->address ?? '',
@@ -95,7 +112,7 @@ class ManageTeachers extends Component
     public function createTeacher()
     {
         $this->authorize('create', [User::class, 'teacher']);
-        
+
         $validated = $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -123,6 +140,8 @@ class ManageTeachers extends Component
             ]);
 
             $user->assignRole('teacher');
+            $departmentId = StaffDepartment::query()->where('school_id', $user->school_id)->where('category', 'teachers')->value('id');
+            $user->staffProfile()->create(['school_id' => $user->school_id, 'staff_department_id' => $departmentId, 'job_title' => 'Teacher', 'is_public' => true]);
         });
 
         session()->flash('success', 'Teacher created successfully');
@@ -136,10 +155,10 @@ class ManageTeachers extends Component
             ->findOrFail($this->teacherId);
 
         $this->authorize('update', [$teacher, 'teacher']);
-        
+
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $this->teacherId,
+            'email' => 'required|email|unique:users,email,'.$this->teacherId,
             'gender' => 'required|in:male,female',
             'birthday' => 'nullable|date|before:today',
             'phone' => 'nullable|string|max:20',
@@ -176,12 +195,12 @@ class ManageTeachers extends Component
             ->findOrFail($teacherId);
 
         $this->authorize('delete', [$teacher, 'teacher']);
-        
+
         DB::transaction(function () use ($teacher) {
             $teacher->subjects()->detach();
             $teacher->delete();
         });
-        
+
         session()->flash('success', 'Teacher deleted successfully');
     }
 
@@ -206,7 +225,7 @@ class ManageTeachers extends Component
         $this->reset([
             'teacherId', 'name', 'email', 'password', 'gender', 'birthday',
             'phone', 'address', 'blood_group', 'religion', 'nationality',
-            'state', 'city'
+            'state', 'city',
         ]);
     }
 
@@ -214,21 +233,21 @@ class ManageTeachers extends Component
     {
         return User::role('teacher')
             ->where('school_id', auth()->user()->school_id)
-            ->when($this->search, function($q) {
-                $q->where(function($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
-                          ->orWhere('email', 'like', '%' . $this->search . '%')
-                          ->orWhere('phone', 'like', '%' . $this->search . '%');
+            ->when($this->search, function ($q) {
+                $q->where(function ($query) {
+                    $query->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%')
+                        ->orWhere('phone', 'like', '%'.$this->search.'%');
                 });
             })
-            ->when($this->selectedStatus !== '', fn($q) => $q->where('locked', $this->selectedStatus))
+            ->when($this->selectedStatus !== '', fn ($q) => $q->where('locked', $this->selectedStatus))
             ->orderBy($this->sortField, $this->sortDirection);
     }
 
     public function render()
     {
         $teachers = collect();
-        
+
         if ($this->mode === 'list') {
             $teachers = $this->getTeachersQuery()
                 ->withCount('subjects')
@@ -239,8 +258,8 @@ class ManageTeachers extends Component
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('teachers.index'), 'text' => 'Teachers', 'active' => true]
-                ]
+                    ['href' => route('teachers.index'), 'text' => 'Teachers', 'active' => true],
+                ],
             ])
             ->title('Manage Teachers');
     }

@@ -24,8 +24,11 @@ class PermissionMatrix
             'manage media library',
             'read analytics dashboard',
             'manage user roles',
+            'read staff directory',
+            'manage staff directory',
 
             'read teacher',
+            'read staff directory',
             'create teacher',
             'update teacher',
             'delete teacher',
@@ -293,6 +296,8 @@ class PermissionMatrix
             'update applicant',
 
             'read teacher',
+            'read staff directory',
+            'manage staff directory',
             'create teacher',
             'update teacher',
             'delete teacher',
