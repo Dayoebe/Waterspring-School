@@ -196,6 +196,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->middleware('permission:read school calendar')
         ->name('calendar.index');
 
+    Route::get('/dashboard/resources', \App\Livewire\Resources\ManageSchoolResources::class)
+        ->middleware('permission:read school resources')
+        ->name('resources.index');
+
     Route::get('/dashboard/staff', \App\Livewire\Staff\ManageStaffDirectory::class)
         ->middleware('permission:manage staff directory')
         ->name('staff.index');

@@ -22,6 +22,8 @@ class PermissionMatrix
             'export school settings',
             'import school settings',
             'manage media library',
+            'read school resources',
+            'manage school resources',
             'read analytics dashboard',
             'manage user roles',
             'read staff directory',
@@ -107,6 +109,7 @@ class PermissionMatrix
             'upload result',
             'view result',
             'view assignment',
+            'read school resources',
             'manage assignment',
             'grade assignment',
 
@@ -170,6 +173,7 @@ class PermissionMatrix
 
             'read student',
             'read parent',
+            'read school resources',
 
             'read academic year',
             'read school calendar',
@@ -222,6 +226,7 @@ class PermissionMatrix
             'take cbt exam',
             'view cbt result',
             'view assignment',
+            'read school resources',
             'read school calendar',
             'submit assignment',
             'view own broadcasts',
@@ -236,6 +241,7 @@ class PermissionMatrix
             'view cbt result',
             'view assignment',
             'view child assignment',
+            'read school resources',
             'read school calendar',
             'read own child attendance',
             'read own child discipline',
@@ -289,6 +295,8 @@ class PermissionMatrix
             'export school settings',
             'import school settings',
             'manage media library',
+            'read school resources',
+            'manage school resources',
             'read analytics dashboard',
 
             'read admin',

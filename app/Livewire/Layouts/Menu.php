@@ -490,6 +490,13 @@ class Menu extends Component
         return [
             ['header' => 'School Operations'],
             [
+                'type' => 'menu-item',
+                'text' => 'Library, Inventory & Assets',
+                'icon' => 'fas fa-boxes-stacked',
+                'route' => 'resources.index',
+                'permissions' => ['read school resources'],
+            ],
+            [
                 'text' => 'Attendance & Discipline',
                 'icon' => 'fas fa-user-check',
                 'submenu' => array_values(array_filter([

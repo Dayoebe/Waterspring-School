@@ -26,6 +26,7 @@ trait RestrictsTeacherPortalAccess
             'dashboard.responsibilities',
             'assignments.*',
             'calendar.index',
+            'resources.index',
             'exams.index',
             'exams.create',
             'exams.store',
