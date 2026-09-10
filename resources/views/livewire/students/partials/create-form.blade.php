@@ -26,7 +26,7 @@
                 </div>
                 <div>
                     <x-password-input label="Password *" wire:model="password"
-                        class="px-4 py-3 @error('password') border-red-300 @else border-gray-300 @enderror focus:ring-indigo-500" />
+                        @class(['px-4 py-3 focus:ring-indigo-500', 'border-red-300' => $errors->has('password'), 'border-gray-300' => !$errors->has('password')]) />
                     @error('password') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
