@@ -534,6 +534,15 @@ class AssignmentHub extends Component
             'canManage' => auth()->user()->can('manage assignment'), 'isStudent' => auth()->user()->hasRole('student'),
             'isParent' => auth()->user()->hasRole('parent'), 'childRecords' => $childRecords,
             'questionTypes' => AssignmentQuestion::TYPES,
-        ]);
+        ])
+            ->layout('layouts.dashboard', [
+                'description' => 'Publish assignments, answer questions, review submissions, and follow student progress.',
+                'icon' => 'fas fa-book-open',
+                'breadcrumbs' => [
+                    ['href' => route('dashboard'), 'text' => 'Dashboard'],
+                    ['href' => route('assignments.index'), 'text' => 'Assignments', 'active' => true],
+                ],
+            ])
+            ->title('Assignments');
     }
 }
