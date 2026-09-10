@@ -4,65 +4,96 @@ namespace App\Livewire\Students;
 
 use App\Models\MyClass;
 use App\Models\Section;
-use App\Models\User;
 use App\Models\StudentRecord;
-use Livewire\Component;
-use Livewire\WithPagination;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class ManageStudents extends Component
 {
-    use WithPagination, AuthorizesRequests, WithFileUploads;
+    use AuthorizesRequests, WithFileUploads, WithPagination;
 
     public $mode = 'list';
-    
+
     // Filters
     public $search = '';
+
     public $selectedClass = '';
+
     public $appliedClass = '';
+
     public $selectedStatus = '';
+
     public $appliedStatus = '';
+
     public $selectedSection = '';
-    
+
     // Sorting & Pagination
     public $sortField = 'name';
+
     public $sortDirection = 'asc';
+
     public $perPage = 15;
-    
+
     // Data
     public $classes = [];
+
     public $sections = [];
-    
+
     // Bulk actions
     public $selectedStudents = [];
+
     public $selectAll = false;
+
     public $showBulkModal = false;
+
     public $bulkAction = '';
+
     public $bulkSection = '';
+
     public $bulkClass = '';
+
     public $bulkClassSections = [];
-    
+
     // Student form
     public $studentId = null;
+
     public $name = '';
+
     public $email = '';
+
     public $password = '';
+
     public $gender = '';
+
     public $birthday = '';
+
     public $phone = '';
+
     public $address = '';
+
     public $blood_group = '';
+
     public $religion = '';
+
     public $nationality = '';
+
     public $state = '';
+
     public $city = '';
+
     public $my_class_id = '';
+
     public $section_id = '';
+
     public $admission_number = '';
+
     public $admission_date = '';
+
     public $profile_photo = null;
 
     protected $queryString = [
@@ -80,7 +111,7 @@ class ManageStudents extends Component
             ->with(['classGroup', 'sections'])
             ->orderBy('name')
             ->get();
-        
+
         if ($this->mode === 'edit' && $this->studentId) {
             $this->loadStudentForEdit();
         } elseif ($this->mode === 'create') {
@@ -138,6 +169,7 @@ class ManageStudents extends Component
 
         if ($mode === 'list') {
             $this->resetForm();
+
             return;
         }
 
@@ -163,7 +195,7 @@ class ManageStudents extends Component
             'name' => $student->name,
             'email' => $student->email,
             'gender' => $student->gender ?? '',
-            'birthday' => $student->birthday ? 
+            'birthday' => $student->birthday ?
                 ($student->birthday instanceof Carbon ? $student->birthday->format('Y-m-d') : $student->birthday) : '',
             'phone' => $student->phone ?? '',
             'address' => $student->address ?? '',
@@ -173,14 +205,14 @@ class ManageStudents extends Component
             'state' => $student->state ?? '',
             'city' => $student->city ?? '',
         ]);
-        
+
         if ($student->studentRecord) {
             $this->my_class_id = $student->studentRecord->my_class_id;
             $this->section_id = $student->studentRecord->section_id ?? '';
             $this->admission_number = $student->studentRecord->admission_number;
             $this->admission_date = $student->studentRecord->admission_date ?
-                ($student->studentRecord->admission_date instanceof Carbon ? 
-                    $student->studentRecord->admission_date->format('Y-m-d') : 
+                ($student->studentRecord->admission_date instanceof Carbon ?
+                    $student->studentRecord->admission_date->format('Y-m-d') :
                     $student->studentRecord->admission_date) : '';
             $this->updatedMyClassId();
         }
@@ -189,7 +221,7 @@ class ManageStudents extends Component
     public function createStudent()
     {
         $this->authorize('create', [User::class, 'student']);
-        
+
         $validated = $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -208,8 +240,9 @@ class ManageStudents extends Component
             })
             ->exists();
 
-        if (!$classExistsForSchool) {
+        if (! $classExistsForSchool) {
             $this->addError('my_class_id', 'Selected class does not belong to your current school.');
+
             return;
         }
 
@@ -221,13 +254,14 @@ class ManageStudents extends Component
                 })
                 ->exists();
 
-            if (!$sectionExistsForClass) {
+            if (! $sectionExistsForClass) {
                 $this->addError('section_id', 'Selected section does not belong to your current school/class.');
+
                 return;
             }
         }
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () {
             $user = User::create([
                 'name' => $this->name,
                 'email' => $this->email,
@@ -261,7 +295,7 @@ class ManageStudents extends Component
                     $currentAcademicYear->id => [
                         'my_class_id' => $this->my_class_id,
                         'section_id' => $this->section_id ?: null,
-                    ]
+                    ],
                 ]);
             }
         });
@@ -278,10 +312,10 @@ class ManageStudents extends Component
             ->findOrFail($this->studentId);
 
         $this->authorize('update', [$student, 'student']);
-        
+
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $this->studentId,
+            'email' => 'required|email|unique:users,email,'.$this->studentId,
             'password' => 'nullable|string|min:8',
             'my_class_id' => 'required|exists:my_classes,id',
             'gender' => 'required|in:male,female',
@@ -295,8 +329,9 @@ class ManageStudents extends Component
             })
             ->exists();
 
-        if (!$classExistsForSchool) {
+        if (! $classExistsForSchool) {
             $this->addError('my_class_id', 'Selected class does not belong to your current school.');
+
             return;
         }
 
@@ -308,8 +343,9 @@ class ManageStudents extends Component
                 })
                 ->exists();
 
-            if (!$sectionExistsForClass) {
+            if (! $sectionExistsForClass) {
                 $this->addError('section_id', 'Selected section does not belong to your current school/class.');
+
                 return;
             }
         }
@@ -337,7 +373,7 @@ class ManageStudents extends Component
 
             if ($student->studentRecord) {
                 $oldClassId = $student->studentRecord->my_class_id;
-                
+
                 $student->studentRecord->update([
                     'my_class_id' => $this->my_class_id,
                     'section_id' => $this->section_id ?: null,
@@ -371,15 +407,33 @@ class ManageStudents extends Component
             ->findOrFail($studentId);
 
         $this->authorize('delete', [$student, 'student']);
-        
+
         DB::transaction(function () use ($student) {
             if ($student->studentRecord) {
                 $student->studentRecord->delete();
             }
             $student->delete();
         });
-        
+
         session()->flash('success', 'Student deleted successfully');
+    }
+
+    public function toggleStatus($studentId)
+    {
+        abort_unless(auth()->user()->can('update student'), 403);
+
+        $student = User::role('student')
+            ->where('school_id', auth()->user()->school_id)
+            ->findOrFail($studentId);
+
+        $student->update(['locked' => ! $student->locked]);
+
+        session()->flash(
+            'success',
+            $student->locked
+                ? "{$student->name} is now inactive and cannot sign in."
+                : "{$student->name} is now active and can sign in."
+        );
     }
 
     public function applyFilters()
@@ -397,6 +451,10 @@ class ManageStudents extends Component
 
     public function sortBy($field)
     {
+        if (! in_array($field, ['name', 'email', 'admission_number', 'locked'], true)) {
+            return;
+        }
+
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
@@ -409,6 +467,7 @@ class ManageStudents extends Component
     {
         if (empty($this->selectedStudents)) {
             session()->flash('error', 'Please select at least one student');
+
             return;
         }
 
@@ -420,6 +479,7 @@ class ManageStudents extends Component
     {
         if (empty($this->selectedStudents)) {
             session()->flash('error', 'No students selected');
+
             return;
         }
 
@@ -439,8 +499,9 @@ class ManageStudents extends Component
     {
         $currentAcademicYear = auth()->user()->school->academic_year_id;
 
-        if (!$currentAcademicYear) {
+        if (! $currentAcademicYear) {
             session()->flash('error', 'No active academic year is set.');
+
             return;
         }
 
@@ -474,15 +535,16 @@ class ManageStudents extends Component
             $updatedCount++;
         }
 
-        session()->flash('success', $updatedCount . ' students assigned to section');
+        session()->flash('success', $updatedCount.' students assigned to section');
     }
 
     protected function bulkMoveClass()
     {
         $currentAcademicYear = auth()->user()->school->academic_year_id;
 
-        if (!$currentAcademicYear) {
+        if (! $currentAcademicYear) {
             session()->flash('error', 'No active academic year is set.');
+
             return;
         }
 
@@ -493,8 +555,9 @@ class ManageStudents extends Component
             })
             ->first();
 
-        if (!$targetClass) {
+        if (! $targetClass) {
             session()->flash('error', 'Selected class does not belong to your current school.');
+
             return;
         }
 
@@ -507,8 +570,9 @@ class ManageStudents extends Component
                 })
                 ->first();
 
-            if (!$targetSection) {
+            if (! $targetSection) {
                 session()->flash('error', 'Selected section does not belong to the selected class.');
+
                 return;
             }
         }
@@ -544,7 +608,7 @@ class ManageStudents extends Component
             $updatedCount++;
         }
 
-        session()->flash('success', $updatedCount . ' students moved to new class');
+        session()->flash('success', $updatedCount.' students moved to new class');
     }
 
     public function closeBulkModal()
@@ -558,7 +622,7 @@ class ManageStudents extends Component
         $this->reset([
             'studentId', 'name', 'email', 'password', 'gender', 'birthday',
             'phone', 'address', 'blood_group', 'religion', 'nationality',
-            'state', 'city', 'my_class_id', 'section_id', 'admission_number', 'admission_date'
+            'state', 'city', 'my_class_id', 'section_id', 'admission_number', 'admission_date',
         ]);
     }
 
@@ -566,9 +630,9 @@ class ManageStudents extends Component
     {
         $schoolInitials = auth()->user()->school->initials ?? 'SCH';
         $currentYear = date('y');
-        
+
         do {
-            $admissionNumber = "{$schoolInitials}/{$currentYear}/" . mt_rand(100000, 999999);
+            $admissionNumber = "{$schoolInitials}/{$currentYear}/".mt_rand(100000, 999999);
         } while (StudentRecord::where('admission_number', $admissionNumber)->exists());
 
         return $admissionNumber;
@@ -578,7 +642,7 @@ class ManageStudents extends Component
     {
         $schoolId = auth()->user()->school_id;
         $currentAcademicYearId = auth()->user()->school->academic_year_id;
-        
+
         $query = User::role('student')
             ->select('users.*')
             ->join('student_records', 'student_records.user_id', '=', 'users.id')
@@ -587,8 +651,8 @@ class ManageStudents extends Component
         if ($currentAcademicYearId) {
             $pivotData = DB::table('academic_year_student_record')
                 ->where('academic_year_id', $currentAcademicYearId)
-                ->when($this->appliedClass, fn($q) => $q->where('my_class_id', $this->appliedClass))
-                ->when($this->selectedSection, fn($q) => $q->where('section_id', $this->selectedSection))
+                ->when($this->appliedClass, fn ($q) => $q->where('my_class_id', $this->appliedClass))
+                ->when($this->selectedSection, fn ($q) => $q->where('section_id', $this->selectedSection))
                 ->select('student_record_id')
                 ->get();
 
@@ -599,8 +663,8 @@ class ManageStudents extends Component
                 ->where('users.school_id', $schoolId)
                 ->whereNull('users.deleted_at')
                 ->where('student_records.is_graduated', false)
-                ->when($this->appliedClass, fn($q) => $q->where('student_records.my_class_id', $this->appliedClass))
-                ->when($this->selectedSection, fn($q) => $q->where('student_records.section_id', $this->selectedSection))
+                ->when($this->appliedClass, fn ($q) => $q->where('student_records.my_class_id', $this->appliedClass))
+                ->when($this->selectedSection, fn ($q) => $q->where('student_records.section_id', $this->selectedSection))
                 ->pluck('student_records.id')
                 ->filter()
                 ->values();
@@ -616,93 +680,105 @@ class ManageStudents extends Component
                 $query->whereIn('student_records.id', $studentRecordIds);
             }
         } else {
-            $query->when($this->appliedClass, fn($q) => $q->where('student_records.my_class_id', $this->appliedClass))
-                ->when($this->selectedSection, fn($q) => $q->where('student_records.section_id', $this->selectedSection));
+            $query->when($this->appliedClass, fn ($q) => $q->where('student_records.my_class_id', $this->appliedClass))
+                ->when($this->selectedSection, fn ($q) => $q->where('student_records.section_id', $this->selectedSection));
         }
 
+        $sortColumns = [
+            'name' => 'users.name',
+            'email' => 'users.email',
+            'admission_number' => 'student_records.admission_number',
+            'locked' => 'users.locked',
+        ];
+
         return $query
-            ->when($this->search, function($q) {
-                $q->where(function($query) {
-                    $query->where('users.name', 'like', '%' . $this->search . '%')
-                          ->orWhere('users.email', 'like', '%' . $this->search . '%')
-                          ->orWhere('student_records.admission_number', 'like', '%' . $this->search . '%');
+            ->when($this->search, function ($q) {
+                $q->where(function ($query) {
+                    $query->where('users.name', 'like', '%'.$this->search.'%')
+                        ->orWhere('users.email', 'like', '%'.$this->search.'%')
+                        ->orWhere('student_records.admission_number', 'like', '%'.$this->search.'%');
                 });
             })
-            ->when($this->appliedStatus !== '', fn($q) => $q->where('users.locked', $this->appliedStatus))
-            ->orderBy($this->sortField, $this->sortDirection);
+            ->when($this->appliedStatus !== '', fn ($q) => $q->where('users.locked', $this->appliedStatus))
+            ->orderBy($sortColumns[$this->sortField] ?? 'users.name', $this->sortDirection)
+            ->orderBy('users.name');
     }
+
     public function render()
     {
         $students = collect();
-        
+
         if ($this->mode === 'list') {
             $students = $this->getStudentsQuery()
                 ->with('studentRecord')
                 ->paginate($this->perPage);
-    
+
             $currentAcademicYearId = auth()->user()->school->academic_year_id;
-            
+
             if ($currentAcademicYearId) {
                 $pivotData = DB::table('academic_year_student_record')
                     ->where('academic_year_id', $currentAcademicYearId)
                     ->whereIn('student_record_id', $students->pluck('studentRecord.id')->filter())
                     ->get()
                     ->keyBy('student_record_id');
-    
+
                 $classIds = $pivotData->pluck('my_class_id')->unique();
                 $sectionIds = $pivotData->pluck('section_id')->filter()->unique();
-                
+
                 $classes = MyClass::whereIn('id', $classIds)->get()->keyBy('id');
                 $sections = Section::whereIn('id', $sectionIds)->get()->keyBy('id');
-    
-                $students->getCollection()->transform(function($student) use ($pivotData, $classes, $sections) {
+
+                $students->getCollection()->transform(function ($student) use ($pivotData, $classes, $sections) {
                     // Initialize properties to avoid null errors
-                    if (!$student->studentRecord) {
-                        $student->studentRecord = (object)[
+                    if (! $student->studentRecord) {
+                        $student->studentRecord = (object) [
                             'current_year_class' => null,
                             'current_year_section' => null,
-                            'admission_number' => 'N/A'
+                            'admission_number' => 'N/A',
                         ];
+
                         return $student;
                     }
-                    
+
                     if (isset($pivotData[$student->studentRecord->id])) {
                         $pivot = $pivotData[$student->studentRecord->id];
                         $student->studentRecord->current_year_class = $classes->get($pivot->my_class_id);
-                        $student->studentRecord->current_year_section = $pivot->section_id 
-                            ? $sections->get($pivot->section_id) 
+                        $student->studentRecord->current_year_section = $pivot->section_id
+                            ? $sections->get($pivot->section_id)
                             : null;
                     } else {
                         // Fall back to the base student record when the current-year pivot is missing.
                         $student->studentRecord->current_year_class = $student->studentRecord->myClass;
                         $student->studentRecord->current_year_section = $student->studentRecord->section;
                     }
+
                     return $student;
                 });
             } else {
                 // No current academic year set
-                $students->getCollection()->transform(function($student) {
-                    if (!$student->studentRecord) {
-                        $student->studentRecord = (object)[
+                $students->getCollection()->transform(function ($student) {
+                    if (! $student->studentRecord) {
+                        $student->studentRecord = (object) [
                             'current_year_class' => null,
                             'current_year_section' => null,
-                            'admission_number' => 'N/A'
+                            'admission_number' => 'N/A',
                         ];
                     } else {
                         $student->studentRecord->current_year_class = null;
                         $student->studentRecord->current_year_section = null;
                     }
+
                     return $student;
                 });
             }
         }
-    
+
         return view('livewire.students.manage-students', compact('students'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('students.index'), 'text' => 'Students', 'active' => true]
-                ]
+                    ['href' => route('students.index'), 'text' => 'Students', 'active' => true],
+                ],
             ])
             ->title('Manage Students');
     }

@@ -2,17 +2,22 @@
 
 namespace App\Livewire\Result;
 
-use Livewire\Component;
-use Livewire\Attributes\On;
-use App\Models\{Result, StudentRecord, Subject, MyClass};
+use App\Models\Result;
+use App\Models\StudentRecord;
 use App\Models\User;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
 class Dashboard extends Component
 {
     public $academicYearId;
+
     public $semesterId;
+
     public $stats = [];
+
     public bool $canOpenViewResults = true;
+
     public bool $canOpenHistory = true;
 
     public function mount()
@@ -34,8 +39,9 @@ class Dashboard extends Component
 
     protected function loadStats()
     {
-        if (!$this->academicYearId || !$this->semesterId) {
+        if (! $this->academicYearId || ! $this->semesterId) {
             $this->stats = [];
+
             return;
         }
 
@@ -45,28 +51,30 @@ class Dashboard extends Component
             $schoolId,
             $this->academicYearId
         );
-    
+
         $totalStudents = $studentRecordIds->count();
-        $inactiveStudents = max(
-            User::query()->where('school_id', $schoolId)->role('student')->count() - $totalStudents,
-            0
-        );
-    
+        $inactiveStudents = User::query()
+            ->where('school_id', $schoolId)
+            ->role('student')
+            ->where('locked', true)
+            ->whereHas('studentRecord', fn ($query) => $query->where('is_graduated', false))
+            ->count();
+
         $results = Result::where('academic_year_id', $this->academicYearId)
             ->where('semester_id', $this->semesterId)
             ->whereIn('student_record_id', $studentRecordIds)
             ->get();
-    
+
         $studentsWithResults = $results->pluck('student_record_id')->unique()->count();
         $totalResults = $results->count();
         $avgScore = $results->avg('total_score') ?? 0;
-    
+
         $recentlyUploaded = Result::where('academic_year_id', $this->academicYearId)
             ->where('semester_id', $this->semesterId)
             ->whereIn('student_record_id', $studentRecordIds)
             ->with([
                 'studentRecord.user',
-                'subject'
+                'subject',
             ])
             ->latest()
             ->take(5)
@@ -84,7 +92,7 @@ class Dashboard extends Component
                 ];
             })
             ->all();
-    
+
         $this->stats = [
             'total_students' => $totalStudents,
             'inactive_students' => $inactiveStudents,
@@ -92,18 +100,19 @@ class Dashboard extends Component
             'pending_students' => $totalStudents - $studentsWithResults,
             'total_results' => $totalResults,
             'average_score' => round($avgScore, 2),
-            'completion_rate' => $totalStudents > 0 
-                ? round(($studentsWithResults / $totalStudents) * 100, 2) 
+            'completion_rate' => $totalStudents > 0
+                ? round(($studentsWithResults / $totalStudents) * 100, 2)
                 : 0,
             'recently_uploaded' => $recentlyUploaded,
         ];
     }
+
     public function render()
     {
         return view('livewire.result.dashboard')
             ->layout('layouts.result', [
                 'title' => 'Results Dashboard',
-                'page_heading' => 'Results Dashboard'
+                'page_heading' => 'Results Dashboard',
             ]);
     }
 }

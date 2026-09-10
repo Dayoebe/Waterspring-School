@@ -55,7 +55,7 @@ class EnrollmentAnalytics extends Component
 
     protected function academicYears(?int $schoolId): Collection
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return collect();
         }
 
@@ -67,7 +67,7 @@ class EnrollmentAnalytics extends Component
 
     protected function classes(?int $schoolId): Collection
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return collect();
         }
 
@@ -92,7 +92,7 @@ class EnrollmentAnalytics extends Component
         Carbon $start,
         Carbon $end
     ): array {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'active_students' => 0,
                 'total_students' => 0,
@@ -106,6 +106,12 @@ class EnrollmentAnalytics extends Component
 
         $totalStudents = User::query()->where('school_id', $schoolId)->role('student')->count();
         $activeStudents = $activeStudentRecordIds->count();
+        $inactiveStudents = User::query()
+            ->where('school_id', $schoolId)
+            ->role('student')
+            ->where('locked', true)
+            ->whereHas('studentRecord', fn ($query) => $query->where('is_graduated', false))
+            ->count();
         $graduatedStudents = User::query()
             ->where('school_id', $schoolId)
             ->role('student')
@@ -139,7 +145,7 @@ class EnrollmentAnalytics extends Component
         return [
             'active_students' => $activeStudents,
             'total_students' => $totalStudents,
-            'inactive_students' => max(0, $totalStudents - $activeStudents),
+            'inactive_students' => $inactiveStudents,
             'graduated_students' => $graduatedStudents,
             'new_students' => $newStudents,
             'linked_to_parent' => $linkedToParent,
@@ -149,7 +155,7 @@ class EnrollmentAnalytics extends Component
 
     protected function admissionMetrics(?int $schoolId, ?int $classId, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'total' => 0,
                 'period_total' => 0,
@@ -182,7 +188,7 @@ class EnrollmentAnalytics extends Component
 
     protected function classDistribution(?int $schoolId, ?int $academicYearId, Collection $activeStudentRecordIds): array
     {
-        if (!$schoolId || !$academicYearId || $activeStudentRecordIds->isEmpty()) {
+        if (! $schoolId || ! $academicYearId || $activeStudentRecordIds->isEmpty()) {
             return [];
         }
 
@@ -209,7 +215,7 @@ class EnrollmentAnalytics extends Component
 
     protected function sectionDistribution(?int $schoolId, ?int $academicYearId, Collection $activeStudentRecordIds): array
     {
-        if (!$schoolId || !$academicYearId || $activeStudentRecordIds->isEmpty()) {
+        if (! $schoolId || ! $academicYearId || $activeStudentRecordIds->isEmpty()) {
             return [];
         }
 
@@ -237,7 +243,7 @@ class EnrollmentAnalytics extends Component
 
     protected function genderDistribution(?int $schoolId, Collection $activeStudentRecordIds): array
     {
-        if (!$schoolId || $activeStudentRecordIds->isEmpty()) {
+        if (! $schoolId || $activeStudentRecordIds->isEmpty()) {
             return [];
         }
 
@@ -272,7 +278,7 @@ class EnrollmentAnalytics extends Component
         $students = array_fill_keys($monthKeys, 0);
         $applications = array_fill_keys($monthKeys, 0);
 
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'students' => $students,
                 'applications' => $applications,
@@ -292,7 +298,7 @@ class EnrollmentAnalytics extends Component
 
             foreach ($studentRows as $row) {
                 $date = $row->admission_date ?: $row->created_at;
-                if (!$date) {
+                if (! $date) {
                     continue;
                 }
 
@@ -335,19 +341,19 @@ class EnrollmentAnalytics extends Component
         }
 
         if (($admissions['pending'] ?? 0) > 0) {
-            $signals[] = ['tone' => 'amber', 'title' => 'Admissions pending', 'body' => number_format((int) $admissions['pending']) . ' application(s) still need review.'];
+            $signals[] = ['tone' => 'amber', 'title' => 'Admissions pending', 'body' => number_format((int) $admissions['pending']).' application(s) still need review.'];
         }
 
         if (($admissions['total'] ?? 0) > 0 && ($admissions['conversion_rate'] ?? 0) < 30) {
-            $signals[] = ['tone' => 'rose', 'title' => 'Low application conversion', 'body' => 'Current conversion is ' . number_format((float) $admissions['conversion_rate'], 1) . '%.'];
+            $signals[] = ['tone' => 'rose', 'title' => 'Low application conversion', 'body' => 'Current conversion is '.number_format((float) $admissions['conversion_rate'], 1).'%.'];
         }
 
         if (($people['active_students'] ?? 0) > 0 && ($people['parent_link_rate'] ?? 0) < 80) {
-            $signals[] = ['tone' => 'sky', 'title' => 'Parent links incomplete', 'body' => 'Only ' . number_format((float) $people['parent_link_rate'], 1) . '% of active students are linked to a parent account.'];
+            $signals[] = ['tone' => 'sky', 'title' => 'Parent links incomplete', 'body' => 'Only '.number_format((float) $people['parent_link_rate'], 1).'% of active students are linked to a parent account.'];
         }
 
         if (($people['inactive_students'] ?? 0) > 0) {
-            $signals[] = ['tone' => 'amber', 'title' => 'Inactive student accounts', 'body' => number_format((int) $people['inactive_students']) . ' student account(s) are outside the active enrollment count.'];
+            $signals[] = ['tone' => 'amber', 'title' => 'Inactive student accounts', 'body' => number_format((int) $people['inactive_students']).' student account(s) are outside the active enrollment count.'];
         }
 
         if ($signals === []) {

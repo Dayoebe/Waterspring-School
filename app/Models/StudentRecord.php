@@ -78,6 +78,7 @@ class StudentRecord extends Model
 
         if (! $schoolId) {
             return $query->where('is_graduated', false)
+                ->whereHas('user', fn ($query) => $query->where('locked', false))
                 ->whereHas('baseClass', function ($query) {
                     $query->instructional();
                 });
@@ -103,6 +104,10 @@ class StudentRecord extends Model
     public function isActiveStudent(): bool
     {
         if ($this->is_graduated) {
+            return false;
+        }
+
+        if ($this->user?->locked) {
             return false;
         }
 
@@ -141,6 +146,7 @@ class StudentRecord extends Model
         $query = DB::table('student_records as sr')
             ->join('users as u', 'u.id', '=', 'sr.user_id')
             ->where('u.school_id', $schoolId)
+            ->where('u.locked', false)
             ->whereNull('u.deleted_at')
             ->when(! $includeGraduated, fn ($query) => $query->where('sr.is_graduated', false));
 

@@ -772,14 +772,12 @@ class DashboardStats extends Component
             return 0;
         }
 
-        $activeStudentsCount ??= $this->getActiveStudentsCount($schoolId);
-
-        $totalStudents = User::query()
+        return User::query()
             ->where('school_id', $schoolId)
             ->role('student')
+            ->where('locked', true)
+            ->whereHas('studentRecord', fn ($query) => $query->where('is_graduated', false))
             ->count();
-
-        return max($totalStudents - $activeStudentsCount, 0);
     }
 
     private function getGraduatedStudentsCount(?int $schoolId): int

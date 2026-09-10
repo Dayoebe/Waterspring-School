@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,33 +16,18 @@ class MyClass extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected const ACTIVE_STUDENT_CLASS_CODES = [
-        'JSS1',
-        'JSS2',
-        'JSS3',
-        'SS1',
-        'SS2',
-        'SS3',
-        'SSS1',
-        'SSS2',
-        'SSS3',
-    ];
-
     protected $fillable = ['name', 'class_group_id'];
 
     public function scopeInstructional($query)
     {
-        return $query->whereIn(
-            DB::raw("UPPER(REPLACE(name, ' ', ''))"),
-            self::ACTIVE_STUDENT_CLASS_CODES
-        );
+        return $query->whereRaw("UPPER(REPLACE(name, ' ', '')) NOT LIKE 'ALUMNI%'");
     }
 
     public function isInstructional(): bool
     {
         $normalizedName = strtoupper(str_replace(' ', '', (string) $this->name));
 
-        return in_array($normalizedName, self::ACTIVE_STUDENT_CLASS_CODES, true);
+        return $normalizedName !== '' && ! str_starts_with($normalizedName, 'ALUMNI');
     }
 
     public function school()
@@ -87,7 +72,7 @@ class MyClass extends Model
      */
     public function addTeacher($teacherId)
     {
-        if (!$this->hasTeacher($teacherId)) {
+        if (! $this->hasTeacher($teacherId)) {
             $this->teachers()->attach($teacherId);
         }
     }
@@ -153,50 +138,48 @@ class MyClass extends Model
     /**
      * 🔥 RECOMMENDED: Get students in this class for a specific academic year
      * This is the correct way to query students after promotions
-     * 
-     * @param int|null $academicYearId If null, uses current academic year
-     * @return Collection
+     *
+     * @param  int|null  $academicYearId  If null, uses current academic year
      */
     public function studentsForAcademicYear($academicYearId = null): Collection
     {
         $studentIds = $this->getStudentRecordIds($academicYearId);
-    
+
         if ($studentIds->isEmpty()) {
-            return new Collection();
+            return new Collection;
         }
-    
+
         $students = User::query()
             ->inSchool()
             ->whereNull('deleted_at')
-            ->whereHas('studentRecord', function($query) use ($studentIds) {
+            ->whereHas('studentRecord', function ($query) use ($studentIds) {
                 $query->whereIn('id', $studentIds);
             })
             ->with(['studentRecord.myClass', 'studentRecord.section'])
             ->orderBy('name')
             ->get();
-    
+
         return $students;
     }
 
     /**
      * Get students in this class and section for a specific academic year
-     * 
-     * @param int|null $academicYearId
-     * @param int|null $sectionId
-     * @return Collection
+     *
+     * @param  int|null  $academicYearId
+     * @param  int|null  $sectionId
      */
     public function studentsForAcademicYearAndSection($academicYearId = null, $sectionId = null): Collection
     {
         $studentIds = $this->resolveStudentRecordIdsForAcademicYear($academicYearId, $sectionId);
 
         if ($studentIds->isEmpty()) {
-            return new Collection();
+            return new Collection;
         }
 
         $students = User::query()
             ->inSchool()
             ->whereNull('deleted_at')
-            ->whereHas('studentRecord', function($query) use ($studentIds) {
+            ->whereHas('studentRecord', function ($query) use ($studentIds) {
                 $query->whereIn('id', $studentIds);
             })
             ->with(['studentRecord.myClass', 'studentRecord.section'])
@@ -208,9 +191,8 @@ class MyClass extends Model
 
     /**
      * Count students in this class for current academic year
-     * 
-     * @param int|null $academicYearId
-     * @return int
+     *
+     * @param  int|null  $academicYearId
      */
     public function studentsCount($academicYearId = null): int
     {
@@ -220,9 +202,8 @@ class MyClass extends Model
     /**
      * Get student record IDs for this class in a specific academic year
      * Useful for queries
-     * 
-     * @param int|null $academicYearId
-     * @return Collection
+     *
+     * @param  int|null  $academicYearId
      */
     public function getStudentRecordIds($academicYearId = null): Collection
     {
@@ -231,10 +212,9 @@ class MyClass extends Model
 
     /**
      * Check if a student is in this class for a specific academic year
-     * 
-     * @param int $studentRecordId
-     * @param int|null $academicYearId
-     * @return bool
+     *
+     * @param  int  $studentRecordId
+     * @param  int|null  $academicYearId
      */
     public function hasStudent($studentRecordId, $academicYearId = null): bool
     {
@@ -244,11 +224,11 @@ class MyClass extends Model
 
     protected function resolveStudentRecordIdsForAcademicYear($academicYearId = null, $sectionId = null)
     {
-        if (!$academicYearId) {
+        if (! $academicYearId) {
             $academicYearId = auth()->user()?->school->academic_year_id;
         }
 
-        if (!$academicYearId) {
+        if (! $academicYearId) {
             return collect();
         }
 

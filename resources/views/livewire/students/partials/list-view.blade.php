@@ -171,7 +171,14 @@
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Admission No</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Class</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Section</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Status</th>
+                    <th wire:click="sortBy('locked')" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase cursor-pointer hover:bg-gray-100">
+                        Status
+                        @if($sortField === 'locked')
+                            <i class="fas fa-sort-{{ $sortDirection === 'asc' ? 'up' : 'down' }} ml-1"></i>
+                        @else
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        @endif
+                    </th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Actions</th>
                 </tr>
             </thead>
@@ -230,6 +237,14 @@
                                     class="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            @can('update student')
+                                <button wire:click="toggleStatus({{ $student->id }})"
+                                        wire:confirm="{{ $student->locked ? 'Reactivate this student account?' : 'Set this student as inactive and block sign-in?' }}"
+                                        title="{{ $student->locked ? 'Set as active' : 'Set as inactive' }}"
+                                        class="p-2 {{ $student->locked ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700' }} text-white rounded-lg transition">
+                                    <i class="fas fa-{{ $student->locked ? 'unlock' : 'lock' }}"></i>
+                                </button>
+                            @endcan
                             <button wire:click="deleteStudent({{ $student->id }})" 
                                     onclick="return confirm('Delete this student?')"
                                     class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition">
