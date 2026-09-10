@@ -38,6 +38,15 @@
                 <div><label class="mb-1.5 block text-sm font-semibold text-slate-700">Maximum score <span class="font-normal text-slate-400">(optional)</span></label><input type="number" min="0" step="0.01" wire:model="maxScore" class="w-full rounded-xl border-slate-300 px-4 py-3 text-sm focus:border-red-500 focus:ring-red-500" placeholder="100">@error('maxScore')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
                 <div class="md:col-span-2"><label class="mb-1.5 block text-sm font-semibold text-slate-700">Instructions</label><textarea rows="5" wire:model="instructions" class="w-full rounded-xl border-slate-300 px-4 py-3 text-sm focus:border-red-500 focus:ring-red-500" placeholder="Explain what students should complete and how to submit it."></textarea>@error('instructions')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
                 <div class="md:col-span-2"><label class="mb-1.5 block text-sm font-semibold text-slate-700">Supporting file <span class="font-normal text-slate-400">(optional, 10 MB)</span></label><input type="file" wire:model="assignmentFile" class="block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:font-semibold">@error('assignmentFile')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+                <div class="md:col-span-2 rounded-xl border border-sky-200 bg-sky-50 p-4">
+                    <label class="flex cursor-pointer items-start gap-3">
+                        <input type="checkbox" wire:model="notifyRecipients" class="mt-1 rounded border-sky-300 text-sky-700 focus:ring-sky-600">
+                        <span>
+                            <span class="block text-sm font-bold text-sky-950">Notify affected students and parents by email</span>
+                            <span class="mt-1 block text-xs leading-5 text-sky-800">Enabled by default. Turn this off to publish the assignment without sending email notifications.</span>
+                        </span>
+                    </label>
+                </div>
                 <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div><h3 class="font-bold text-slate-900">Structured questions</h3><p class="text-xs text-slate-500">Mix objective, short response and essay questions. Leave empty for a regular file or written assignment.</p></div>

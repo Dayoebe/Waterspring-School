@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Assignments;
 
+use App\Mail\AssignmentPublishedMail;
 use App\Models\Assignment;
 use App\Models\AssignmentAnswer;
 use App\Models\AssignmentQuestion;
@@ -11,6 +12,7 @@ use App\Models\Subject;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -39,6 +41,8 @@ class AssignmentHub extends Component
     public string $maxScore = '';
 
     public $assignmentFile;
+
+    public bool $notifyRecipients = true;
 
     public array $questions = [];
 
@@ -188,6 +192,7 @@ class AssignmentHub extends Component
             'dueAt' => ['required', 'date', 'after:now'],
             'maxScore' => [$this->questions === [] ? 'nullable' : 'nullable', 'numeric', 'min:0.01', 'max:999999.99'],
             'assignmentFile' => ['nullable', 'file', 'max:10240'],
+            'notifyRecipients' => ['boolean'],
         ]);
 
         $classId = (int) $validated['classId'];
@@ -205,7 +210,7 @@ class AssignmentHub extends Component
             return;
         }
 
-        DB::transaction(function () use ($validated, $classId, $subjectId, $recipientIds): void {
+        $assignment = DB::transaction(function () use ($validated, $classId, $subjectId, $recipientIds): Assignment {
             $path = $this->assignmentFile?->store('assignments/'.auth()->user()->school_id, 'local');
             $structuredScore = collect($this->questions)->sum('points');
             $assignment = Assignment::query()->create([
@@ -232,11 +237,83 @@ class AssignmentHub extends Component
                 ]);
             }
             $assignment->recipients()->attach($recipientIds->all(), ['assigned_at' => now()]);
+
+            return $assignment;
         });
 
+        $notificationResult = $this->notifyRecipients
+            ? $this->sendAssignmentNotifications($assignment)
+            : ['sent' => 0, 'failed' => 0];
+
         $this->reset(['title', 'instructions', 'classId', 'subjectId', 'maxScore', 'assignmentFile', 'showCreate', 'questions']);
+        $this->notifyRecipients = true;
         $this->dueAt = now()->addDays(7)->format('Y-m-d\TH:i');
-        session()->flash('success', 'Assignment published to '.$recipientIds->count().' student'.($recipientIds->count() === 1 ? '' : 's').'.');
+        $message = 'Assignment published to '.$recipientIds->count().' student'.($recipientIds->count() === 1 ? '' : 's').'.';
+        if ($notificationResult['sent'] > 0) {
+            $message .= ' Email notifications sent to '.$notificationResult['sent'].' recipient'.($notificationResult['sent'] === 1 ? '' : 's').'.';
+        }
+        if ($notificationResult['failed'] > 0) {
+            $message .= ' '.$notificationResult['failed'].' email notification'.($notificationResult['failed'] === 1 ? '' : 's').' could not be delivered.';
+        }
+        session()->flash('success', $message);
+    }
+
+    protected function sendAssignmentNotifications(Assignment $assignment): array
+    {
+        $students = $assignment->recipients()
+            ->with(['user.parents'])
+            ->get()
+            ->filter(fn ($record) => $record->user);
+
+        $deliveries = collect();
+
+        foreach ($students as $studentRecord) {
+            $student = $studentRecord->user;
+            if (filled($student->email)) {
+                $deliveries->put('student:'.$student->id, [
+                    'recipient' => $student,
+                    'audience' => 'student',
+                    'studentNames' => [$student->name],
+                ]);
+            }
+
+            foreach ($student->parents as $parent) {
+                if (blank($parent->email)) {
+                    continue;
+                }
+
+                $key = 'parent:'.$parent->id;
+                $delivery = $deliveries->get($key, [
+                    'recipient' => $parent,
+                    'audience' => 'parent',
+                    'studentNames' => [],
+                ]);
+                $delivery['studentNames'][] = $student->name;
+                $delivery['studentNames'] = array_values(array_unique($delivery['studentNames']));
+                $deliveries->put($key, $delivery);
+            }
+        }
+
+        $sent = 0;
+        $failed = 0;
+        $assignment->loadMissing(['myClass', 'subject', 'teacher']);
+
+        foreach ($deliveries as $delivery) {
+            try {
+                Mail::to($delivery['recipient']->email)->send(new AssignmentPublishedMail(
+                    $assignment,
+                    $delivery['recipient'],
+                    $delivery['audience'],
+                    $delivery['studentNames'],
+                ));
+                $sent++;
+            } catch (\Throwable $exception) {
+                report($exception);
+                $failed++;
+            }
+        }
+
+        return compact('sent', 'failed');
     }
 
     public function selectAssignment(int $assignmentId): void
