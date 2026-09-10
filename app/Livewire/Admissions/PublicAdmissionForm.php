@@ -2,45 +2,64 @@
 
 namespace App\Livewire\Admissions;
 
+use App\Mail\AdmissionNotificationMail;
 use App\Models\AdmissionRegistration;
 use App\Models\AdmissionStatusHistory;
 use App\Models\MyClass;
 use App\Models\School;
 use App\Models\Section;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Throwable;
 
 class PublicAdmissionForm extends Component
 {
     use WithFileUploads;
 
     public $school_id = '';
+
     public $my_class_id = '';
+
     public $section_id = '';
 
     public $student_name = '';
+
     public $student_email = '';
+
     public $gender = '';
+
     public $birthday = '';
 
     public $guardian_name = '';
+
     public $guardian_phone = '';
+
     public $guardian_email = '';
+
     public $guardian_relationship = '';
 
     public $address = '';
+
     public $previous_school = '';
+
     public $notes = '';
+
     public $document = null;
 
     public $schools = [];
+
     public $classes = [];
+
     public $sections = [];
+
     public string $classNotice = '';
+
     public string $sectionNotice = '';
 
     public bool $submitted = false;
+
     public string $submittedReference = '';
 
     public function mount(): void
@@ -85,13 +104,13 @@ class PublicAdmissionForm extends Component
             'section_id' => ['nullable', 'integer', 'exists:sections,id'],
 
             'student_name' => ['required', 'string', 'max:255'],
-            'student_email' => ['nullable', 'email', 'max:255'],
+            'student_email' => ['nullable', 'required_without:guardian_email', 'email', 'max:255'],
             'gender' => ['required', 'in:male,female'],
             'birthday' => ['required', 'date', 'before:today'],
 
             'guardian_name' => ['required', 'string', 'max:255'],
             'guardian_phone' => ['required', 'string', 'max:30'],
-            'guardian_email' => ['nullable', 'email', 'max:255'],
+            'guardian_email' => ['nullable', 'required_without:student_email', 'email', 'max:255'],
             'guardian_relationship' => ['nullable', 'string', 'max:100'],
 
             'address' => ['required', 'string', 'max:1000'],
@@ -105,17 +124,19 @@ class PublicAdmissionForm extends Component
     {
         $this->validate();
 
-        if (!$this->selectedClassBelongsToSchool()) {
+        if (! $this->selectedClassBelongsToSchool()) {
             $this->addError('my_class_id', 'Selected class does not belong to selected school.');
+
             return;
         }
 
-        if (!$this->selectedSectionBelongsToClass()) {
+        if (! $this->selectedSectionBelongsToClass()) {
             $this->addError('section_id', 'Selected section does not belong to selected class.');
+
             return;
         }
 
-        $reference = DB::transaction(function () {
+        $registration = DB::transaction(function () {
             $referenceNo = $this->generateReferenceNo();
             $documentPath = null;
             $documentName = null;
@@ -159,14 +180,27 @@ class PublicAdmissionForm extends Component
                 'changed_at' => now(),
             ]);
 
-            return $referenceNo;
+            return $registration->load(['school', 'myClass', 'section']);
         });
 
+        $this->sendAdmissionNotification($registration, 'received');
+
         $this->submitted = true;
-        $this->submittedReference = $reference;
+        $this->submittedReference = $registration->reference_no;
         $this->resetFormFields();
 
         session()->flash('success', 'Admission form submitted successfully.');
+    }
+
+    protected function sendAdmissionNotification(AdmissionRegistration $admission, string $type): void
+    {
+        foreach ($admission->notificationEmails() as $email) {
+            try {
+                Mail::to($email)->send(new AdmissionNotificationMail($admission, $type));
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     public function submitAnother(): void
@@ -179,18 +213,20 @@ class PublicAdmissionForm extends Component
 
     protected function loadClasses(): void
     {
-        if (!$this->school_id) {
+        if (! $this->school_id) {
             $this->classes = [];
             $this->classNotice = '';
             $this->sectionNotice = '';
+
             return;
         }
 
         $school = School::find((int) $this->school_id);
 
-        if (!$school) {
+        if (! $school) {
             $this->classes = [];
             $this->classNotice = 'Selected school not found.';
+
             return;
         }
 
@@ -212,9 +248,10 @@ class PublicAdmissionForm extends Component
 
     protected function loadSections(): void
     {
-        if (!$this->my_class_id) {
+        if (! $this->my_class_id) {
             $this->sections = [];
             $this->sectionNotice = '';
+
             return;
         }
 
@@ -247,7 +284,7 @@ class PublicAdmissionForm extends Component
 
     protected function selectedSectionBelongsToClass(): bool
     {
-        if (!$this->section_id) {
+        if (! $this->section_id) {
             return true;
         }
 
@@ -260,7 +297,7 @@ class PublicAdmissionForm extends Component
     protected function generateReferenceNo(): string
     {
         do {
-            $reference = 'ADM-' . now()->format('Y') . '-' . mt_rand(100000, 999999);
+            $reference = 'ADM-'.now()->format('Y').'-'.mt_rand(100000, 999999);
         } while (AdmissionRegistration::where('reference_no', $reference)->exists());
 
         return $reference;

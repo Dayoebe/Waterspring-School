@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admissions;
 
+use App\Mail\AdmissionNotificationMail;
 use App\Models\AdmissionRegistration;
 use App\Models\AdmissionStatusHistory;
 use App\Models\MyClass;
@@ -11,6 +12,7 @@ use App\Models\StudentRecord;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -130,7 +132,14 @@ class ManageAdmissionRegistrations extends Component
             return;
         }
 
+        if ($admission->status === 'rejected') {
+            session()->flash('error', 'This admission has already been rejected.');
+
+            return;
+        }
+
         $this->transitionStatus($admission, 'rejected', $this->normalizedNote($this->adminNote));
+        $this->sendAdmissionNotification($admission->fresh(['school', 'myClass', 'section']), 'rejected');
         $this->refreshSelectedAdmission($admission->id);
         session()->flash('success', 'Admission rejected.');
     }
@@ -246,6 +255,8 @@ class ManageAdmissionRegistrations extends Component
         }
 
         $this->refreshSelectedAdmission($admission->id);
+        $approvedAdmission = $admission->fresh(['school', 'myClass', 'section', 'enrolledUser', 'enrolledStudentRecord']);
+        $this->sendAdmissionNotification($approvedAdmission, 'approved', $this->studentLastName($approvedAdmission->student_name));
         session()->flash('success', 'Admission approved and student record created. The default password is the student\'s last name.');
     }
 
@@ -259,6 +270,17 @@ class ManageAdmissionRegistrations extends Component
         }
 
         return $lastName;
+    }
+
+    protected function sendAdmissionNotification(AdmissionRegistration $admission, string $type, ?string $temporaryPassword = null): void
+    {
+        foreach ($admission->notificationEmails() as $email) {
+            try {
+                Mail::to($email)->send(new AdmissionNotificationMail($admission, $type, $temporaryPassword));
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     protected function admissionQuery()

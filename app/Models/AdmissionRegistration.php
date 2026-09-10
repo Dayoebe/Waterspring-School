@@ -80,4 +80,14 @@ class AdmissionRegistration extends Model
     {
         return $this->hasMany(AdmissionStatusHistory::class)->latest('changed_at');
     }
+
+    public function notificationEmails(): array
+    {
+        return collect([$this->guardian_email, $this->student_email])
+            ->map(fn ($email) => strtolower(trim((string) $email)))
+            ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values()
+            ->all();
+    }
 }
