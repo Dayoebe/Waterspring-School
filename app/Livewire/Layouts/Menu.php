@@ -286,6 +286,13 @@ class Menu extends Component
                 'submenu' => array_values(array_filter([
                     [
                         'type' => 'menu-item',
+                        'text' => 'School Calendar',
+                        'route' => 'calendar.index',
+                        'permissions' => ['read school calendar'],
+                        'section' => 'Academic Calendar',
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'text' => 'Academic Years',
                         'route' => 'academic-years.index',
                         'permissions' => ['read academic year'],

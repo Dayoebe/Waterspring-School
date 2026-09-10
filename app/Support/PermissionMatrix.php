@@ -50,6 +50,8 @@ class PermissionMatrix
             'delete parent',
 
             'read academic year',
+            'read school calendar',
+            'manage school calendar',
             'create academic year',
             'update academic year',
             'delete academic year',
@@ -170,6 +172,7 @@ class PermissionMatrix
             'read parent',
 
             'read academic year',
+            'read school calendar',
             'read semester',
             'read class group',
             'read class',
@@ -219,6 +222,7 @@ class PermissionMatrix
             'take cbt exam',
             'view cbt result',
             'view assignment',
+            'read school calendar',
             'submit assignment',
             'view own broadcasts',
         ];
@@ -232,6 +236,7 @@ class PermissionMatrix
             'view cbt result',
             'view assignment',
             'view child assignment',
+            'read school calendar',
             'read own child attendance',
             'read own child discipline',
             'view own broadcasts',
@@ -319,6 +324,8 @@ class PermissionMatrix
             'delete parent',
 
             'read academic year',
+            'read school calendar',
+            'manage school calendar',
             'create academic year',
             'update academic year',
             'delete academic year',
