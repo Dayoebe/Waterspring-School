@@ -118,6 +118,15 @@ class ManageStaffDirectory extends Component
             ->orderBy('display_order')->paginate(15);
         $departments = StaffDepartment::where('school_id', auth()->user()->school_id)->orderBy('display_order')->get();
 
-        return view('livewire.staff.manage-staff-directory', compact('profiles', 'departments'));
+        return view('livewire.staff.manage-staff-directory', compact('profiles', 'departments'))
+            ->layout('layouts.dashboard', [
+                'description' => 'Manage staff accounts, departments, biographies, and public team profiles.',
+                'icon' => 'fas fa-users-gear',
+                'breadcrumbs' => [
+                    ['href' => route('dashboard'), 'text' => 'Dashboard'],
+                    ['href' => route('staff.index'), 'text' => 'Staff', 'active' => true],
+                ],
+            ])
+            ->title('Staff');
     }
 }
