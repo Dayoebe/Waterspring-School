@@ -28,10 +28,10 @@
         $isStaff = $user->hasAnyRole(['super-admin', 'super_admin', 'principal', 'admin', 'teacher']);
     @endphp
 
-    @if ($isSuperAdmin)
+    {{-- @if ($isSuperAdmin)
         <div class="mb-6">
             @livewire('dashboard.result-publication-manager')
         </div>
-    @endif
+    @endif --}}
 
 @endsection
