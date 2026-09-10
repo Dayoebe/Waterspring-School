@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssignmentSubmission extends Model
 {
@@ -35,5 +36,10 @@ class AssignmentSubmission extends Model
     public function grader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'graded_by');
+    }
+
+    public function answers(): HasMany
+    {
+        return $this->hasMany(AssignmentAnswer::class);
     }
 }
