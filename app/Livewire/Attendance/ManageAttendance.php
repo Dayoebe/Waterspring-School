@@ -6,6 +6,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\MyClass;
 use App\Models\Section;
+use App\Services\AttendanceNotificationService;
 use App\Traits\ResolvesRestrictedTeacherAssignments;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -21,6 +22,8 @@ class ManageAttendance extends Component
     public string $selectedSectionId = '';
 
     public string $sessionNotes = '';
+
+    public bool $notifyParents = true;
 
     /** @var array<int, string> */
     public array $statuses = [];
@@ -108,7 +111,11 @@ class ManageAttendance extends Component
             abort(403);
         }
 
-        DB::transaction(function () use ($existingSession, $academicYearId, $classId, $sectionId): void {
+        $previousStatuses = $existingSession?->records
+            ->pluck('status', 'student_record_id')
+            ->all() ?? [];
+
+        $session = DB::transaction(function () use ($existingSession, $academicYearId, $classId, $sectionId): AttendanceSession {
             $session = $existingSession ?: new AttendanceSession();
 
             $session->fill([
@@ -142,11 +149,34 @@ class ManageAttendance extends Component
                     ]
                 );
             }
+
+            return $session;
         });
+
+        $notificationResults = ['sent' => 0, 'failed' => 0];
+        if ($this->notifyParents) {
+            $recordsToNotify = $session->records()
+                ->whereIn('status', ['absent', 'late', 'excused'])
+                ->get()
+                ->filter(fn (AttendanceRecord $record): bool => ($previousStatuses[$record->student_record_id] ?? null) !== $record->status);
+
+            foreach ($recordsToNotify as $record) {
+                $result = app(AttendanceNotificationService::class)->notifyParents($record);
+                $notificationResults['sent'] += $result['sent'];
+                $notificationResults['failed'] += $result['failed'];
+            }
+        }
 
         $this->loadAttendanceSheet();
 
-        session()->flash('success', 'Attendance saved successfully.');
+        $message = 'Attendance saved successfully.';
+        if ($this->notifyParents && $notificationResults['sent'] > 0) {
+            $message .= " {$notificationResults['sent']} parent alert(s) sent.";
+        }
+        if ($notificationResults['failed'] > 0) {
+            $message .= " {$notificationResults['failed']} alert(s) could not be sent.";
+        }
+        session()->flash('success', $message);
         $this->dispatch('attendance-saved');
     }
 

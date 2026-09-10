@@ -45,6 +45,7 @@
                 </button>
             </div>
         </div>
+
     </div>
 
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -100,6 +101,14 @@
                 @error('sessionNotes') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
         </div>
+
+        <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4">
+            <input type="checkbox" wire:model="notifyParents" class="mt-1 rounded border-sky-300 text-sky-700 focus:ring-sky-600">
+            <span>
+                <span class="block text-sm font-bold text-sky-950">Email parents about attendance concerns</span>
+                <span class="mt-1 block text-xs leading-5 text-sky-800">Enabled by default. Parents are alerted when their child is newly marked absent, late, or excused. Saving an unchanged sheet does not send another email.</span>
+            </span>
+        </label>
     </div>
 
     <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
