@@ -417,6 +417,9 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
     Route::get('/students/create', ManageStudents::class)
         ->middleware('permission:create student')
         ->name('students.create');
+    Route::get('/students/login-readiness', \App\Livewire\Students\StudentCredentialReadiness::class)
+        ->middleware('permission:update student')
+        ->name('students.credentials');
     Route::get('/students/{studentId}/edit', ManageStudents::class)
         ->middleware('permission:update student')
         ->name('students.edit');

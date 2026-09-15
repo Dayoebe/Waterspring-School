@@ -20,7 +20,7 @@ class EnsureDefaultPasswordIsChanged
         if (app()->isLocal() && app()->hasDebugModeEnabled()) {
             return $next($request);
         }
-        if (Hash::check('password', auth()->user()->password)) {
+        if (auth()->user()->requires_password_change || Hash::check('password', auth()->user()->password)) {
             session()->flash('danger', 'Please change your password to proceed.');
 
             return redirect()->to(route('profile.edit') . '#password');

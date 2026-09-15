@@ -104,6 +104,13 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'text' => 'Student Login Readiness',
+                        'route' => 'students.credentials',
+                        'permissions' => ['update student'],
+                        'section' => 'Students & Admissions',
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'text' => 'Promote Students',
                         'route' => 'students.promote',
                         'permissions' => ['promote student', 'read promotion'],

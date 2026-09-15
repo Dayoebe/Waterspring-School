@@ -10,15 +10,23 @@ We are pleased to confirm that **{{ $admission->student_name }}** has been offer
 **Application reference:** {{ $admission->reference_no }}  
 **Admission number:** {{ $admission->enrolledStudentRecord?->admission_number }}  
 **Class:** {{ $admission->myClass?->name }}{{ $admission->section?->name ? ' - '.$admission->section->name : '' }}  
+@if(!$admission->enrolledUser?->email_is_placeholder)
 **Portal email:** {{ $admission->enrolledUser?->email }}  
 **Temporary password:** {{ $temporaryPassword }}
+@else
+**Portal access:** The school will confirm the student’s login email and secure password separately.
+@endif
 </x-mail::panel>
 
+@if(!$admission->enrolledUser?->email_is_placeholder)
 Please sign in to the school portal with these details and change the password after the first login. Keep the login details private.
 
 <x-mail::button :url="route('login')">
 Sign in to the Student Portal
 </x-mail::button>
+@else
+The application did not include a student email address, so temporary internal credentials have not been shown. Please contact the school if you need an update about portal access.
+@endif
 @elseif($notificationType === 'rejected')
 Thank you for applying to **{{ $admission->school?->name }}** on behalf of **{{ $admission->student_name }}**.
 

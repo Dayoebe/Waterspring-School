@@ -199,7 +199,9 @@ class ManageAdmissionRegistrations extends Component
                     $user = User::create([
                         'name' => $lockedAdmission->student_name,
                         'email' => $email,
+                        'email_is_placeholder' => str_ends_with($email, '.admission.local'),
                         'password' => Hash::make($defaultPassword),
+                        'requires_password_change' => true,
                         'gender' => $lockedAdmission->gender,
                         'birthday' => $lockedAdmission->birthday,
                         'phone' => $lockedAdmission->guardian_phone,
@@ -257,7 +259,11 @@ class ManageAdmissionRegistrations extends Component
         $this->refreshSelectedAdmission($admission->id);
         $approvedAdmission = $admission->fresh(['school', 'myClass', 'section', 'enrolledUser', 'enrolledStudentRecord']);
         $this->sendAdmissionNotification($approvedAdmission, 'approved', $this->studentLastName($approvedAdmission->student_name));
-        session()->flash('success', 'Admission approved and student record created. The default password is the student\'s last name.');
+        $message = 'Admission approved and student record created. The default password is the student\'s last name.';
+        if ($approvedAdmission->enrolledUser?->email_is_placeholder) {
+            $message .= ' Add a real email and secure password in Student Login Readiness before issuing portal access.';
+        }
+        session()->flash('success', $message);
     }
 
     protected function studentLastName(string $studentName): string

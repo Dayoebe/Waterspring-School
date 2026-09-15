@@ -42,6 +42,7 @@ class ProfileController extends Controller
         }
 
         $user->password = Hash::make($request->password);
+        $user->requires_password_change = false;
         $user->save();
 
         return redirect()->route('profile.edit')
@@ -91,6 +92,7 @@ class ProfileController extends Controller
         $payload = [
             'name' => $request->name,
             'email' => $request->email,
+            'email_is_placeholder' => false,
             'phone' => $request->phone,
             'gender' => $request->gender,
             'birthday' => $request->birthday ?: null,

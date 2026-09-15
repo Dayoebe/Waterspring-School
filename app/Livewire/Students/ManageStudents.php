@@ -354,6 +354,7 @@ class ManageStudents extends Component
             $studentData = [
                 'name' => $this->name,
                 'email' => $this->email,
+                'email_is_placeholder' => str_ends_with(strtolower(trim($this->email)), '.admission.local'),
                 'gender' => $this->gender,
                 'birthday' => $this->birthday ?: null,
                 'phone' => $this->phone,
@@ -367,6 +368,7 @@ class ManageStudents extends Component
 
             if (filled($this->password)) {
                 $studentData['password'] = trim($this->password);
+                $studentData['requires_password_change'] = false;
             }
 
             $student->update($studentData);
