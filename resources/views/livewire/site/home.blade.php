@@ -17,6 +17,7 @@
             <img src="{{ asset('images/watersprings/learn.jpg') }}" alt="Learning at Watersprings International School Akure" fetchpriority="high" class="w-full rounded-3xl object-cover shadow-xl" width="960" height="450">
         </div>
     </section>
+    @include('partials.current-term-theme')
     <section class="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 md:grid-cols-3 lg:px-8">
         <div class="rounded-2xl bg-sky-100 p-6 text-center">
             <img src="{{ asset('images/watersprings/head-of-school.jpg') }}" alt="Adedamola Ogidan, Head of School" class="mx-auto h-48 w-40 rounded-xl object-cover" loading="lazy" width="160" height="192">

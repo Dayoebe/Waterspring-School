@@ -13,12 +13,26 @@ class ManageSemesters extends Component
     public $semesters;
     public $selectedSemesterId;
     public $termName = '';
+    public $themeTitle = '';
+    public $themeDescription = '';
+    public $themeScripture = '';
+    public $themeFocus = '';
+    public $themeColor = '#0875a5';
+    public $startsOn = '';
+    public $endsOn = '';
     public $editMode = false;
     public $editingId = null;
     public $showForm = false;
 
     protected $rules = [
         'termName' => 'required|string|max:255',
+        'themeTitle' => 'required|string|max:255',
+        'themeDescription' => 'nullable|string|max:3000',
+        'themeScripture' => 'nullable|string|max:255',
+        'themeFocus' => 'nullable|string|max:3000',
+        'themeColor' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+        'startsOn' => 'nullable|required_with:endsOn|date',
+        'endsOn' => 'nullable|required_with:startsOn|date|after_or_equal:startsOn',
     ];
 
     public function mount()
@@ -60,6 +74,7 @@ class ManageSemesters extends Component
             'name' => $this->termName,
             'school_id' => auth()->user()->school_id,
             'academic_year_id' => auth()->user()->school->academic_year_id,
+            ...$this->themeData(),
         ]);
 
         $this->loadSemesters();
@@ -74,6 +89,13 @@ class ManageSemesters extends Component
 
         $this->editingId = $id;
         $this->termName = $semester->name;
+        $this->themeTitle = (string) $semester->theme_title;
+        $this->themeDescription = (string) $semester->theme_description;
+        $this->themeScripture = (string) $semester->theme_scripture;
+        $this->themeFocus = (string) $semester->theme_focus;
+        $this->themeColor = $semester->theme_color ?: '#0875a5';
+        $this->startsOn = $semester->starts_on?->format('Y-m-d') ?? '';
+        $this->endsOn = $semester->ends_on?->format('Y-m-d') ?? '';
         $this->editMode = true;
         $this->showForm = true;
     }
@@ -87,6 +109,7 @@ class ManageSemesters extends Component
 
         $semester->update([
             'name' => $this->termName,
+            ...$this->themeData(),
         ]);
 
         $this->loadSemesters();
@@ -154,11 +177,25 @@ class ManageSemesters extends Component
 
     public function resetForm()
     {
-        $this->termName = '';
+        $this->reset(['termName', 'themeTitle', 'themeDescription', 'themeScripture', 'themeFocus', 'startsOn', 'endsOn']);
+        $this->themeColor = '#0875a5';
         $this->editMode = false;
         $this->editingId = null;
         $this->showForm = false;
         $this->resetValidation();
+    }
+
+    protected function themeData(): array
+    {
+        return [
+            'theme_title' => trim($this->themeTitle),
+            'theme_description' => trim($this->themeDescription) ?: null,
+            'theme_scripture' => trim($this->themeScripture) ?: null,
+            'theme_focus' => trim($this->themeFocus) ?: null,
+            'theme_color' => $this->themeColor,
+            'starts_on' => $this->startsOn ?: null,
+            'ends_on' => $this->endsOn ?: null,
+        ];
     }
 
     public function render()

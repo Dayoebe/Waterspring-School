@@ -14,7 +14,16 @@ class Semester extends Model
 
     protected $table = 'semesters';
 
-    protected $fillable = ['name', 'school_id', 'academic_year_id'];
+    protected $fillable = [
+        'name', 'school_id', 'academic_year_id', 'theme_title',
+        'theme_description', 'theme_scripture', 'theme_focus', 'theme_color',
+        'starts_on', 'ends_on',
+    ];
+
+    protected $casts = [
+        'starts_on' => 'date',
+        'ends_on' => 'date',
+    ];
 
     public function academicYear()
     {

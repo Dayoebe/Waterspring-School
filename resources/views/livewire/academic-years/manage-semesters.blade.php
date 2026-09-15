@@ -119,6 +119,44 @@
                                 @enderror
                             </div>
 
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="md:col-span-2">
+                                    <label for="themeTitle" class="mb-2 block text-sm font-medium">Term Theme <span class="text-red-500">*</span></label>
+                                    <input type="text" wire:model="themeTitle" id="themeTitle" placeholder="e.g., Growing in wisdom and purpose" class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:border-sky-500 focus:ring-sky-500" required>
+                                    @error('themeTitle')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label for="themeDescription" class="mb-2 block text-sm font-medium">Theme Message</label>
+                                    <textarea wire:model="themeDescription" id="themeDescription" rows="3" placeholder="Explain what the theme means for this term." class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:border-sky-500 focus:ring-sky-500"></textarea>
+                                    @error('themeDescription')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="themeScripture" class="mb-2 block text-sm font-medium">Scripture, Quote or Motto</label>
+                                    <input type="text" wire:model="themeScripture" id="themeScripture" placeholder="e.g., Proverbs 4:7" class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:border-sky-500 focus:ring-sky-500">
+                                    @error('themeScripture')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="themeColor" class="mb-2 block text-sm font-medium">Theme Colour</label>
+                                    <div class="flex gap-2"><input type="color" wire:model="themeColor" id="themeColor" class="h-11 w-16 rounded-lg border border-gray-300 p-1"><input type="text" wire:model="themeColor" class="min-w-0 flex-1 rounded-xl border border-gray-300 px-3 py-2" maxlength="7"></div>
+                                    @error('themeColor')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label for="themeFocus" class="mb-2 block text-sm font-medium">Key Focus</label>
+                                    <textarea wire:model="themeFocus" id="themeFocus" rows="2" placeholder="The main character, academic or community focus for the term." class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:border-sky-500 focus:ring-sky-500"></textarea>
+                                    @error('themeFocus')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="startsOn" class="mb-2 block text-sm font-medium">Term Starts</label>
+                                    <input type="date" wire:model="startsOn" id="startsOn" class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:border-sky-500 focus:ring-sky-500">
+                                    @error('startsOn')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="endsOn" class="mb-2 block text-sm font-medium">Term Ends</label>
+                                    <input type="date" wire:model="endsOn" id="endsOn" class="w-full rounded-xl border border-gray-300 px-3 py-2 focus:border-sky-500 focus:ring-sky-500">
+                                    @error('endsOn')<span class="mt-1 block text-sm text-red-500">{{ $message }}</span>@enderror
+                                </div>
+                            </div>
+
                             <div class="mt-4 flex gap-2">
                                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center">
                                     <i class="fas fa-save mr-2"></i>
@@ -138,6 +176,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Theme</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -147,6 +186,13 @@
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <strong>{{ $semester->name }}</strong>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        @if($semester->theme_title)
+                                            <div class="flex items-start gap-2"><span class="mt-1 h-3 w-3 shrink-0 rounded-full" style="background: {{ $semester->theme_color ?: '#0875a5' }}"></span><div><strong class="text-sm text-slate-800">{{ $semester->theme_title }}</strong>@if($semester->theme_scripture)<p class="mt-1 text-xs text-slate-500">{{ $semester->theme_scripture }}</p>@endif</div></div>
+                                        @else
+                                            <span class="text-sm text-amber-700">Theme not added</span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if ($semester->id == auth()->user()->school->semester_id)
@@ -183,7 +229,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="px-6 py-4 text-center text-gray-500">
+                                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">
                                         No terms found.
                                     </td>
                                 </tr>
