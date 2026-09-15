@@ -92,9 +92,9 @@ class AssignStudentsToParent extends Component
             return;
         }
         
-        // Check if already assigned
-        if ($this->parent->children()->where('student_id', $studentId)->exists()) {
-            session()->flash('error', 'Student is already assigned to this parent');
+        $existingParentId = DB::table('parent_records')->where('student_id', $studentId)->value('user_id');
+        if ($existingParentId) {
+            session()->flash('error', 'This student is already linked to a parent and cannot be reassigned.');
             return;
         }
         
@@ -112,13 +112,7 @@ class AssignStudentsToParent extends Component
 
     public function removeStudent($studentId)
     {
-        DB::table('parent_records')
-            ->where('user_id', $this->parent->id)
-            ->where('student_id', $studentId)
-            ->delete();
-        
-        session()->flash('success', 'Student removed successfully');
-        $this->dispatch('student-removed');
+        session()->flash('error', 'Parent relationships are permanent and cannot be removed or reassigned.');
     }
 
     public function render()
@@ -135,7 +129,7 @@ class AssignStudentsToParent extends Component
         $availableStudentsQuery = User::role('student')
             ->where('school_id', auth()->user()->school_id)
             ->whereHas('studentRecord') // Only get students with student records
-            ->whereNotIn('id', $assignedStudents->pluck('id'))
+            ->whereNotIn('id', DB::table('parent_records')->select('student_id'))
             ->when($this->search, function($q) {
                 $q->where(function($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')

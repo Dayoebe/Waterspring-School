@@ -96,6 +96,10 @@ class ManageStudents extends Component
 
     public $profile_photo = null;
 
+    public $parent_id = '';
+
+    public $assignedParent = null;
+
     protected $queryString = [
         'mode' => ['except' => 'list'],
         'search' => ['except' => ''],
@@ -183,13 +187,15 @@ class ManageStudents extends Component
 
     public function loadStudentForEdit()
     {
-        $student = User::with('studentRecord')
+        $student = User::with(['studentRecord', 'parents'])
             ->role('student')
             ->where('school_id', auth()->user()->school_id)
             ->findOrFail($this->studentId);
 
         $this->authorize('update', [$student, 'student']);
         $this->password = '';
+        $this->assignedParent = $student->parents->first();
+        $this->parent_id = $this->assignedParent?->id ?? '';
 
         $this->fill([
             'name' => $student->name,
@@ -321,7 +327,29 @@ class ManageStudents extends Component
             'gender' => 'required|in:male,female',
             'birthday' => 'nullable|date|before:today',
             'phone' => 'nullable|string|max:20',
+            'parent_id' => 'nullable|integer',
         ]);
+
+        $existingParent = $student->parents()->first();
+
+        if ($existingParent && (int) $this->parent_id !== $existingParent->id) {
+            $this->addError('parent_id', 'This student is already linked to '.$existingParent->name.'. The parent relationship cannot be reassigned.');
+
+            return;
+        }
+
+        if (! $existingParent && $this->parent_id) {
+            $parentExists = User::role('parent')
+                ->where('school_id', auth()->user()->school_id)
+                ->whereKey($this->parent_id)
+                ->exists();
+
+            if (! $parentExists) {
+                $this->addError('parent_id', 'Select a valid parent from this school.');
+
+                return;
+            }
+        }
 
         $classExistsForSchool = MyClass::where('id', $this->my_class_id)
             ->whereHas('classGroup', function ($query) {
@@ -372,6 +400,15 @@ class ManageStudents extends Component
             }
 
             $student->update($studentData);
+
+            if (! $student->parents()->exists() && $this->parent_id) {
+                DB::table('parent_records')->insert([
+                    'user_id' => (int) $this->parent_id,
+                    'student_id' => $student->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             if ($student->studentRecord) {
                 $oldClassId = $student->studentRecord->my_class_id;
@@ -625,6 +662,7 @@ class ManageStudents extends Component
             'studentId', 'name', 'email', 'password', 'gender', 'birthday',
             'phone', 'address', 'blood_group', 'religion', 'nationality',
             'state', 'city', 'my_class_id', 'section_id', 'admission_number', 'admission_date',
+            'parent_id', 'assignedParent',
         ]);
     }
 
@@ -775,7 +813,14 @@ class ManageStudents extends Component
             }
         }
 
-        return view('livewire.students.manage-students', compact('students'))
+        $availableParents = $this->mode === 'edit'
+            ? User::role('parent')
+                ->where('school_id', auth()->user()->school_id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email', 'phone'])
+            : collect();
+
+        return view('livewire.students.manage-students', compact('students', 'availableParents'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],

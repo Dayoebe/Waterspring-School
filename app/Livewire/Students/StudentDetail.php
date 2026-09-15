@@ -28,6 +28,7 @@ class StudentDetail extends Component
         $this->student = User::with([
             'studentRecord.myClass',
             'studentRecord.section',
+            'parents',
             'feeInvoices'
         ])
             ->role('student')

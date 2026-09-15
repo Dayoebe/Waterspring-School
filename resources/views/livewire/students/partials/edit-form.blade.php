@@ -86,6 +86,44 @@
             </div>
         </div>
 
+        <div class="rounded-2xl border border-sky-200 bg-sky-50 p-6">
+            <div class="mb-4 flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white">
+                    <i class="fas fa-people-roof"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Parent or Guardian</h3>
+                    <p class="mt-1 text-sm text-gray-600">A parent may have several children. Once this student is linked, the parent cannot be replaced.</p>
+                </div>
+            </div>
+
+            @if($assignedParent)
+                <div class="rounded-xl border border-emerald-200 bg-white p-4">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p class="font-bold text-gray-900">{{ $assignedParent->name }}</p>
+                            <p class="text-sm text-gray-600">{{ $assignedParent->email }}@if($assignedParent->phone) · {{ $assignedParent->phone }}@endif</p>
+                        </div>
+                        <span class="mt-2 inline-flex w-fit items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 sm:mt-0">
+                            <i class="fas fa-lock mr-1.5"></i>Relationship locked
+                        </span>
+                    </div>
+                    <input type="hidden" wire:model="parent_id">
+                </div>
+            @else
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-gray-700">Select parent</span>
+                    <select wire:model="parent_id" class="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-sky-500 focus:ring-sky-500">
+                        <option value="">No parent assigned yet</option>
+                        @foreach($availableParents as $parent)
+                            <option value="{{ $parent->id }}">{{ $parent->name }} · {{ $parent->email }}</option>
+                        @endforeach
+                    </select>
+                    @error('parent_id') <span class="mt-1 block text-sm text-red-600">{{ $message }}</span> @enderror
+                </label>
+            @endif
+        </div>
+
         <!-- Academic Information -->
         <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Academic Information</h3>

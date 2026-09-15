@@ -50,11 +50,9 @@
                                     </p>
                                 </div>
                             </div>
-                            <button wire:click="removeStudent({{ $student->id }})" 
-                                    wire:confirm="Are you sure you want to remove this student from {{ $parent->name }}?"
-                                    class="mt-3 w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-semibold">
-                                <i class="fas fa-times mr-2"></i>Remove
-                            </button>
+                            <div class="mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-center text-sm font-semibold text-emerald-800">
+                                <i class="fas fa-lock mr-2"></i>Relationship locked
+                            </div>
                         </div>
                     @endforeach
                 </div>

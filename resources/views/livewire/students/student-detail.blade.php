@@ -54,6 +54,11 @@
                     class="px-6 py-4 font-semibold transition whitespace-nowrap">
                 <i class="fas fa-graduation-cap mr-2"></i>Academic Info
             </button>
+            <button @click="activeTab = 'parent'"
+                    :class="activeTab === 'parent' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-indigo-600'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i class="fas fa-people-roof mr-2"></i>Parent
+            </button>
             <button @click="activeTab = 'fees'" 
                     :class="activeTab === 'fees' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-indigo-600'"
                     class="px-6 py-4 font-semibold transition whitespace-nowrap">
@@ -130,6 +135,27 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div x-show="activeTab === 'parent'" x-transition>
+                @if($student->parents->isNotEmpty())
+                    @foreach($student->parents as $parent)
+                        <a href="{{ route('parents.show', $parent->id) }}" class="flex max-w-2xl flex-col gap-4 rounded-2xl border border-sky-200 bg-sky-50 p-5 transition hover:border-sky-400 hover:shadow-md sm:flex-row sm:items-center">
+                            <img src="{{ $parent->profile_photo_url }}" alt="{{ $parent->name }}" class="h-16 w-16 rounded-full border-2 border-white object-cover shadow">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">Linked parent or guardian</p>
+                                <h3 class="mt-1 text-xl font-bold text-gray-900">{{ $parent->name }}</h3>
+                                <p class="mt-1 text-sm text-gray-600">{{ $parent->email }}@if($parent->phone) · {{ $parent->phone }}@endif</p>
+                            </div>
+                            <span class="font-semibold text-sky-700">View profile <i class="fas fa-arrow-right ml-1"></i></span>
+                        </a>
+                    @endforeach
+                @else
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center">
+                        <i class="fas fa-people-roof text-4xl text-gray-300"></i>
+                        <p class="mt-3 font-semibold text-gray-700">No parent has been linked to this student.</p>
+                    </div>
+                @endif
             </div>
 
             <!-- Academic Tab -->
