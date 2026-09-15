@@ -279,9 +279,10 @@ class SeoController extends Controller
     protected function mainTopics(): array
     {
         return [
-            'Early years and primary education in Akure',
+            'Early years, primary and junior secondary education in Akure',
             'Early Years and Foundation Stage',
             'Key Stage 1 and Key Stage 2',
+            'Watersprings International College Years 7, 8 and 9',
             'Admissions and student registration',
             'Academic pathways and exam preparation',
             'Practical learning, ICT and creative activities',

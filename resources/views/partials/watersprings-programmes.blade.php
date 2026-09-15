@@ -1,4 +1,4 @@
-<div class="grid gap-6 md:grid-cols-3">
+<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
     @foreach ($publicSiteSettings['programmes'] as $programme)
         <article id="{{ $programme['id'] }}" class="scroll-mt-32 rounded-2xl border border-sky-100 bg-white p-6 shadow-sm">
             <p class="text-sm font-semibold text-sky-700">{{ $programme['subtitle'] }}</p>

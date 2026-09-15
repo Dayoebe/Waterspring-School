@@ -2,9 +2,9 @@
 @section('title', 'Learning at Watersprings')
 @section('content')
 <div class="bg-slate-50 text-slate-900">
-    @include('partials.watersprings-hero', ['eyebrow' => 'Our classes and curriculum', 'title' => 'Learning for every stage of childhood', 'description' => 'Our curriculum draws on the National Curriculum of England, adapted for children learning in Nigeria. Practical experiences, creativity and individual care support academic growth.'])
+    @include('partials.watersprings-hero', ['eyebrow' => 'Our classes and curriculum', 'title' => 'Learning from the early years through Year 9', 'description' => 'Watersprings provides a connected learning journey through early years, primary school and college Years 7–9. Our curriculum draws on the National Curriculum of England and is adapted for learners in Nigeria.'])
     <section class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
-        <h2 class="mb-7 text-3xl font-black">From early years to primary school</h2>
+        <h2 class="mb-7 text-3xl font-black">Early years, primary and college</h2>
         @include('partials.watersprings-programmes')
     </section>
     <section id="clubs" class="bg-sky-50 py-12">
@@ -18,13 +18,13 @@
     </section>
     <section id="college" class="mx-auto grid max-w-6xl items-start gap-8 px-4 py-14 sm:px-6 md:grid-cols-2 lg:px-8">
         <div>
-            <p class="text-sm font-bold uppercase tracking-widest text-sky-700">College announcement • July 2025</p>
+            <p class="text-sm font-bold uppercase tracking-widest text-sky-700">Years 7, 8 and 9</p>
             <h2 class="mt-3 text-3xl font-black">Watersprings International College</h2>
-            <p class="mt-5 leading-relaxed text-slate-600">The school’s announcement introduced admission into Years 7 and 8 for the 2025/2026 academic session. The notice shown here is an archive of that announcement.</p>
-            <p class="mt-4 leading-relaxed text-slate-600">For current entry classes, places, fees and entrance arrangements, please speak with the school office.</p>
+            <p class="mt-5 leading-relaxed text-slate-600">The college is an active part of Watersprings and currently runs Year 7, Year 8 and Year 9. It gives students a familiar, caring environment in which to deepen subject knowledge, strengthen independent study habits and grow in character and leadership.</p>
+            <p class="mt-4 leading-relaxed text-slate-600">Families can contact the school office for current places, fees, curriculum details and admission arrangements for each college year.</p>
             <a href="{{ route('contact') }}" class="site-primary-bg mt-6 inline-block rounded-xl px-6 py-3 font-bold text-white">Ask about college admission</a>
         </div>
-        <figure><a href="{{ asset('images/watersprings/college.jpg') }}"><img src="{{ asset('images/watersprings/college.jpg') }}" alt="Archived Watersprings International College admission notice for 2025/2026, Years 7 and 8" class="w-full rounded-2xl" loading="lazy" width="1080" height="1080"></a><figcaption class="mt-3 text-sm text-slate-500">2025/2026 announcement. The examination dates on this notice have passed.</figcaption></figure>
+        <figure><img src="{{ asset('images/watersprings/college.jpg') }}" alt="Watersprings International College serving Years 7, 8 and 9" class="w-full rounded-2xl" loading="lazy" width="1080" height="1080"><figcaption class="mt-3 text-sm text-slate-500">Watersprings International College continues the learning journey through Years 7–9.</figcaption></figure>
     </section>
 </div>
 @endsection

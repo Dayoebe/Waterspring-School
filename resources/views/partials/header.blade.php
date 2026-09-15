@@ -2,13 +2,13 @@
     $navGroups = [
         'school' => ['label' => 'Our School', 'items' => [
             ['label' => 'About Watersprings', 'route' => 'about', 'description' => 'Our story, values and leadership'],
-            ['label' => 'Academics', 'route' => 'academics', 'description' => 'Classes and learning stages'],
+            ['label' => 'Academics', 'route' => 'academics', 'description' => 'Early years, primary and college Years 7–9'],
             ['label' => 'Why Watersprings', 'route' => 'why-watersprings', 'description' => 'What makes our school special'],
             ['label' => 'Our Team', 'route' => 'team', 'description' => 'Meet our leadership, teachers and staff'],
             ['label' => 'Gallery', 'route' => 'gallery', 'description' => 'A look at life in our school'],
         ]],
         'admissions' => ['label' => 'Admissions', 'items' => [
-            ['label' => 'Admission Guide', 'route' => 'admission', 'description' => 'How to apply, fees and requirements'],
+            ['label' => 'Admission Guide', 'route' => 'admission', 'description' => 'Apply for early years, primary or Years 7–9'],
             ['label' => 'School Prospectus', 'route' => 'prospectus', 'description' => 'Your guide to learning and school life'],
         ]],
     ];

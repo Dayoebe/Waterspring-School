@@ -47,7 +47,7 @@
             <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <h2 class="text-3xl font-black text-slate-900">Joining Watersprings</h2>
                 <div class="mt-6 grid gap-5 md:grid-cols-3">
-                    <article class="rounded-2xl border border-sky-100 bg-white p-6"><h3 class="text-xl font-bold text-sky-900">Explore our school</h3><p class="mt-3 text-slate-600">Read about our classes and arrange a visit with your child to meet the team and see the learning environment.</p></article>
+                    <article class="rounded-2xl border border-sky-100 bg-white p-6"><h3 class="text-xl font-bold text-sky-900">Choose the right stage</h3><p class="mt-3 text-slate-600">Explore early years, primary classes and college admission for Years 7, 8 and 9, then arrange a visit to see the learning environment.</p></article>
                     <article class="rounded-2xl border border-sky-100 bg-white p-6"><h3 class="text-xl font-bold text-sky-900">Apply</h3><p class="mt-3 text-slate-600">The school accepts online applications. Contact the office if you need help or a copy of the admission form.</p></article>
                     <article class="rounded-2xl border border-sky-100 bg-white p-6"><h3 class="text-xl font-bold text-sky-900">Speak with admissions</h3><p class="mt-3 text-slate-600">Confirm available places, current fees and the next steps for your child’s entry class with the school.</p></article>
                 </div>
@@ -67,7 +67,7 @@
                 <div class="mb-6">
                     <p class="text-xs font-bold uppercase tracking-wider text-sky-700">Admission Form</p>
                     <h2 class="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">Apply for a place</h2>
-                    <p class="mt-2 text-sm text-slate-600">Have your child’s details and parent or guardian contact information ready.</p>
+                    <p class="mt-2 text-sm text-slate-600">Applications are welcome for available early years, primary and college places, including Years 7, 8 and 9.</p>
                 </div>
 
                 @if (\App\Models\School::query()->exists())

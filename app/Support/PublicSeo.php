@@ -43,14 +43,14 @@ class PublicSeo
             'team' => [
                 'label' => 'Our Team', 'title' => 'Our Team | '.$siteName,
                 'description' => 'Meet the leadership, teachers and support staff of '.$siteName.'.',
-                'summary' => 'Professional profiles for the staff who lead, teach and support pupils at '.$siteName.'.',
+                'summary' => 'Professional profiles for the staff who lead, teach and support learners across the school and college at '.$siteName.'.',
                 'changefreq' => 'monthly', 'priority' => '0.8', 'schemaType' => 'CollectionPage',
             ],
             'academics' => [
                 'label' => 'Academics',
                 'title' => 'Classes and Curriculum in Akure | '.$siteName,
-                'description' => 'Explore early years, Key Stage 1, Key Stage 2 and extracurricular learning at '.$siteName.' in Akure.',
-                'summary' => 'Early years, primary classes, practical learning and clubs at Watersprings International School in Akure, Ondo State.',
+                'description' => 'Explore early years, primary education and Watersprings International College Years 7, 8 and 9 in Akure.',
+                'summary' => 'Early years, primary classes, college Years 7–9, practical learning and clubs at Watersprings in Akure, Ondo State.',
                 'changefreq' => 'monthly',
                 'priority' => '0.9',
                 'schemaType' => 'WebPage',
@@ -58,7 +58,7 @@ class PublicSeo
             'why-watersprings' => [
                 'label' => 'Why Watersprings',
                 'title' => 'Why Choose '.$siteName.' in Akure, Ondo State?',
-                'description' => 'See how '.$siteName.' combines structured academics, discipline, mentoring, technology, leadership, and parent communication for children.',
+                'description' => 'See how '.$siteName.' supports learners from the early years through college Year 9 with academics, character, technology and parent partnership.',
                 'summary' => 'A clear, evidence-minded guide for families choosing a school in Akure: teaching, student support, character, technology, activities, and parent partnership.',
                 'changefreq' => 'monthly',
                 'priority' => '0.9',
@@ -86,7 +86,7 @@ class PublicSeo
                 'label' => 'Prospectus',
                 'title' => 'School Prospectus | '.$siteName,
                 'description' => 'Read the Watersprings school prospectus: curriculum, classes, facilities, uniforms, attendance, school transport and clubs.',
-                'summary' => 'A guide to early years and primary school life, including the daily timetable, uniform guidance, bus service and contact details.',
+                'summary' => 'A guide to early years, primary and college Years 7–9, including curriculum, daily life, uniforms, transport and contact details.',
                 'changefreq' => 'monthly',
                 'priority' => '0.8',
                 'schemaType' => 'WebPage',
@@ -347,6 +347,7 @@ class PublicSeo
                     ['@type' => 'ListItem', 'position' => 1, 'name' => 'Early Years and Foundation Stage', 'url' => route('academics').'#early-years'],
                     ['@type' => 'ListItem', 'position' => 2, 'name' => 'Key Stage 1 (Years 1 and 2)', 'url' => route('academics').'#key-stage-1'],
                     ['@type' => 'ListItem', 'position' => 3, 'name' => 'Key Stage 2 (Years 3-6)', 'url' => route('academics').'#key-stage-2'],
+                    ['@type' => 'ListItem', 'position' => 4, 'name' => 'Watersprings International College (Years 7-9)', 'url' => route('academics').'#college'],
                 ],
             ];
         }

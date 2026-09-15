@@ -73,7 +73,7 @@
                 <div>
                     <section id="visit" class="mb-6 rounded-2xl border border-sky-100 bg-white p-6">
                         <h2 class="text-2xl font-black text-sky-900">Arrange a visit</h2>
-                        <p class="mt-4 leading-relaxed text-slate-600">Come with your child to meet our team and take a tour of the school. Call or email the office with your preferred date so we can arrange your visit.</p>
+                        <p class="mt-4 leading-relaxed text-slate-600">Come with your child to meet our team and tour the school or college. Families considering Years 7, 8 or 9 can also discuss college admission during the visit.</p>
                         <a href="mailto:{{ $contactEmail }}?subject=School%20visit%20enquiry" class="site-primary-bg mt-5 inline-block rounded-xl px-5 py-3 font-bold text-white">Email the school office</a>
                         <h3 class="mt-6 font-bold">Other enquiries</h3>
                         <p class="mt-3 break-words text-sm"><a class="text-sky-700 hover:underline" href="mailto:{{ $publicSiteSettings['contact']['admin_email'] }}">{{ $publicSiteSettings['contact']['admin_email'] }}</a></p>
