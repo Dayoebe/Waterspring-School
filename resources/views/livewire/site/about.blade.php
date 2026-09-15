@@ -26,18 +26,33 @@
             @endforeach
         </div>
     </section>
-    <section id="leadership" class="mx-auto grid max-w-6xl gap-6 px-4 pb-12 sm:px-6 md:grid-cols-2 lg:px-8">
-        <article class="rounded-2xl border border-slate-200 bg-white p-7">
-            <img src="{{ asset('images/watersprings/head-of-school.jpg') }}" alt="Adedamola Ogidan" loading="lazy" class="mb-5 h-40 w-32 rounded-xl object-cover" width="128" height="160">
-            <p class="text-sm font-bold text-sky-700">Head of School</p><h2 class="mt-2 text-2xl font-black">Adedamola Ogidan</h2>
-            <p class="mt-4 leading-relaxed text-slate-600">Our Head of School welcomes families to a community that combines academic learning with character development, extracurricular interests and a lifelong curiosity about the world.</p>
-        </article>
-        <article class="rounded-2xl border border-slate-200 bg-white p-7">
-            <p class="text-sm font-bold text-sky-700">CEO</p><h2 class="mt-2 text-2xl font-black">Dr. Olukayode Abimbola Babatunde</h2>
-            <p class="mt-4 leading-relaxed text-slate-600">The CEO’s welcome describes a purpose-built school in the Ijapo area of Akure, with small classes, ICT and music facilities, and a curriculum based on England’s National Curriculum, adapted to the Nigerian setting.</p>
-            <a href="{{ route('contact') }}#visit" class="mt-6 inline-block font-bold text-sky-700 hover:underline">Visit our school →</a>
-        </article>
-    </section>
+    @if($administrators->isNotEmpty())
+        <section id="leadership" class="bg-white py-14">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-sm font-bold uppercase tracking-widest text-sky-700">School leadership</p>
+                        <h2 class="mt-2 text-3xl font-black">Meet our administrators</h2>
+                        <p class="mt-3 max-w-2xl leading-relaxed text-slate-600">The leadership team responsible for the direction, standards and daily administration of Watersprings.</p>
+                    </div>
+                    <a href="{{ route('team') }}" class="font-bold text-sky-700 hover:underline">View the full staff directory →</a>
+                </div>
+                <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($administrators as $profile)
+                        <a href="{{ route('team.show', $profile) }}" class="group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                            <img src="{{ $profile->user->profile_photo_url }}" alt="{{ $profile->user->name }}" loading="lazy" class="aspect-[4/3] w-full object-cover object-top">
+                            <div class="p-6">
+                                <p class="text-xs font-bold uppercase tracking-widest text-sky-700">{{ $profile->department?->name }}</p>
+                                <h3 class="mt-2 text-xl font-black text-slate-900 group-hover:text-sky-700">{{ $profile->user->name }}</h3>
+                                <p class="mt-1 font-semibold text-slate-600">{{ $profile->job_title }}</p>
+                                @if($profile->bio)<p class="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">{{ $profile->bio }}</p>@endif
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
     @include('partials.watersprings-faq')
 </div>
 @endsection

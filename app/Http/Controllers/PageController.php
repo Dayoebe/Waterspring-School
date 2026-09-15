@@ -10,12 +10,16 @@ class PageController extends Controller
 {
     public function home()
     {
-        return view('livewire.site.home', ['featuredStaff' => $this->publicStaff()->limit(4)->get()]);
+        return view('livewire.site.home');
     }
 
     public function about()
     {
-        return view('livewire.site.about');
+        $administrators = $this->publicStaff()
+            ->whereHas('department', fn ($query) => $query->where('category', 'management'))
+            ->get();
+
+        return view('livewire.site.about', compact('administrators'));
     }
 
     public function academics()
