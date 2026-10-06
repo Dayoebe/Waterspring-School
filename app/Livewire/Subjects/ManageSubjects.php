@@ -17,7 +17,6 @@ class ManageSubjects extends Component
     public $canCreateSubject = false;
     public $canUpdateSubject = false;
     public $canDeleteSubject = false;
-    public $canManageIntegrityTools = false;
     
     // Filters
     public $search = '';
@@ -81,7 +80,6 @@ class ManageSubjects extends Component
         $this->canCreateSubject = $user->can('create subject');
         $this->canUpdateSubject = $user->can('update subject');
         $this->canDeleteSubject = $user->can('delete subject');
-        $this->canManageIntegrityTools = $this->canUpdateSubject && $this->canDeleteSubject;
     }
 
     protected function getClassesForCurrentSchool()

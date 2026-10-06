@@ -1,13 +1,18 @@
 <div>
-    <!-- Trigger Button -->
-    <button wire:click="openModal" 
-            class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition">
-        <i class="fas fa-wrench mr-2"></i>Data Integrity Check
-    </button>
+    <article class="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700"><i class="fas fa-book-medical" aria-hidden="true"></i></span>
+            <div><h3 class="font-black text-slate-900">Subject Data Integrity</h3><p class="mt-1 text-sm leading-6 text-slate-600">Find duplicate subjects, broken class or teacher links, orphaned student assignments, and unused legacy records.</p></div>
+        </div>
+        <button wire:click="openModal" type="button"
+                class="mt-5 inline-flex items-center justify-center rounded-xl bg-orange-600 px-4 py-2.5 font-bold text-white transition hover:bg-orange-700">
+            <i class="fas fa-stethoscope mr-2"></i>Open checker
+        </button>
+    </article>
 
     <!-- Modal -->
     @if($showModal)
-        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 p-4" wire:click.self="closeModal">
             <div class="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4 flex justify-between items-center">

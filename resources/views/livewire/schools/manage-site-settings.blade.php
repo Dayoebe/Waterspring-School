@@ -95,6 +95,31 @@
             </div>
         </div>
 
+        @if (auth()->user()->can('update subject') && auth()->user()->can('delete subject'))
+            <section id="data-integrity" class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+                <div class="border-b border-amber-100 bg-amber-50 px-6 py-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-start gap-4">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                                <i class="fas fa-shield-halved text-lg" aria-hidden="true"></i>
+                            </span>
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">System maintenance</p>
+                                <h2 class="mt-1 text-xl font-black text-slate-950">Data Integrity Centre</h2>
+                                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Run database diagnostics and carefully repair inconsistent school records from one controlled location. Tools operate on your current school of operation.</p>
+                            </div>
+                        </div>
+                        <span class="rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-800">Restricted administrator tools</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        @livewire('subjects.subject-integrity-checker', key('settings-subject-integrity-checker'))
+                    </div>
+                </div>
+            </section>
+        @endif
+
         <form wire:submit.prevent="saveDraft" class="space-y-6">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div class="rounded-lg bg-white p-6 shadow">

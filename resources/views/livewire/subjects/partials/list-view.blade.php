@@ -4,18 +4,12 @@
         <h2 class="text-2xl font-bold text-gray-800">
             <i class="fas fa-lightbulb text-green-600 mr-2"></i>Subjects
         </h2>
-        @if($canManageIntegrityTools || $canCreateSubject)
+        @if($canCreateSubject)
             <div class="flex gap-3">
-                @if($canManageIntegrityTools)
-                    @livewire('subjects.subject-integrity-checker')
-                @endif
-
-                @if($canCreateSubject)
-                    <button wire:click="switchMode('create')" 
-                            class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-teal-700 shadow-lg transition">
-                        <i class="fas fa-plus mr-2"></i>Add New Subject
-                    </button>
-                @endif
+                <button wire:click="switchMode('create')"
+                        class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-teal-700 shadow-lg transition">
+                    <i class="fas fa-plus mr-2"></i>Add New Subject
+                </button>
             </div>
         @endif
     </div>
