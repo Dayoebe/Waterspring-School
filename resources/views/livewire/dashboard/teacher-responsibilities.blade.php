@@ -85,7 +85,7 @@
                     </div>
                     <div class="rounded-2xl bg-slate-100 px-4 py-3 text-slate-900">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Today</p>
-                        <p class="mt-1 text-sm font-semibold">{{ $academicContext['today'] ?? now()->format('D, M j, Y') }}</p>
+                        <p class="mt-1 text-sm font-semibold">{{ $academicContext['today'] ?? now('Africa/Lagos')->format('D, M j, Y · g:i A') }}</p>
                     </div>
                 </div>
             </div>
