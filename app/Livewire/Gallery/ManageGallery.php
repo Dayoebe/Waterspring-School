@@ -108,11 +108,11 @@ class ManageGallery extends Component
         if ($this->categoryId) {
             $category = $this->categoriesQuery()->findOrFail($this->categoryId);
             $category->update($payload);
-            session()->flash('success', 'Gallery category updated.');
+            session()->flash('success', 'Gallery event updated.');
         } else {
             $payload['school_id'] = $schoolId;
             GalleryCategory::create($payload);
-            session()->flash('success', 'Gallery category created.');
+            session()->flash('success', 'Gallery event created.');
         }
 
         $this->resetCategoryForm();
@@ -144,7 +144,7 @@ class ManageGallery extends Component
             $this->categoryFilter = 'all';
         }
 
-        session()->flash('success', 'Gallery category deleted.');
+        session()->flash('success', 'Gallery event deleted.');
     }
 
     public function resetCategoryForm(): void

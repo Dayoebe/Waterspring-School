@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Club;
+use App\Models\GalleryCategory;
 use App\Models\School;
 use App\Models\StaffProfile;
 use App\Support\SiteSettings;
@@ -49,7 +50,23 @@ class PageController extends Controller
 
     public function gallery()
     {
-        return view('livewire.site.gallery');
+        $school = $this->publicSchool();
+        $eventAlbums = GalleryCategory::query()
+            ->withoutGlobalScope('school')
+            ->where('school_id', $school?->id ?? 0)
+            ->where('is_active', true)
+            ->whereHas('items', fn ($query) => $query->withoutGlobalScope('school')->where('is_active', true))
+            ->with(['items' => fn ($query) => $query
+                ->withoutGlobalScope('school')
+                ->where('is_active', true)
+                ->orderByDesc('is_featured')
+                ->orderBy('sort_order')
+                ->orderByDesc('taken_on')])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('livewire.site.gallery', compact('eventAlbums'));
     }
 
     public function prospectus()

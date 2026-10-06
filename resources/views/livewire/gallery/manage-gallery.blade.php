@@ -53,7 +53,7 @@
     @else
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div class="rounded-xl border border-red-200 bg-red-50 p-4">
-                <p class="text-xs font-semibold uppercase tracking-wider text-red-700">Categories</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-red-700">Event Albums</p>
                 <p class="mt-1 text-2xl font-black text-red-900">{{ $stats['categories'] }}</p>
             </div>
             <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
@@ -86,7 +86,7 @@
                     <button type="button" @click="tab = 'categories'"
                         class="rounded-lg px-4 py-2 text-sm font-bold transition"
                         :class="tab === 'categories' ? 'bg-red-600 text-white' : 'text-slate-700 hover:bg-slate-100'">
-                        Categories
+                        Event Albums
                     </button>
                 </div>
             </div>
@@ -145,10 +145,10 @@
                         </div>
 
                         <div>
-                            <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Category</label>
+                            <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Event Album</label>
                             <select wire:model="itemCategoryId"
                                 class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
-                                <option value="">Select Category</option>
+                                <option value="">Select Event Album</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
                                 @endforeach
@@ -212,10 +212,10 @@
                                 class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Filter Category</label>
+                            <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Filter Event</label>
                             <select wire:model="categoryFilter"
                                 class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
-                                <option value="all">All Categories</option>
+                                <option value="all">All Events</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
                                 @endforeach
@@ -267,7 +267,7 @@
         <div x-show="tab === 'categories'" x-transition class="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1">
                 <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-base font-black text-slate-900">{{ $categoryId ? 'Edit Category' : 'Create Category' }}</h3>
+                    <h3 class="text-base font-black text-slate-900">{{ $categoryId ? 'Edit Event Album' : 'Create Event Album' }}</h3>
                     @if ($categoryId)
                         <button wire:click="resetCategoryForm" type="button"
                             class="text-xs font-bold text-red-700 hover:underline">Cancel Edit</button>
@@ -276,7 +276,7 @@
 
                 <div class="space-y-3">
                     <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Category Name</label>
+                        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Event Name</label>
                         <input wire:model="categoryName" type="text"
                             class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
                         @error('categoryName') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -310,7 +310,7 @@
 
                     <label class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                         <input wire:model="categoryIsActive" type="checkbox" class="rounded border-slate-300 text-red-600 focus:ring-red-500">
-                        <span class="text-xs font-semibold text-slate-700">Active Category</span>
+                        <span class="text-xs font-semibold text-slate-700">Publish Event Album</span>
                     </label>
                 </div>
 
@@ -318,7 +318,7 @@
                     <button wire:click="saveCategory" type="button"
                         class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-700">
                         <i class="fas fa-floppy-disk"></i>
-                        <span>{{ $categoryId ? 'Update Category' : 'Save Category' }}</span>
+                        <span>{{ $categoryId ? 'Update Event' : 'Save Event' }}</span>
                     </button>
                     <button wire:click="resetCategoryForm" type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100">
@@ -329,7 +329,7 @@
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
-                <h3 class="mb-4 text-base font-black text-slate-900">Category List</h3>
+                <h3 class="mb-4 text-base font-black text-slate-900">Event Album List</h3>
 
                 <div class="space-y-3">
                     @forelse($categories as $category)
@@ -362,7 +362,7 @@
                         </div>
                     @empty
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">
-                            No categories yet. Create one to start organizing gallery items.
+                            No event albums yet. Create an event first, then add its photographs.
                         </div>
                     @endforelse
                 </div>
