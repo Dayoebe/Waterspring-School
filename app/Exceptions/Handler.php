@@ -3,6 +3,8 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -34,6 +36,17 @@ class Handler extends ExceptionHandler
      */
     public function register(): void
     {
+        $this->renderable(function (HttpExceptionInterface $exception, Request $request) {
+            if ($exception->getStatusCode() !== 409 || ! $request->user() || $request->expectsJson()) {
+                return null;
+            }
+
+            return redirect()->route('dashboard')->with(
+                'danger',
+                $exception->getMessage() ?: 'That action cannot be completed with the current school setup.'
+            );
+        });
+
         $this->reportable(function (Throwable $e) {
             //
         });

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['mode' => 'public'])
+@extends('errors.layout')
 
 @section('title', '429 Too Many Requests')
 

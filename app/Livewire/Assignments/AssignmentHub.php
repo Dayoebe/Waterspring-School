@@ -85,7 +85,6 @@ class AssignmentHub extends Component
     {
         abort_unless(auth()->user()?->can('view assignment'), 403);
         abort_unless(auth()->user()?->school_id, 403, 'A school must be selected before using assignments.');
-        abort_unless(auth()->user()?->school?->academic_year_id && auth()->user()?->school?->semester_id, 409, 'Set the current academic year and term before using assignments.');
         $this->dueAt = now()->addDays(7)->format('Y-m-d\TH:i');
     }
 

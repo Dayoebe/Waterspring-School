@@ -189,7 +189,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->name('dashboard.responsibilities');
 
     Route::get('/dashboard/assignments', \App\Livewire\Assignments\AssignmentHub::class)
-        ->middleware('permission:view assignment')
+        ->middleware([
+            'permission:view assignment',
+            \App\Http\Middleware\EnsureAcademicPeriodIsSet::class,
+        ])
         ->name('assignments.index');
 
     Route::get('/dashboard/calendar', \App\Livewire\Calendar\SchoolCalendar::class)

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['mode' => 'public'])
+@extends('errors.layout')
 
 @section('title', '503 Service Unavailable')
 
