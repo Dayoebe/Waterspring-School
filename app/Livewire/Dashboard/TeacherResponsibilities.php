@@ -56,7 +56,7 @@ class TeacherResponsibilities extends Component
             'school_name' => $user->school?->name ?? config('app.name'),
             'academic_year' => $user->school?->academicYear?->name ?? 'Not set',
             'semester' => $user->school?->semester?->name ?? 'Not set',
-            'today' => Carbon::now('Africa/Lagos')->format('D, M j, Y · g:i A'),
+            'today' => Carbon::now('Africa/Lagos')->format('D, M j, Y · g:i:s A'),
         ];
 
         if ($this->isTeacher) {

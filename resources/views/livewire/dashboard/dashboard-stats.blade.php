@@ -264,7 +264,7 @@
             <dl class="dashboard-context-grid">
                 <div><dt>Academic year</dt><dd>{{ $academicContext['academic_year'] ?? 'Not set' }}</dd></div>
                 <div><dt>Term</dt><dd>{{ $academicContext['semester'] ?? 'Not set' }}</dd></div>
-                <div><dt>Today</dt><dd>{{ $academicContext['today'] ?? now('Africa/Lagos')->format('D, M j, Y · g:i A') }}</dd></div>
+                <div><dt>Today</dt><dd>{{ $academicContext['today'] ?? now('Africa/Lagos')->format('D, M j, Y · g:i:s A') }}</dd></div>
             </dl>
         </section>
         <div class="dashboard-metric-grid">
