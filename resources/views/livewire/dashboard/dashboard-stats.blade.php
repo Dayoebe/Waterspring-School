@@ -483,7 +483,7 @@
                         </p>
                     </div>
                     <div class="rounded-2xl {{ $roleTheme['panel'] }} px-4 py-3 text-sm font-medium text-slate-700">
-                        Showing {{ count($quickActions) }} of {{ $availableActionCount }}
+                        Showing {{ $availableActionCount > 0 ? (($quickActionPage - 1) * $quickActionsPerPage) + 1 : 0 }}–{{ min($quickActionPage * $quickActionsPerPage, $availableActionCount) }} of {{ $availableActionCount }}
                     </div>
                 </div>
 
@@ -510,6 +510,31 @@
                     <div class="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
                         No dashboard actions are available for this account yet.
                     </div>
+                @endif
+
+                @if ($quickActionPageCount > 1)
+                    <nav class="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Your tools pages">
+                        <p class="text-xs font-medium text-slate-500">
+                            Page {{ $quickActionPage }} of {{ $quickActionPageCount }}
+                        </p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" wire:click="previousQuickActionPage" wire:loading.attr="disabled" wire:target="previousQuickActionPage,nextQuickActionPage,setQuickActionPage" @disabled($quickActionPage <= 1)
+                                class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-40">
+                                <i class="fas fa-arrow-left" aria-hidden="true"></i> Previous
+                            </button>
+                            @for ($page = 1; $page <= $quickActionPageCount; $page++)
+                                <button type="button" wire:click="setQuickActionPage({{ $page }})" wire:loading.attr="disabled" wire:target="previousQuickActionPage,nextQuickActionPage,setQuickActionPage"
+                                    class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-3 text-xs font-bold transition {{ $page === $quickActionPage ? 'border-sky-700 bg-sky-700 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-sky-300 hover:text-sky-700' }}"
+                                    aria-label="Open tools page {{ $page }}" aria-current="{{ $page === $quickActionPage ? 'page' : 'false' }}">
+                                    {{ $page }}
+                                </button>
+                            @endfor
+                            <button type="button" wire:click="nextQuickActionPage" wire:loading.attr="disabled" wire:target="previousQuickActionPage,nextQuickActionPage,setQuickActionPage" @disabled($quickActionPage >= $quickActionPageCount)
+                                class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-40">
+                                Next <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </nav>
                 @endif
 
                 <div class="mt-6 border-t border-slate-200 pt-5">

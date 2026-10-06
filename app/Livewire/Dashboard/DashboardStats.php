@@ -35,6 +35,14 @@ class DashboardStats extends Component
 
     public $quickActions = [];
 
+    public $allQuickActions = [];
+
+    public $quickActionPage = 1;
+
+    public $quickActionsPerPage = 7;
+
+    public $quickActionPageCount = 1;
+
     public $featureGroups = [];
 
     public $attentionItems = [];
@@ -630,15 +638,41 @@ class DashboardStats extends Component
             ],
         };
 
-        $this->quickActions = collect($availableActions)
+        $this->allQuickActions = collect($availableActions)
             ->sortBy(function (array $action) use ($priorityRoutes): int {
                 $position = array_search($action['route'], $priorityRoutes, true);
 
                 return $position === false ? 999 : $position;
             })
-            ->take(6)
             ->values()
             ->all();
+
+        $this->refreshQuickActionsPage();
+    }
+
+    public function setQuickActionPage(int $page): void
+    {
+        $this->quickActionPage = max(1, min($page, $this->quickActionPageCount));
+        $this->refreshQuickActionsPage();
+    }
+
+    public function previousQuickActionPage(): void
+    {
+        $this->setQuickActionPage($this->quickActionPage - 1);
+    }
+
+    public function nextQuickActionPage(): void
+    {
+        $this->setQuickActionPage($this->quickActionPage + 1);
+    }
+
+    private function refreshQuickActionsPage(): void
+    {
+        $this->quickActionPageCount = max(1, (int) ceil($this->availableActionCount / $this->quickActionsPerPage));
+        $this->quickActionPage = max(1, min($this->quickActionPage, $this->quickActionPageCount));
+        $offset = ($this->quickActionPage - 1) * $this->quickActionsPerPage;
+
+        $this->quickActions = array_slice($this->allQuickActions, $offset, $this->quickActionsPerPage);
     }
 
     private function loadAttentionItems(User $user): void
