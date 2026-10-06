@@ -144,6 +144,8 @@
                 </div>
             </div>
 
+            @include('livewire.parents.partials.children-panel')
+
             <!-- Actions -->
             <div class="flex justify-end gap-3 pt-4">
                 <button type="button" wire:click="switchMode('list')" 

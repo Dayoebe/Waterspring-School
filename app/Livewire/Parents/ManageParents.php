@@ -2,6 +2,9 @@
 
 namespace App\Livewire\Parents;
 
+use App\Models\MyClass;
+use App\Models\Section;
+use App\Models\StudentRecord;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -46,6 +49,22 @@ class ManageParents extends Component
     public $city = '';
     public $profile_photo = null;
 
+    public bool $showChildrenPanel = false;
+    public string $childEntryMode = 'existing';
+    public string $studentSearch = '';
+    public array $selectedStudentIds = [];
+    public string $newStudentName = '';
+    public string $newStudentEmail = '';
+    public string $newStudentPassword = '';
+    public string $newStudentGender = '';
+    public string $newStudentBirthday = '';
+    public string $newStudentPhone = '';
+    public string $newStudentClassId = '';
+    public string $newStudentSectionId = '';
+    public string $newStudentAdmissionNumber = '';
+    public string $newStudentAdmissionDate = '';
+    public $newStudentSections;
+
     protected $queryString = [
         'mode' => ['except' => 'list'],
         'search' => ['except' => ''],
@@ -55,11 +74,29 @@ class ManageParents extends Component
 
     public function mount()
     {
+        $this->newStudentSections = collect();
+
         if ($this->mode === 'edit' && $this->parentId) {
             $this->loadParentForEdit();
         } elseif ($this->mode === 'create') {
             $this->resetForm();
         }
+    }
+
+    public function updatedNewStudentClassId(): void
+    {
+        $classId = (int) $this->newStudentClassId;
+        $this->newStudentSections = $classId
+            ? Section::query()->where('my_class_id', $classId)
+                ->whereHas('myClass.classGroup', fn ($query) => $query->where('school_id', auth()->user()->school_id))
+                ->orderBy('name')->get()
+            : collect();
+        $this->newStudentSectionId = '';
+    }
+
+    public function toggleChildrenPanel(): void
+    {
+        $this->showChildrenPanel = ! $this->showChildrenPanel;
     }
 
     public function updatedSelectAll($value)
@@ -130,6 +167,10 @@ class ManageParents extends Component
             'city' => 'nullable|string',
         ]);
 
+        if (! $this->validateChildrenPlan()) {
+            return;
+        }
+
         DB::transaction(function () {
             $user = User::create([
                 'name' => $this->name,
@@ -148,6 +189,7 @@ class ManageParents extends Component
             ]);
 
             $user->assignRole('parent');
+            $this->attachChildren($user);
         });
 
         session()->flash('success', 'Parent created successfully');
@@ -174,6 +216,10 @@ class ManageParents extends Component
             'password' => 'nullable|min:8|confirmed',
         ]);
 
+        if (! $this->validateChildrenPlan()) {
+            return;
+        }
+
         DB::transaction(function () use ($parent) {
             $parent->update([
                 'name' => $this->name,
@@ -192,6 +238,8 @@ class ManageParents extends Component
             if ($this->password) {
                 $parent->update(['password' => bcrypt($this->password)]);
             }
+
+            $this->attachChildren($parent);
         });
 
         session()->flash('success', 'Parent updated successfully');
@@ -259,8 +307,133 @@ class ManageParents extends Component
         $this->reset([
             'parentId', 'name', 'email', 'password', 'password_confirmation', 
             'gender', 'birthday', 'phone', 'address', 'blood_group', 
-            'religion', 'nationality', 'state', 'city', 'profile_photo'
+            'religion', 'nationality', 'state', 'city', 'profile_photo',
+            'showChildrenPanel', 'childEntryMode', 'studentSearch', 'selectedStudentIds',
+            'newStudentName', 'newStudentEmail', 'newStudentPassword', 'newStudentGender',
+            'newStudentBirthday', 'newStudentPhone', 'newStudentClassId', 'newStudentSectionId',
+            'newStudentAdmissionNumber', 'newStudentAdmissionDate',
         ]);
+        $this->childEntryMode = 'existing';
+        $this->newStudentSections = collect();
+    }
+
+    protected function validateChildrenPlan(): bool
+    {
+        if (! $this->showChildrenPanel) {
+            return true;
+        }
+
+        if ($this->childEntryMode === 'existing') {
+            $this->validate(['selectedStudentIds' => ['array'], 'selectedStudentIds.*' => ['integer']]);
+            $selectedIds = collect($this->selectedStudentIds)->map(fn ($id) => (int) $id)->filter()->unique();
+            $validCount = User::role('student')->where('school_id', auth()->user()->school_id)
+                ->whereIn('id', $selectedIds)
+                ->whereDoesntHave('parents')
+                ->count();
+
+            if ($validCount !== $selectedIds->count()) {
+                $this->addError('selectedStudentIds', 'One or more selected students already have a parent or do not belong to this school.');
+                return false;
+            }
+
+            return true;
+        }
+
+        if ($this->childEntryMode !== 'new') {
+            $this->addError('childEntryMode', 'Choose how you want to add a student.');
+            return false;
+        }
+
+        abort_unless(auth()->user()->can('create student'), 403);
+        $this->validate([
+            'newStudentName' => ['required', 'string', 'max:255'],
+            'newStudentEmail' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'newStudentPassword' => ['required', 'string', 'min:8'],
+            'newStudentGender' => ['required', 'in:male,female'],
+            'newStudentBirthday' => ['nullable', 'date', 'before:today'],
+            'newStudentPhone' => ['nullable', 'string', 'max:20'],
+            'newStudentClassId' => ['required', 'integer'],
+            'newStudentSectionId' => ['nullable', 'integer'],
+            'newStudentAdmissionNumber' => ['nullable', 'string', 'max:100', 'unique:student_records,admission_number'],
+            'newStudentAdmissionDate' => ['nullable', 'date'],
+        ]);
+
+        $classIsValid = MyClass::query()->whereKey($this->newStudentClassId)
+            ->whereHas('classGroup', fn ($query) => $query->where('school_id', auth()->user()->school_id))->exists();
+        if (! $classIsValid) {
+            $this->addError('newStudentClassId', 'Select a class from the current school.');
+            return false;
+        }
+
+        if ($this->newStudentSectionId && ! Section::query()->whereKey($this->newStudentSectionId)
+            ->where('my_class_id', $this->newStudentClassId)->exists()) {
+            $this->addError('newStudentSectionId', 'Select a section belonging to the chosen class.');
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function attachChildren(User $parent): void
+    {
+        if (! $this->showChildrenPanel) {
+            return;
+        }
+
+        if ($this->childEntryMode === 'existing') {
+            foreach (collect($this->selectedStudentIds)->map(fn ($id) => (int) $id)->filter()->unique() as $studentId) {
+                DB::table('parent_records')->insert([
+                    'user_id' => $parent->id,
+                    'student_id' => $studentId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            return;
+        }
+
+        $student = User::create([
+            'name' => trim($this->newStudentName),
+            'email' => strtolower(trim($this->newStudentEmail)),
+            'password' => bcrypt($this->newStudentPassword),
+            'gender' => $this->newStudentGender,
+            'birthday' => $this->newStudentBirthday ?: null,
+            'phone' => trim($this->newStudentPhone) ?: null,
+            'school_id' => auth()->user()->school_id,
+        ]);
+        $student->assignRole('student');
+
+        $studentRecord = $student->studentRecord()->create([
+            'my_class_id' => (int) $this->newStudentClassId,
+            'section_id' => $this->newStudentSectionId ? (int) $this->newStudentSectionId : null,
+            'admission_number' => trim($this->newStudentAdmissionNumber) ?: $this->generateStudentAdmissionNumber(),
+            'admission_date' => $this->newStudentAdmissionDate ?: now(),
+        ]);
+
+        $academicYear = auth()->user()->school->academicYear;
+        if ($academicYear) {
+            $studentRecord->academicYears()->syncWithoutDetaching([$academicYear->id => [
+                'my_class_id' => (int) $this->newStudentClassId,
+                'section_id' => $this->newStudentSectionId ? (int) $this->newStudentSectionId : null,
+            ]]);
+        }
+
+        DB::table('parent_records')->insert([
+            'user_id' => $parent->id,
+            'student_id' => $student->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    protected function generateStudentAdmissionNumber(): string
+    {
+        $initials = auth()->user()->school->initials ?? 'SCH';
+        do {
+            $number = $initials.'/'.date('y').'/'.mt_rand(100000, 999999);
+        } while (StudentRecord::query()->where('admission_number', $number)->exists());
+
+        return $number;
     }
 
     protected function getParentsQuery()
@@ -288,7 +461,27 @@ class ManageParents extends Component
                 ->paginate($this->perPage);
         }
 
-        return view('livewire.parents.manage-parents', compact('parents'))
+        $classes = in_array($this->mode, ['create', 'edit'], true)
+            ? MyClass::query()->whereHas('classGroup', fn ($query) => $query->where('school_id', auth()->user()->school_id))
+                ->orderBy('name')->get(['id', 'name'])
+            : collect();
+        $availableStudents = in_array($this->mode, ['create', 'edit'], true)
+            ? User::role('student')->where('school_id', auth()->user()->school_id)
+                ->whereDoesntHave('parents')->whereHas('studentRecord')
+                ->when($this->studentSearch, function ($query): void {
+                    $term = '%'.trim($this->studentSearch).'%';
+                    $query->where(fn ($inner) => $inner->where('name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhereHas('studentRecord', fn ($record) => $record->where('admission_number', 'like', $term)));
+                })
+                ->with(['studentRecord.myClass'])->orderBy('name')->limit(50)->get()
+            : collect();
+        $assignedChildren = $this->mode === 'edit' && $this->parentId
+            ? User::role('student')->whereHas('parents', fn ($query) => $query->where('users.id', $this->parentId))
+                ->with(['studentRecord.myClass'])->orderBy('name')->get()
+            : collect();
+
+        return view('livewire.parents.manage-parents', compact('parents', 'classes', 'availableStudents', 'assignedChildren'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
