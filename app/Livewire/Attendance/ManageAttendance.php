@@ -177,7 +177,6 @@ class ManageAttendance extends Component
             $message .= " {$notificationResults['failed']} alert(s) could not be sent.";
         }
         session()->flash('success', $message);
-        $this->dispatch('attendance-saved');
     }
 
     protected function loadClasses(): void
