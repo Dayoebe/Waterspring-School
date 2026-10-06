@@ -1,10 +1,10 @@
 <div>
     @if ($notices->isNotEmpty())
-        <section class="overflow-hidden rounded-[1.75rem] border-2 border-amber-300 bg-amber-50 shadow-[0_24px_80px_-32px_rgba(180,83,9,0.45)]">
-            <div class="border-b-2 border-amber-200 bg-amber-200 px-5 py-5">
+        <section class="dashboard-notice-board">
+            <div class="dashboard-notice-header">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex items-start gap-4">
-                        <div class="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-red-600 text-white shadow-lg">
+                        <div class="dashboard-notice-icon">
                             <i class="fas fa-bell text-xl"></i>
                             @if ($unreadNoticeCount > 0)
                                 <span class="absolute -right-2 -top-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-slate-950 px-2 text-xs font-black text-white">
@@ -14,8 +14,8 @@
                         </div>
 
                         <div>
-                            <p class="text-xs font-black uppercase tracking-[0.28em] text-red-700">Notice Board</p>
-                            <h2 class="mt-1 text-2xl font-black text-slate-950">Important School Notices</h2>
+                            <p class="dashboard-notice-kicker">Notice board</p>
+                            <h2 class="dashboard-notice-title">Important school notices</h2>
                             <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
                                 Active notices are shown here first so everyone visiting the dashboard can quickly see current school updates.
                             </p>
@@ -46,10 +46,10 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 p-5 xl:grid-cols-2">
+            <div class="dashboard-notice-grid">
                 @foreach ($notices as $notice)
                     @php($isUnread = (bool) $notice->getAttribute('is_unread'))
-                    <article class="relative rounded-[1.35rem] border-2 p-4 shadow-sm {{ $isUnread ? 'border-red-300 bg-white' : 'border-amber-200 bg-white/80' }}">
+                    <article class="dashboard-notice-item {{ $isUnread ? 'is-unread' : '' }}">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <div class="flex flex-wrap items-center gap-2">

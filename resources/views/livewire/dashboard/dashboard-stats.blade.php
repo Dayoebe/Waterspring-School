@@ -277,7 +277,7 @@
             @endforeach
         </div>
 
-        @if ($isStaff)
+        @if ($isStaff && $attentionItems !== [])
             <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -290,30 +290,23 @@
                     </span>
                 </div>
 
-                @if ($attentionItems !== [])
-                    <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        @foreach ($attentionItems as $item)
-                            <a href="{{ route($item['route']) }}" wire:navigate
-                                class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-300 hover:bg-sky-50">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-sky-700 shadow-sm">
-                                    <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    @foreach ($attentionItems as $item)
+                        <a href="{{ route($item['route']) }}" wire:navigate
+                            class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-300 hover:bg-sky-50">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-sky-700 shadow-sm">
+                                <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <span class="flex items-center justify-between gap-3">
+                                    <strong class="text-sm text-slate-900">{{ $item['title'] }}</strong>
+                                    <span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{{ $item['count'] }}</span>
                                 </span>
-                                <span class="min-w-0 flex-1">
-                                    <span class="flex items-center justify-between gap-3">
-                                        <strong class="text-sm text-slate-900">{{ $item['title'] }}</strong>
-                                        <span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{{ $item['count'] }}</span>
-                                    </span>
-                                    <span class="mt-1 block text-xs leading-5 text-slate-600">{{ $item['description'] }}</span>
-                                </span>
-                            </a>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="mt-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                        <i class="fas fa-circle-check" aria-hidden="true"></i>
-                        <span>No urgent records need attention right now.</span>
-                    </div>
-                @endif
+                                <span class="mt-1 block text-xs leading-5 text-slate-600">{{ $item['description'] }}</span>
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
             </section>
         @endif
 

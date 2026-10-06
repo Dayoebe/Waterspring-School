@@ -8,32 +8,22 @@
 @section('page_heading', 'Dashboard')
 
 @section('content')
-    @include('partials.current-term-theme', ['compact' => true])
+    <div class="dashboard-home">
+        @if (session('status'))
+            <div class="dashboard-home-status" role="status">
+                <i class="fas fa-circle-check" aria-hidden="true"></i>
+                <span>{{ session('status') }}</span>
+            </div>
+        @endif
 
-    @if (session('status'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            {{ session('status') }}
+        @include('partials.current-term-theme', ['compact' => true])
+
+        <div class="dashboard-home-notices">
+            @livewire('dashboard.active-notices')
         </div>
-    @endif
 
-    
-    <div class="mb-6">
-        @livewire('dashboard.active-notices')
-    </div>
-
-    <div class="mb-6">
-        @livewire('dashboard.dashboard-stats')
-    </div>
-    @php
-        $user = auth()->user();
-        $isSuperAdmin = $user->hasAnyRole(['super-admin', 'super_admin']);
-        $isStaff = $user->hasAnyRole(['super-admin', 'super_admin', 'principal', 'admin', 'teacher']);
-    @endphp
-
-    {{-- @if ($isSuperAdmin)
-        <div class="mb-6">
-            @livewire('dashboard.result-publication-manager')
+        <div class="dashboard-home-overview">
+            @livewire('dashboard.dashboard-stats')
         </div>
-    @endif --}}
-
+    </div>
 @endsection
