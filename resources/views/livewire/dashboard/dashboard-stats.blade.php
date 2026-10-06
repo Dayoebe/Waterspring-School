@@ -511,6 +511,30 @@
                         No dashboard actions are available for this account yet.
                     </div>
                 @endif
+
+                <div class="mt-6 border-t border-slate-200 pt-5">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Account</p>
+                            <h4 class="mt-1 text-lg font-bold text-slate-900">Current context</h4>
+                        </div>
+                        <p class="text-xs text-slate-500">The school period currently applied to your tools.</p>
+                    </div>
+                    <dl class="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">School</dt>
+                            <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $academicContext['school_name'] ?? config('app.name') }}</dd>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Academic year</dt>
+                            <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $academicContext['academic_year'] ?? 'Not set' }}</dd>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <dt class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Term</dt>
+                            <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $academicContext['semester'] ?? 'Not set' }}</dd>
+                        </div>
+                    </dl>
+                </div>
             </section>
 
             <div class="space-y-6">
@@ -641,24 +665,6 @@
                     </section>
                 @endif
 
-                <section class="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Account</p>
-                    <h3 class="mt-2 text-2xl font-bold text-slate-900">Current context</h3>
-                    <div class="mt-5 grid grid-cols-1 gap-3">
-                        <div class="rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 shadow-md">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-700">School</p>
-                            <p class="mt-2 text-base font-semibold">{{ $academicContext['school_name'] ?? config('app.name') }}</p>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 shadow-md">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-700">Active Academic Year</p>
-                            <p class="mt-2 text-base font-semibold">{{ $academicContext['academic_year'] ?? 'Not set' }}</p>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 shadow-md">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-700">Active Term</p>
-                            <p class="mt-2 text-base font-semibold">{{ $academicContext['semester'] ?? 'Not set' }}</p>
-                        </div>
-                    </div>
-                </section>
             </div>
         </div>
 
