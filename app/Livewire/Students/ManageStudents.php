@@ -100,6 +100,22 @@ class ManageStudents extends Component
 
     public $assignedParent = null;
 
+    public bool $showParentPanel = false;
+
+    public string $parentEntryMode = 'select';
+
+    public string $newParentName = '';
+
+    public string $newParentEmail = '';
+
+    public string $newParentPassword = '';
+
+    public string $newParentPasswordConfirmation = '';
+
+    public string $newParentGender = '';
+
+    public string $newParentPhone = '';
+
     protected $queryString = [
         'mode' => ['except' => 'list'],
         'search' => ['except' => ''],
@@ -238,7 +254,17 @@ class ManageStudents extends Component
             'birthday' => 'nullable|date|before:today',
             'phone' => 'nullable|string|max:20',
             'admission_date' => 'nullable|date',
+            'parent_id' => 'nullable|integer',
         ]);
+
+        if ($this->parent_id && ! User::role('parent')
+            ->where('school_id', auth()->user()->school_id)
+            ->whereKey($this->parent_id)
+            ->exists()) {
+            $this->addError('parent_id', 'Select a valid parent from this school.');
+
+            return;
+        }
 
         $classExistsForSchool = MyClass::where('id', $this->my_class_id)
             ->whereHas('classGroup', function ($query) {
@@ -304,11 +330,67 @@ class ManageStudents extends Component
                     ],
                 ]);
             }
+
+            if ($this->parent_id) {
+                DB::table('parent_records')->insert([
+                    'user_id' => (int) $this->parent_id,
+                    'student_id' => $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         });
 
         session()->flash('success', 'Student created successfully');
         $this->switchMode('list');
         $this->dispatch('refreshStudents');
+    }
+
+    public function toggleParentPanel(): void
+    {
+        $this->showParentPanel = ! $this->showParentPanel;
+        $this->resetValidation([
+            'parent_id', 'newParentName', 'newParentEmail', 'newParentPassword',
+            'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',
+        ]);
+    }
+
+    public function createInlineParent(): void
+    {
+        abort_unless(auth()->user()->can('create parent'), 403);
+
+        $validated = $this->validate([
+            'newParentName' => ['required', 'string', 'max:255'],
+            'newParentEmail' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'newParentPassword' => ['required', 'string', 'min:8', 'same:newParentPasswordConfirmation'],
+            'newParentPasswordConfirmation' => ['required', 'string', 'min:8'],
+            'newParentGender' => ['required', 'in:male,female'],
+            'newParentPhone' => ['nullable', 'string', 'max:20'],
+        ], [
+            'newParentPassword.same' => 'The parent password confirmation does not match.',
+        ]);
+
+        $parent = DB::transaction(function () use ($validated): User {
+            $parent = User::create([
+                'name' => trim($validated['newParentName']),
+                'email' => strtolower(trim($validated['newParentEmail'])),
+                'password' => bcrypt($validated['newParentPassword']),
+                'gender' => $validated['newParentGender'],
+                'phone' => trim((string) ($validated['newParentPhone'] ?? '')) ?: null,
+                'school_id' => auth()->user()->school_id,
+            ]);
+            $parent->assignRole('parent');
+
+            return $parent;
+        });
+
+        $this->parent_id = (string) $parent->id;
+        $this->parentEntryMode = 'select';
+        $this->reset([
+            'newParentName', 'newParentEmail', 'newParentPassword',
+            'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',
+        ]);
+        session()->flash('parent_created', 'Parent account created and selected for this student.');
     }
 
     public function updateStudent()
@@ -663,7 +745,11 @@ class ManageStudents extends Component
             'phone', 'address', 'blood_group', 'religion', 'nationality',
             'state', 'city', 'my_class_id', 'section_id', 'admission_number', 'admission_date',
             'parent_id', 'assignedParent',
+            'showParentPanel', 'parentEntryMode', 'newParentName', 'newParentEmail',
+            'newParentPassword', 'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',
         ]);
+
+        $this->parentEntryMode = 'select';
     }
 
     protected function generateAdmissionNumber()
@@ -813,7 +899,7 @@ class ManageStudents extends Component
             }
         }
 
-        $availableParents = $this->mode === 'edit'
+        $availableParents = in_array($this->mode, ['create', 'edit'], true)
             ? User::role('parent')
                 ->where('school_id', auth()->user()->school_id)
                 ->orderBy('name')
