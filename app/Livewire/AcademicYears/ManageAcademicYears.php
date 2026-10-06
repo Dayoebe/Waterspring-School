@@ -3,6 +3,7 @@
 namespace App\Livewire\AcademicYears;
 
 use App\Models\AcademicYear;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -31,7 +32,8 @@ class ManageAcademicYears extends Component
     {
         $this->authorize('viewAny', AcademicYear::class);
         $this->loadAcademicYears();
-        $this->selectedAcademicYearId = auth()->user()->school->academic_year_id;
+        $this->selectedAcademicYearId = auth()->user()->school->academic_year_id
+            ?? $this->academicYears->first()?->id;
     }
 
     public function loadAcademicYears()
@@ -126,7 +128,14 @@ class ManageAcademicYears extends Component
         $this->authorize('setAcademicYear', AcademicYear::class);
         
         $this->validate([
-            'selectedAcademicYearId' => 'required|exists:academic_years,id',
+            'selectedAcademicYearId' => [
+                'required',
+                Rule::exists('academic_years', 'id')
+                    ->where('school_id', auth()->user()->school_id),
+            ],
+        ], [
+            'selectedAcademicYearId.required' => 'Please select an academic year.',
+            'selectedAcademicYearId.exists' => 'Please select a valid academic year for your school.',
         ]);
 
         $school = auth()->user()->school;
@@ -156,6 +165,7 @@ class ManageAcademicYears extends Component
     protected function getAcademicYearForCurrentSchool($id): AcademicYear
     {
         return AcademicYear::query()
+            ->where('school_id', auth()->user()->school_id)
             ->findOrFail($id);
     }
 

@@ -41,7 +41,7 @@
                         <div class="md:col-span-9">
                             <label for="selectedAcademicYearId" class="block text-sm font-medium mb-2">Select Academic Year</label>
                             <select 
-                                wire:model="selectedAcademicYearId" 
+                                wire:model.live="selectedAcademicYearId"
                                 id="selectedAcademicYearId" 
                                 name="selectedAcademicYearId"
                                 class="form-control w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
