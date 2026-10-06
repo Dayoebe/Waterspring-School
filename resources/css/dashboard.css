@@ -265,32 +265,7 @@ body.dashboard-ui.dark .dashboard-content [class*='bg-gradient-to-']:is([class*=
     body.dashboard-ui .dashboard-content .dashboard-section-heading { padding: 1rem; }
     body.dashboard-ui .dashboard-overview .dashboard-welcome { padding: 1rem; }
 }
-.dashboard-countdown { margin: 0 32px 20px; }
-.dashboard-countdown-card { width: 100%; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--line); color: var(--ink); box-shadow: none; }
-.dashboard-countdown-card > div:first-of-type { flex: 1; align-items: center; }
-.dashboard-countdown-card > .grid { display: flex; margin: 0; gap: .5rem; }
-.dashboard-countdown-card > .grid > div { display: flex; align-items: center; gap: .35rem; background: var(--surface-muted); }
-.dashboard-countdown-card > .grid > div p { margin: 0; }
-.dashboard-countdown-card :where(.text-slate-950) { color: var(--ink); }
-.dashboard-countdown-card :where(.text-slate-500) { color: var(--muted); }
-.dashboard-countdown-card > p { margin: 0; }
 body.dashboard-ui .dashboard-content :where(input,textarea,select).border-red-300 { border-color: #dc4c4c; }
 body.dashboard-ui.dark .dashboard-content :where(.text-blue-900,.text-indigo-900,.text-purple-900,.text-sky-900) { color: var(--ink); }
-@media (max-width: 639px) {
-    .dashboard-countdown { margin: 0 16px 20px; }
-    .dashboard-countdown-card > div:first-of-type { flex-basis: 100%; }
-}
-body.dashboard-ui .dashboard-countdown-card { width: 100%; box-shadow: none; background: var(--surface); color: var(--ink); }
 body.dashboard-ui .dashboard-content label > i { color: var(--accent); }
 body.dashboard-ui.dark .dashboard-content :where(.text-slate-800,.text-slate-950,.text-gray-950) { color: var(--ink); }
-
-body.dashboard-ui.dark .dashboard-countdown-card {
-    border-color: var(--line);
-    color: var(--ink);
-}
-body.dashboard-ui.dark .dashboard-countdown-card [class*="text-slate-"] {
-    color: var(--muted);
-}
-body.dashboard-ui.dark .dashboard-countdown-card :is(.text-slate-900, .text-slate-950) {
-    color: var(--ink);
-}

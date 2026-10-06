@@ -33,7 +33,6 @@
                     @yield('content')
                 @endisset
             </main>
-            @include('partials.dashboard-floating-countdown')
             <footer class="dashboard-footer">
                 <span>&copy; {{ date('Y') }} Watersprings International School</span>
                 <a href="{{ route('home') }}">Visit school website <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>

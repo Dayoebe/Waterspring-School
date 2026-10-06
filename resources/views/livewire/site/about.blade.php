@@ -26,6 +26,17 @@
             @endforeach
         </div>
     </section>
+    <section class="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 py-16">
+        <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
+            <div>
+                <p class="text-sm font-bold uppercase tracking-[0.18em] text-orange-700">Our promise to learners</p>
+                <h2 class="mt-3 text-3xl font-black sm:text-4xl">Known, valued and supported to progress</h2>
+                <p class="mt-5 leading-8 text-slate-700">The school’s vision places cooperation and individual support at the centre of daily life. That means helping children build the knowledge, skills, attitudes and confidence they need for future opportunities while recognising that each learner’s journey is different.</p>
+                <p class="mt-4 leading-8 text-slate-700">From early exploration and play to independent study in Years 7–9, each stage is designed to prepare children for the next one without losing the care and sense of belonging that support meaningful learning.</p>
+            </div>
+            <div class="rounded-[2rem] bg-white p-8 shadow-xl ring-1 ring-orange-100"><i class="fas fa-quote-left text-3xl text-amber-400"></i><blockquote class="mt-5 text-2xl font-black leading-10 text-slate-900">{{ $publicSiteSettings['school_promise'] }}</blockquote><p class="mt-6 font-bold text-sky-700">{{ $publicSiteSettings['school_motto'] }}</p></div>
+        </div>
+    </section>
     @if($administrators->isNotEmpty())
         <section id="leadership" class="bg-white py-14">
             <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

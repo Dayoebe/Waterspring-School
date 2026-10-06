@@ -187,7 +187,7 @@
 
         <div x-data="{ menuOpen: false }">
             @include('partials.header')
-            <main id="main" class="min-h-screen py-10">
+            <main id="main" class="min-h-screen">
                 @yield('content')
             </main>
             @include('partials.footer')

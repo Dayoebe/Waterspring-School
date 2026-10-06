@@ -46,6 +46,17 @@
             @endforeach
         </div>
     </section>
+    <section class="overflow-hidden bg-gradient-to-r from-amber-50 via-rose-50 to-violet-50 py-16">
+        <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div>
+                <p class="text-sm font-bold uppercase tracking-[0.18em] text-rose-700">Learn • Play • Grow • Together</p>
+                <h2 class="mt-3 text-3xl font-black sm:text-4xl">A balanced school day makes room for every kind of growth</h2>
+                <p class="mt-5 leading-8 text-slate-600">Children need strong teaching, but they also need opportunities to create, move, collaborate and discover what interests them. The Watersprings experience connects classroom learning with clubs, practical activities and shared school life.</p>
+                <div class="mt-7 flex flex-wrap gap-3"><a href="{{ route('gallery') }}" class="rounded-xl bg-rose-600 px-6 py-3 font-bold text-white hover:bg-rose-700">See life at Watersprings</a><a href="{{ route('why-watersprings') }}" class="rounded-xl border border-rose-200 bg-white px-6 py-3 font-bold text-rose-800">Why families choose us</a></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4"><img src="{{ asset('images/watersprings/play.jpg') }}" alt="Children enjoying school life at Watersprings" class="aspect-square w-full rounded-3xl object-cover shadow-lg" loading="lazy"><img src="{{ asset('images/watersprings/together.jpg') }}" alt="The Watersprings school community together" class="mt-8 aspect-square w-full rounded-3xl object-cover shadow-lg" loading="lazy"></div>
+        </div>
+    </section>
     <section class="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
         <div class="rounded-2xl bg-sky-900 p-8 text-white">
             <p class="text-sm font-bold text-yellow-300">Junior secondary education</p>
