@@ -104,13 +104,6 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Student Login Readiness',
-                        'route' => 'students.credentials',
-                        'permissions' => ['update student'],
-                        'section' => 'Students & Admissions',
-                    ],
-                    [
-                        'type' => 'menu-item',
                         'text' => 'Promote Students',
                         'route' => 'students.promote',
                         'permissions' => ['promote student', 'read promotion'],
@@ -626,6 +619,13 @@ class Menu extends Component
                         'icon' => 'fas fa-sliders-h',
                         'route' => 'schools.settings',
                         'permissions' => ['manage school settings'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Student Login Readiness',
+                        'icon' => 'fas fa-user-shield',
+                        'route' => 'students.credentials',
+                        'permissions' => ['update student'],
                     ],
                     [
                         'type' => 'menu-item',
