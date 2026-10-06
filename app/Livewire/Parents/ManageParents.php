@@ -465,10 +465,10 @@ class ManageParents extends Component
             ? MyClass::query()->whereHas('classGroup', fn ($query) => $query->where('school_id', auth()->user()->school_id))
                 ->orderBy('name')->get(['id', 'name'])
             : collect();
-        $availableStudents = in_array($this->mode, ['create', 'edit'], true)
+        $availableStudents = in_array($this->mode, ['create', 'edit'], true) && trim($this->studentSearch) !== ''
             ? User::role('student')->where('school_id', auth()->user()->school_id)
                 ->whereDoesntHave('parents')->whereHas('studentRecord')
-                ->when($this->studentSearch, function ($query): void {
+                ->where(function ($query): void {
                     $term = '%'.trim($this->studentSearch).'%';
                     $query->where(fn ($inner) => $inner->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)

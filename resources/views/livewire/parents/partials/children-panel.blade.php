@@ -17,11 +17,18 @@
 
             @if($childEntryMode === 'existing')
                 <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Find students</label><input type="search" wire:model.live.debounce.300ms="studentSearch" placeholder="Search by name, email, or admission number" class="w-full rounded-xl border-slate-300 px-4 py-3">
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Find students</label><input type="search" wire:model.live.debounce.300ms="studentSearch" placeholder="Start typing a name, email, or admission number" autocomplete="off" class="w-full rounded-xl border-slate-300 px-4 py-3">
                     <div class="mt-3 max-h-72 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3">
-                        @forelse($availableStudents as $student)
-                            <label class="flex cursor-pointer items-start gap-3 rounded-lg p-3 hover:bg-sky-50"><input type="checkbox" wire:model="selectedStudentIds" value="{{ $student->id }}" class="mt-1 rounded text-sky-700"><span><span class="block font-bold text-slate-900">{{ $student->name }}</span><span class="text-xs text-slate-600">{{ $student->studentRecord?->admission_number ?: $student->email }}@if($student->studentRecord?->myClass) · {{ $student->studentRecord->myClass->name }}@endif</span></span></label>
-                        @empty <p class="p-5 text-center text-sm text-slate-500">No unassigned students match your search.</p>@endforelse
+                        <div wire:loading wire:target="studentSearch" class="p-5 text-center text-sm font-semibold text-sky-700"><i class="fas fa-spinner fa-spin mr-2"></i>Searching students…</div>
+                        <div wire:loading.remove wire:target="studentSearch">
+                            @if(trim($studentSearch) === '')
+                                <p class="p-5 text-center text-sm text-slate-500"><i class="fas fa-search mb-2 block text-xl text-sky-500"></i>Start typing above to find an unassigned student.</p>
+                            @else
+                                @forelse($availableStudents as $student)
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-lg p-3 hover:bg-sky-50"><input type="checkbox" wire:model="selectedStudentIds" value="{{ $student->id }}" class="mt-1 rounded text-sky-700"><span><span class="block font-bold text-slate-900">{{ $student->name }}</span><span class="text-xs text-slate-600">{{ $student->studentRecord?->admission_number ?: $student->email }}@if($student->studentRecord?->myClass) · {{ $student->studentRecord->myClass->name }}@endif</span></span></label>
+                                @empty <p class="p-5 text-center text-sm text-slate-500">No unassigned students match “{{ trim($studentSearch) }}”.</p>@endforelse
+                            @endif
+                        </div>
                     </div>
                     @error('selectedStudentIds')<span class="mt-2 block text-sm text-red-600">{{ $message }}</span>@enderror
                 </div>
