@@ -17,7 +17,7 @@ class EnsureSemesterIsSet
     public function handle(Request $request, Closure $next)
     {
         if (auth()->user()->school->semester_id == null) {
-            session()->flash('danger', 'Please set the semester before proceeding.');
+            session()->flash('danger', 'Please set the term before proceeding.');
 
             return redirect()->route('semesters.index');
         }

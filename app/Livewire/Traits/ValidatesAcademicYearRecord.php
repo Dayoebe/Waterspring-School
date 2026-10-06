@@ -36,7 +36,7 @@ trait ValidatesAcademicYearRecord
             ->exists();
 
         if (!$valid) {
-            throw new \Exception("Invalid semester for the selected academic year.");
+            throw new \Exception("Invalid term for the selected academic year.");
         }
 
         return true;

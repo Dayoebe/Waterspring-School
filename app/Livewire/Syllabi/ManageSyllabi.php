@@ -222,7 +222,7 @@ class ManageSyllabi extends Component
 
         $semesterId = auth()->user()->school?->semester_id;
         if (!$semesterId) {
-            $this->addError('semester', 'Set an active semester before creating a syllabus.');
+            $this->addError('semester', 'Set an active term before creating a syllabus.');
             return;
         }
 

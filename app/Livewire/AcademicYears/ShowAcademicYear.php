@@ -209,7 +209,7 @@ class ShowAcademicYear extends Component
             ->findOrFail($semesterId);
 
         if ($semester->academic_year_id !== auth()->user()->school->academic_year_id) {
-            session()->flash('danger', 'Semester not in current academic year');
+            session()->flash('danger', 'The selected term does not belong to the current academic year.');
             return;
         }
 

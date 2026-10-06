@@ -408,7 +408,7 @@ class ExecutiveReport extends Component
         }
 
         if (!($academics['has_context'] ?? false)) {
-            $signals[] = ['tone' => 'amber', 'title' => 'Academic context incomplete', 'body' => 'Set the active academic year and semester to unlock result coverage metrics.'];
+            $signals[] = ['tone' => 'amber', 'title' => 'Academic context incomplete', 'body' => 'Set the active academic year and term to unlock result coverage metrics.'];
         } elseif (($academics['coverage_rate'] ?? 0) < 80) {
             $signals[] = ['tone' => 'sky', 'title' => 'Result coverage needs attention', 'body' => 'Only ' . ($academics['coverage_rate'] ?? 0) . '% of active students have result entries this term.'];
         }

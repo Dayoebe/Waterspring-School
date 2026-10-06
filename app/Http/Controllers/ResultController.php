@@ -276,7 +276,7 @@ class ResultController extends Controller
         }
         
         if (!$academicYearId || !$semesterId) {
-            abort(400, 'Academic year and semester are required. Please ensure your school has an active academic year and semester.');
+            abort(400, 'Academic year and term are required. Please ensure your school has an active academic year and term.');
         }
 
         $this->ensureFamilyCanViewTermResult($academicYearId, $semesterId);
@@ -586,7 +586,7 @@ class ResultController extends Controller
     ) {
         // 🔥 ADD VALIDATION AT THE START
         if (!$academicYearId || !$semesterId) {
-            throw new \InvalidArgumentException('Academic year and semester are required to prepare report data.');
+            throw new \InvalidArgumentException('Academic year and term are required to prepare report data.');
         }
     
         $classIdForPeriod = $this->classIdForStudentInAcademicYear($studentRecord, $academicYearId)
@@ -746,7 +746,7 @@ class ResultController extends Controller
         $grandTotalExam = $rawResults->sum('exam_score');
         $percentage = $totalSubjects > 0 ? round(($grandTotal / $maxTotalScore) * 100, 2) : 0; // Corrected percentage calculation based on maxTotalScore
         $academicYearName = optional($this->findAcademicYearForCurrentSchool($academicYearId))->name ?? 'Unknown Academic Year';
-        $semesterName = optional($this->findSemesterForCurrentSchool($semesterId))->name ?? 'Unknown Semester';
+        $semesterName = optional($this->findSemesterForCurrentSchool($semesterId))->name ?? 'Unknown Term';
     
         $subjectsPassed = 0;
         foreach ($subjects as $subject) {
@@ -847,7 +847,7 @@ class ResultController extends Controller
         $semesterId = $school?->semester_id;
 
         if (!$academicYearId || !$semesterId) {
-            abort(400, 'Academic year and semester are required for report generation.');
+            abort(400, 'Academic year and term are required for report generation.');
         }
 
         // For single PDF generation, we don't have pre-fetched data, so call prepareReportData without them

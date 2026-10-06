@@ -19,9 +19,16 @@
     @endif
 
     @if (!auth()->user()->school->academicYear)
-        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
-            <i class="fas fa-exclamation-triangle"></i> 
-            <span class="block sm:inline">Please set an academic year first before managing terms.</span>
+        <div class="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-amber-900 sm:flex-row sm:items-center sm:justify-between" role="alert">
+            <div>
+                <i class="fas fa-exclamation-triangle mr-1" aria-hidden="true"></i>
+                <span class="font-medium">Set an academic year before managing terms.</span>
+            </div>
+            @can('viewAny', App\Models\AcademicYear::class)
+                <a href="{{ route('academic-years.index') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800">
+                    Manage Academic Years
+                </a>
+            @endcan
         </div>
     @else
         <!-- Set Current Term -->

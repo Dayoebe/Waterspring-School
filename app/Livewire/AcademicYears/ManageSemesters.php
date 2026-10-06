@@ -122,7 +122,7 @@ class ManageSemesters extends Component
         $semester = $this->getSemesterForCurrentSchool($id);
         $this->authorize('delete', $semester);
 
-        // Prevent deleting current semester
+        // Prevent deleting the current term.
         if ($semester->id == auth()->user()->school->semester_id) {
             session()->flash('danger', 'Cannot delete the current term. Please set a different term first.');
             return;
@@ -146,7 +146,7 @@ class ManageSemesters extends Component
             ->findOrFail($this->selectedSemesterId);
 
         if ($semester->academic_year_id !== auth()->user()->school->academic_year_id) {
-            session()->flash('danger', 'Semester not in current academic year');
+            session()->flash('danger', 'The selected term does not belong to the current academic year.');
             return;
         }
 

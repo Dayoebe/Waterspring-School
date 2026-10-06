@@ -244,7 +244,7 @@ class ManageTimetables extends Component
         $this->ensureCan(['create timetable']);
 
         if (!$this->activeSemesterId) {
-            session()->flash('error', 'Set an active semester before creating a timetable.');
+            session()->flash('error', 'Set an active term before creating a timetable.');
             return;
         }
         

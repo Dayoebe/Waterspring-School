@@ -582,13 +582,13 @@ Route::middleware($dashboardMiddleware)->prefix('dashboard')->group(function () 
         ->name('academic-years.show')
         ->can('view', 'academicYear');
 
-    // Semester Management
-    Route::middleware('App\Http\Middleware\EnsureAcademicYearIsSet')->group(function () {
-        Route::get('semesters', ManageSemesters::class)
-            ->middleware('permission:read semester')
-            ->name('semesters.index')
-            ->can('viewAny', 'App\Models\Semester');
-    });
+    // Term Management
+    // Keep this page accessible before an academic year is selected so the
+    // menu does not silently redirect users away from the Terms screen.
+    Route::get('semesters', ManageSemesters::class)
+        ->middleware('permission:read semester')
+        ->name('semesters.index')
+        ->can('viewAny', 'App\Models\Semester');
 
     // Class Groups & Classes
     Route::get('class-groups', ManageClassGroups::class)
