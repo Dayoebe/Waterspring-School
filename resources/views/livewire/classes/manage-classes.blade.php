@@ -143,7 +143,7 @@
                             </div>
 
                             @if($classGroups->isNotEmpty())
-                                <select wire:model="class_group_id" class="w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500">
+                                <select wire:model.live="class_group_id" class="w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Select a class group</option>
                                     @foreach ($classGroups as $group)<option value="{{ $group->id }}">{{ $group->name }} · {{ $group->classes_count }} class{{ $group->classes_count === 1 ? '' : 'es' }}</option>@endforeach
                                 </select>
@@ -812,8 +812,6 @@
                 </div>
             </div>
         @endif
-    </div>
-
     {{-- MODALS --}}
 
     {{-- Teacher Assignment Modal --}}
