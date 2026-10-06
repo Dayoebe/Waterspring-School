@@ -1,84 +1,58 @@
-<div class="min-h-screen bg-gray-50">
-
-    {{-- Flash Messages --}}
-    @if (session()->has('success') || session()->has('error'))
-        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition
-            class="fixed top-4 right-4 z-50 max-w-md">
-            @if (session()->has('success'))
-                <div class="bg-white border-l-4 border-green-500 rounded-lg shadow-lg p-4 flex items-start space-x-3">
-                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-check-circle text-green-600"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-bold text-gray-900">Success!</p>
-                        <p class="text-sm text-gray-600">{{ session('success') }}</p>
-                    </div>
-                    <button @click="show = false" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            @endif
-            @if (session()->has('error'))
-                <div class="bg-white border-l-4 border-red-500 rounded-lg shadow-lg p-4 flex items-start space-x-3">
-                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-exclamation-circle text-red-600"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-bold text-gray-900">Error!</p>
-                        <p class="text-sm text-gray-600">{{ session('error') }}</p>
-                    </div>
-                    <button @click="show = false" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    <div class="px-4 sm:px-6 lg:px-8 py-8">
+<div class="space-y-6">
 
         {{-- LIST VIEW --}}
         @if ($view === 'list')
-            <div class="mb-8">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 class="text-4xl font-bold text-gray-900">Classes</h2>
-                        <p class="text-gray-600 mt-2 flex items-center">
-                            <i class="fas fa-chalkboard-teacher mr-2 text-indigo-600"></i>
-                            Manage all your school classes
-                        </p>
+            <section class="overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-900 to-sky-800 text-white shadow-xl">
+                <div class="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="max-w-2xl">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-sky-200">Academic structure</p>
+                        <h2 class="mt-2 text-3xl font-black sm:text-4xl">Classes</h2>
+                        <p class="mt-3 leading-7 text-indigo-100">Organise class levels, connect subjects and teachers, manage sections, and keep student placement clear for the current academic year.</p>
                     </div>
                     @can('create', App\Models\MyClass::class)
                         <button wire:click="showCreate"
-                            class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 hover:shadow-lg transition-all duration-200 flex items-center space-x-2 font-semibold">
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 font-black text-indigo-950 transition hover:bg-amber-300">
                             <i class="fas fa-plus"></i>
-                            <span>New Class</span>
+                            <span>Create class</span>
                         </button>
                     @endcan
                 </div>
-            </div>
+            </section>
 
-            <div x-data="{ focused: false }" class="mb-6">
-                <div class="relative max-w-xl">
+            <section class="grid gap-4 sm:grid-cols-3">
+                @foreach ([
+                    ['Classes', $totalClasses, 'fa-chalkboard', 'bg-indigo-100 text-indigo-700'],
+                    ['Class groups', $totalClassGroups, 'fa-layer-group', 'bg-sky-100 text-sky-700'],
+                    ['Active students', $totalStudents, 'fa-user-graduate', 'bg-emerald-100 text-emerald-700'],
+                ] as [$label, $value, $icon, $style])
+                    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <span class="{{ $style }} flex h-12 w-12 items-center justify-center rounded-2xl"><i class="fas {{ $icon }}"></i></span>
+                        <div><p class="text-sm font-semibold text-slate-500">{{ $label }}</p><p class="mt-1 text-2xl font-black text-slate-950">{{ number_format($value) }}</p></div>
+                    </article>
+                @endforeach
+            </section>
+
+            <div x-data="{ focused: false }" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i class="fas fa-search text-gray-400" :class="{ 'text-indigo-600': focused }"></i>
                     </div>
                     <input wire:model.live.debounce.300ms="search" @focus="focused = true" @blur="focused = false"
-                        type="text" placeholder="Search classes..."
-                        class="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
+                        type="search" placeholder="Search classes by name..."
+                        class="w-full rounded-xl border-slate-300 bg-slate-50 py-3 pl-12 pr-4 focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
             </div>
 
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @forelse ($classes as $class)
-                    <div
-                        class="bg-white rounded-lg shadow hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200">
+                    <article class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl">
+                        <div class="h-1.5 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400"></div>
                         <div class="p-6">
-                            <div class="w-14 h-14 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100">
                                 <i class="fas fa-chalkboard-teacher text-2xl text-indigo-600"></i>
                             </div>
 
-                            <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $class->name }}</h3>
+                            <h3 class="mb-2 text-xl font-black text-slate-950 transition group-hover:text-indigo-700">{{ $class->name }}</h3>
 
                             <div class="mb-3">
                                 <span
@@ -119,15 +93,15 @@
                                 @endcan
                             </div>
                         </div>
-                    </div>
+                    </article>
                 @empty
                     <div class="col-span-full">
-                        <div class="text-center py-16 bg-white rounded-lg border border-gray-200">
-                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <i class="fas fa-chalkboard-teacher text-gray-400 text-4xl"></i>
+                        <div class="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+                            <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50">
+                                <i class="fas fa-chalkboard-teacher text-3xl text-indigo-400"></i>
                             </div>
                             <h3 class="text-xl font-bold text-gray-900 mb-2">No classes yet</h3>
-                            <p class="text-gray-600 mb-6">Create your first class to get started</p>
+                            <p class="mx-auto mb-6 max-w-md text-slate-600">Create your first class. If your school has no class group yet, you can create one inside the same form.</p>
                             @can('create', App\Models\MyClass::class)
                                 <button wire:click="showCreate"
                                     class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold">
@@ -144,60 +118,65 @@
 
         {{-- CREATE VIEW --}}
         @if ($view === 'create')
-            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-                <div class="bg-indigo-600 p-6">
-                    <h2 class="text-2xl font-bold text-white flex items-center">
-                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                        </div>
-                        Create Class
-                    </h2>
+            <section class="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+                <div class="bg-gradient-to-r from-indigo-900 to-sky-800 p-6 text-white sm:p-8">
+                    <button type="button" wire:click="showList" class="mb-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-100 hover:text-white"><i class="fas fa-arrow-left"></i>Back to classes</button>
+                    <div class="flex items-start gap-4"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-xl"><i class="fas fa-chalkboard"></i></span><div><p class="text-xs font-bold uppercase tracking-[0.18em] text-sky-200">Academic structure</p><h2 class="mt-1 text-3xl font-black">Create a class</h2><p class="mt-2 max-w-2xl text-sm leading-6 text-indigo-100">Add a class to an existing group, or create the class group here without leaving this page.</p></div></div>
                 </div>
 
-                <form wire:submit.prevent="create" class="p-6 space-y-6">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">
-                            Class Name <span class="text-red-500">*</span>
-                        </label>
-                        <input wire:model="name" type="text" placeholder="e.g., JSS 1, SS 2"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
-                        @error('name')
-                            <p class="mt-2 text-sm text-red-600 flex items-center">
-                                <i class="fas fa-exclamation-circle mr-2"></i>{{ $message }}
-                            </p>
-                        @enderror
+                <form wire:submit.prevent="create" class="grid gap-8 p-6 sm:p-8 2xl:grid-cols-[minmax(0,1fr)_260px]">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-800">Class name <span class="text-red-500">*</span></label>
+                            <input wire:model="name" type="text" placeholder="e.g. Year 4, JSS 1, SS 2"
+                                class="w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500">
+                            <p class="mt-2 text-xs leading-5 text-slate-500">Use the name families and staff recognise on registers and reports.</p>
+                            @error('name')<p class="mt-2 flex items-center text-sm text-red-600"><i class="fas fa-circle-exclamation mr-2"></i>{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <label class="text-sm font-bold text-slate-800">Class group <span class="text-red-500">*</span></label>
+                                @can('create', App\Models\ClassGroup::class)
+                                    @if(!$showInlineGroupForm)<button type="button" wire:click="openInlineGroupForm" class="text-sm font-bold text-indigo-700 hover:text-indigo-900"><i class="fas fa-plus-circle mr-1"></i>Create a new group</button>@endif
+                                @endcan
+                            </div>
+
+                            @if($classGroups->isNotEmpty())
+                                <select wire:model="class_group_id" class="w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Select a class group</option>
+                                    @foreach ($classGroups as $group)<option value="{{ $group->id }}">{{ $group->name }} · {{ $group->classes_count }} class{{ $group->classes_count === 1 ? '' : 'es' }}</option>@endforeach
+                                </select>
+                            @else
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                                    <div class="flex gap-3"><i class="fas fa-layer-group mt-1 text-amber-600"></i><div><p class="font-bold text-amber-950">No class group exists yet</p><p class="mt-1 text-sm leading-6 text-amber-800">Create your first group below, then it will be selected automatically for this class.</p></div></div>
+                                </div>
+                            @endif
+                            @error('class_group_id')<p class="mt-2 flex items-center text-sm text-red-600"><i class="fas fa-circle-exclamation mr-2"></i>{{ $message }}</p>@enderror
+                        </div>
+
+                        @can('create', App\Models\ClassGroup::class)
+                            @if($showInlineGroupForm || $classGroups->isEmpty())
+                                <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+                                    <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-indigo-600">New class group</p><h3 class="mt-1 font-black text-indigo-950">Create without leaving this form</h3></div>@if($classGroups->isNotEmpty())<button type="button" wire:click="cancelInlineGroupForm" class="text-indigo-400 hover:text-indigo-700" aria-label="Close class group form"><i class="fas fa-times"></i></button>@endif</div>
+                                    <div class="mt-4 flex flex-col gap-3 sm:flex-row"><input wire:model="newClassGroupName" wire:keydown.enter.prevent="createInlineClassGroup" type="text" placeholder="e.g. Primary, Junior Secondary" class="min-w-0 flex-1 rounded-xl border-indigo-200 bg-white px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500"><button type="button" wire:click="createInlineClassGroup" class="rounded-xl bg-indigo-700 px-5 py-3 font-bold text-white hover:bg-indigo-800"><i class="fas fa-plus mr-2"></i>Create group</button></div>
+                                    @error('newClassGroupName')<p class="mt-2 flex items-center text-sm text-red-600"><i class="fas fa-circle-exclamation mr-2"></i>{{ $message }}</p>@enderror
+                                </div>
+                            @endif
+                        @endcan
+
+                        <div class="flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end">
+                            <button type="button" wire:click="showList" class="rounded-xl border border-slate-300 px-6 py-3 font-bold text-slate-700 hover:bg-slate-50">Cancel</button>
+                            <button type="submit" @disabled(!$class_group_id) class="rounded-xl bg-indigo-700 px-6 py-3 font-black text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50"><i class="fas fa-check mr-2"></i>Create class</button>
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">
-                            Class Group <span class="text-red-500">*</span>
-                        </label>
-                        <select wire:model="class_group_id"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
-                            <option value="">Select a class group</option>
-                            @foreach ($classGroups as $group)
-                                <option value="{{ $group->id }}">{{ $group->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('class_group_id')
-                            <p class="mt-2 text-sm text-red-600 flex items-center">
-                                <i class="fas fa-exclamation-circle mr-2"></i>{{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                    <div class="flex space-x-3 pt-4">
-                        <button type="submit"
-                            class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 hover:shadow-lg transition-all font-bold">
-                            <i class="fas fa-save mr-2"></i>Create Class
-                        </button>
-                        <button type="button" wire:click="showList"
-                            class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all font-semibold">
-                            Cancel
-                        </button>
-                    </div>
+                    <aside class="rounded-2xl bg-slate-50 p-5 2xl:self-start">
+                        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">How it is organised</p>
+                        <ol class="mt-5 space-y-5">@foreach([['1','Class group','The broad school stage, such as Primary or Junior Secondary.'],['2','Class','The individual year or level, such as Year 4 or JSS 1.'],['3','Sections','Optional divisions such as A or B can be added after creating the class.']] as [$step,$label,$text])<li class="flex gap-3"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700">{{ $step }}</span><div><p class="text-sm font-bold text-slate-800">{{ $label }}</p><p class="mt-1 text-xs leading-5 text-slate-500">{{ $text }}</p></div></li>@endforeach</ol>
+                    </aside>
                 </form>
-            </div>
+            </section>
         @endif
 
         {{-- EDIT VIEW --}}

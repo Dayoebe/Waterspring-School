@@ -29,6 +29,8 @@ class ManageClasses extends Component
     // ============================================
     public $name = '';
     public $class_group_id = null;
+    public $showInlineGroupForm = false;
+    public $newClassGroupName = '';
 
     // ============================================
     // STUDENT MANAGEMENT
@@ -124,15 +126,60 @@ class ManageClasses extends Component
     // ============================================
     public function showList()
     {
-        $this->reset(['view', 'name', 'class_group_id', 'selectedClass', 'selectedStudents', 'selectAll']);
+        $this->reset(['view', 'name', 'class_group_id', 'showInlineGroupForm', 'newClassGroupName', 'selectedClass', 'selectedStudents', 'selectAll']);
         $this->view = 'list';
     }
 
     public function showCreate()
     {
         $this->authorize('create', MyClass::class);
-        $this->reset(['name', 'class_group_id']);
+        $this->reset(['name', 'class_group_id', 'showInlineGroupForm', 'newClassGroupName']);
         $this->view = 'create';
+    }
+
+    public function openInlineGroupForm(): void
+    {
+        $this->authorize('create', ClassGroup::class);
+        $this->resetValidation('newClassGroupName');
+        $this->showInlineGroupForm = true;
+    }
+
+    public function cancelInlineGroupForm(): void
+    {
+        $this->reset(['showInlineGroupForm', 'newClassGroupName']);
+        $this->resetValidation('newClassGroupName');
+    }
+
+    public function createInlineClassGroup(): void
+    {
+        $this->authorize('create', ClassGroup::class);
+        $this->newClassGroupName = trim($this->newClassGroupName);
+        $schoolId = (int) auth()->user()->school_id;
+
+        $this->validate([
+            'newClassGroupName' => [
+                'required',
+                'string',
+                'max:100',
+                \Illuminate\Validation\Rule::unique('class_groups', 'name')->where('school_id', $schoolId),
+            ],
+        ], [
+            'newClassGroupName.unique' => 'A class group with this name already exists in your school.',
+        ]);
+
+        try {
+            $group = ClassGroup::create([
+                'name' => $this->newClassGroupName,
+                'school_id' => $schoolId,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $exception) {
+            $this->addError('newClassGroupName', 'A class group with this name already exists in your school.');
+            return;
+        }
+
+        $this->class_group_id = $group->id;
+        $this->cancelInlineGroupForm();
+        session()->flash('success', 'Class group created and selected. You can now finish creating the class.');
     }
 
     public function showEdit($id)
@@ -814,6 +861,8 @@ class ManageClasses extends Component
     
         $classGroups = ClassGroup::query()
             ->where('school_id', auth()->user()->school_id)
+            ->withCount('classes')
+            ->orderBy('name')
             ->get();
         
         $students = null;
@@ -835,6 +884,9 @@ class ManageClasses extends Component
             'students' => $students,
             'allClasses' => $allClasses,
             'teachers' => $teachers,
+            'totalClasses' => MyClass::whereHas('classGroup', fn($q) => $q->where('school_id', auth()->user()->school_id))->count(),
+            'totalClassGroups' => $classGroups->count(),
+            'totalStudents' => User::role('student')->where('school_id', auth()->user()->school_id)->where('locked', false)->count(),
         ])->layout('layouts.dashboard');
     }
 }
