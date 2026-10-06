@@ -113,7 +113,7 @@
                     <li><a href="{{ route('academics') }}#early-years" class="transition hover:text-white">Early Years & Foundation Stage</a></li>
                     <li><a href="{{ route('academics') }}#key-stage-1" class="transition hover:text-white">Key Stage 1</a></li>
                     <li><a href="{{ route('academics') }}#key-stage-2" class="transition hover:text-white">Key Stage 2</a></li>
-                    <li>Clubs and Leadership</li>
+                    <li><a href="{{ route('academics') }}#clubs" class="transition hover:text-white">Clubs and Leadership</a></li>
                     <li>Learn, Play and Grow Together</li>
                 </ul>
             </div>

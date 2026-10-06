@@ -48,20 +48,14 @@
         </div>
     </section>
 
-    <section id="clubs" class="bg-gradient-to-br from-cyan-950 to-sky-900 py-16 text-white">
+    <section id="clubs" class="scroll-mt-24 bg-gradient-to-b from-sky-950 to-sky-900 py-16">
         <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div class="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-                <div>
-                    <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-300">Beyond the classroom</p>
-                    <h2 class="mt-3 text-3xl font-black sm:text-4xl">Room to discover new interests</h2>
-                    <p class="mt-5 leading-8 text-sky-100">Clubs create space for children to make, perform, communicate, solve problems and stay active. Choices may vary, so families can ask the school office about the current club programme.</p>
-                </div>
-                <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ($publicSiteSettings['clubs'] as $club)
-                        <li class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 font-semibold backdrop-blur"><span class="h-2 w-2 rounded-full bg-amber-300"></span>{{ $club }}</li>
-                    @endforeach
-                </ul>
+            <div class="max-w-3xl text-white">
+                <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-300">Beyond the classroom</p>
+                <h2 class="mt-3 text-3xl font-black sm:text-4xl">Our registered clubs</h2>
+                <p class="mt-5 leading-8 text-sky-100">These are the active clubs currently offered by Watersprings. Students can explore practical interests, learn with others and develop confidence beyond their regular lessons.</p>
             </div>
+            <div class="mt-9">@include('partials.public-club-cards', ['clubs' => $clubs])</div>
         </div>
     </section>
 

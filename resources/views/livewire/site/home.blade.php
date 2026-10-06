@@ -46,6 +46,21 @@
             @endforeach
         </div>
     </section>
+    @if ($clubs->isNotEmpty())
+        <section class="border-y border-sky-100 bg-white py-16">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div class="max-w-3xl">
+                        <p class="text-sm font-bold uppercase tracking-[0.18em] text-sky-700">Clubs at Watersprings</p>
+                        <h2 class="mt-3 text-3xl font-black sm:text-4xl">Interests grow through practice and teamwork</h2>
+                        <p class="mt-4 leading-7 text-slate-600">Explore the active clubs currently registered by the school. Each one gives students another place to build skills, confidence and friendships.</p>
+                    </div>
+                    <a href="{{ route('academics') }}#clubs" class="shrink-0 font-bold text-sky-700 hover:underline">See all clubs →</a>
+                </div>
+                <div class="mt-9">@include('partials.public-club-cards', ['clubs' => $clubs])</div>
+            </div>
+        </section>
+    @endif
     <section class="overflow-hidden bg-gradient-to-r from-amber-50 via-rose-50 to-violet-50 py-16">
         <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Club;
 use App\Models\School;
 use App\Models\StaffProfile;
 use App\Support\SiteSettings;
@@ -10,7 +11,9 @@ class PageController extends Controller
 {
     public function home()
     {
-        return view('livewire.site.home');
+        $clubs = $this->publicClubs()->limit(6)->get();
+
+        return view('livewire.site.home', compact('clubs'));
     }
 
     public function about()
@@ -24,7 +27,9 @@ class PageController extends Controller
 
     public function academics()
     {
-        return view('livewire.site.academics');
+        $clubs = $this->publicClubs()->get();
+
+        return view('livewire.site.academics', compact('clubs'));
     }
 
     public function whyWatersprings()
@@ -82,5 +87,17 @@ class PageController extends Controller
         return SiteSettings::resolveSchool(request())
             ?? School::query()->where('name', config('app.name'))->first()
             ?? School::query()->latest('id')->first();
+    }
+
+    protected function publicClubs()
+    {
+        $school = $this->publicSchool();
+
+        return Club::query()
+            ->withoutGlobalScope('school')
+            ->where('school_id', $school?->id ?? 0)
+            ->where('is_active', true)
+            ->orderByRaw('category is null, category')
+            ->orderBy('name');
     }
 }
