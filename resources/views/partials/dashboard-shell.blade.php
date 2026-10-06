@@ -25,7 +25,6 @@
                 <x-show-set-school />
                 @isset($breadcrumbs)<x-breadcrumbs :paths="$breadcrumbs" />@endisset
             </header>
-            @include('partials.current-term-theme', ['compact' => true])
             <main id="main" class="dashboard-content" tabindex="-1">
                 @isset($dashboardSlot)
                     {{ $dashboardSlot }}
