@@ -411,6 +411,10 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 */
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+    Route::get('/clubs', \App\Livewire\Clubs\ClubHub::class)
+        ->middleware('permission:view clubs')
+        ->name('clubs.index');
+
     Route::get('/students', ManageStudents::class)
         ->middleware('permission:read student')
         ->name('students.index');

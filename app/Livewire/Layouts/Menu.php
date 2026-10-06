@@ -232,6 +232,13 @@ class Menu extends Component
                 'permissions' => ['view assignment'],
             ],
             [
+                'type' => 'menu-item',
+                'text' => 'Clubs & Activities',
+                'icon' => 'fas fa-people-group',
+                'route' => 'clubs.index',
+                'permissions' => ['view clubs'],
+            ],
+            [
                 'text' => 'Classes & Subjects',
                 'icon' => 'fas fa-book-open',
                 'submenu' => array_values(array_filter([

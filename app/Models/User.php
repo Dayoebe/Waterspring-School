@@ -170,6 +170,18 @@ class User extends Authenticatable
         return $this->belongsToMany(User::class, 'parent_records', 'user_id', 'student_id');
     }
 
+    public function instructedClubs()
+    {
+        return $this->belongsToMany(Club::class, 'club_instructors', 'teacher_id', 'club_id')
+            ->withPivot('is_lead')->withTimestamps();
+    }
+
+    public function clubs()
+    {
+        return $this->belongsToMany(Club::class, 'club_memberships', 'student_id', 'club_id')
+            ->withPivot(['joined_on', 'status', 'added_by'])->withTimestamps();
+    }
+
     public function broadcastMessageRecipients()
     {
         return $this->hasMany(BroadcastMessageRecipient::class);
