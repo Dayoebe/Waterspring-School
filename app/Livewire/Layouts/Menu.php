@@ -43,13 +43,6 @@ class Menu extends Component
                 'permissions' => ['view dashboard'],
             ],
             [
-                'type' => 'menu-item',
-                'icon' => 'fas fa-briefcase',
-                'text' => 'My Responsibilities',
-                'route' => 'dashboard.responsibilities',
-                'permissions' => ['view dashboard'],
-            ],
-            [
                 'text' => 'My Learning',
                 'icon' => 'fas fa-graduation-cap',
                 'submenu' => array_values(array_filter([
@@ -704,6 +697,13 @@ class Menu extends Component
                 'text' => 'My Account',
                 'icon' => 'fas fa-user',
                 'submenu' => array_values(array_filter([
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-briefcase',
+                        'text' => 'My Responsibilities',
+                        'route' => 'dashboard.responsibilities',
+                        'permissions' => ['view dashboard'],
+                    ],
                     [
                         'type' => 'menu-item',
                         'icon' => 'fas fa-user',
