@@ -9,6 +9,7 @@ use App\Models\ClubActivity;
 use App\Models\ClubWeeklyAgenda;
 use App\Models\ContactMessage;
 use App\Models\Assessment\Assessment;
+use App\Models\Exam;
 use App\Models\FeeInvoice;
 use App\Models\MyClass;
 use App\Models\Notice;

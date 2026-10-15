@@ -29,7 +29,7 @@
     $logoUrl = $themeLogoUrl !== '' ? $themeLogoUrl : ($publicSiteSchool?->logo_url ?? asset(config('app.logo', 'images/watersprings/logo.png')));
 @endphp
 
-<header id="top"
+<header
     x-data="{ mobileOpen: false, mobileGroup: @js($activeGroup), openGroup: null, accountOpen: false, scrolled: false }"
     @scroll.window="scrolled = window.scrollY > 8"
     @resize.window.debounce.150ms="mobileOpen = false; openGroup = null; accountOpen = false"

@@ -230,6 +230,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->middleware('permission:read own child attendance|read own child discipline')
         ->name('parent.student-welfare');
 
+    Route::get('/dashboard/behaviour-reports', \App\Livewire\Behaviour\BehaviourReportHub::class)
+        ->middleware('permission:access behavioural reports')
+        ->name('behaviour-reports.index');
+
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->middleware('permission:manage own profile')

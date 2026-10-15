@@ -163,25 +163,55 @@ class ClubHub extends Component
         session()->flash('success', 'Club and its related records were deleted.');
     }
 
-    public function joinClub(int $clubId): void
+    public function joinClub(int $clubId, ?int $studentId = null): void
     {
         $user = auth()->user();
-        abort_unless($user->hasRole('student') && $user->can('join clubs'), 403);
+        $student = $this->resolveMembershipStudent($studentId);
         $club = Club::query()->where('is_active', true)->findOrFail($clubId);
-        $activeCount = $club->members()->wherePivot('status', 'active')->count();
-        abort_if($club->capacity && $activeCount >= $club->capacity && ! $club->members()->whereKey($user->id)->wherePivot('status', 'active')->exists(), 422, 'This club has reached its capacity.');
-        $club->members()->syncWithoutDetaching([$user->id => ['joined_on' => now()->toDateString(), 'status' => 'active', 'added_by' => $user->id]]);
-        $club->members()->updateExistingPivot($user->id, ['status' => 'active', 'joined_on' => now()->toDateString(), 'added_by' => $user->id]);
+        $activeCount = $club->members()->wherePivotIn('status', ['active', 'pending_leave'])->count();
+        abort_if($club->capacity && $activeCount >= $club->capacity && ! $club->members()->whereKey($student->id)->wherePivot('status', 'active')->exists(), 422, 'This club has reached its capacity.');
+        abort_if($club->members()->whereKey($student->id)->wherePivotIn('status', ['active', 'pending_join', 'pending_leave'])->exists(), 422, 'There is already an active membership or pending request for this club.');
+        $club->members()->syncWithoutDetaching([$student->id => ['joined_on' => now()->toDateString(), 'status' => 'pending_join', 'added_by' => $user->id]]);
+        $club->members()->updateExistingPivot($student->id, ['status' => 'pending_join', 'added_by' => $user->id]);
         $this->selectedClubId = $club->id;
-        session()->flash('success', 'You have joined '.$club->name.'.');
+        session()->flash('success', 'The request to join '.$club->name.' is awaiting moderator approval.');
     }
 
-    public function leaveClub(int $clubId): void
+    public function leaveClub(int $clubId, ?int $studentId = null): void
     {
-        $user = auth()->user();
-        abort_unless($user->hasRole('student') && $user->can('join clubs'), 403);
-        Club::query()->findOrFail($clubId)->members()->updateExistingPivot($user->id, ['status' => 'left']);
-        session()->flash('success', 'You have left the club.');
+        $student = $this->resolveMembershipStudent($studentId);
+        $club = Club::query()->findOrFail($clubId);
+        abort_unless($club->members()->whereKey($student->id)->wherePivot('status', 'active')->exists(), 422, 'This student is not an active member of the club.');
+        $club->members()->updateExistingPivot($student->id, ['status' => 'pending_leave', 'added_by' => auth()->id()]);
+        session()->flash('success', 'The request to leave '.$club->name.' is awaiting moderator approval. Membership remains active until then.');
+    }
+
+    public function reviewMembershipRequest(int $studentId, string $decision): void
+    {
+        abort_unless(in_array($decision, ['approve', 'reject'], true), 422);
+        $club = Club::query()->findOrFail($this->selectedClubId);
+        $this->ensureCanManageClub($club);
+        $membership = $club->members()->whereKey($studentId)->firstOrFail();
+        $status = $membership->pivot->status;
+        abort_unless(in_array($status, ['pending_join', 'pending_leave'], true), 422, 'This request has already been resolved.');
+
+        if ($status === 'pending_join' && $decision === 'approve') {
+            $activeCount = $club->members()->wherePivotIn('status', ['active', 'pending_leave'])->count();
+            abort_if($club->capacity && $activeCount >= $club->capacity, 422, 'This club has reached its capacity.');
+        }
+
+        $newStatus = match ([$status, $decision]) {
+            ['pending_join', 'approve'] => 'active',
+            ['pending_join', 'reject'] => 'rejected',
+            ['pending_leave', 'approve'] => 'left',
+            ['pending_leave', 'reject'] => 'active',
+        };
+        $updates = ['status' => $newStatus, 'added_by' => auth()->id()];
+        if ($newStatus === 'active' && $status === 'pending_join') {
+            $updates['joined_on'] = now()->toDateString();
+        }
+        $club->members()->updateExistingPivot($studentId, $updates);
+        session()->flash('success', $decision === 'approve' ? 'Membership request approved.' : 'Membership request declined.');
     }
 
     public function addInstructor(): void
@@ -208,7 +238,7 @@ class ClubHub extends Component
         $this->validate(['selectedStudentId' => ['required', 'integer']]);
         $club = Club::query()->findOrFail($this->selectedClubId);
         $student = $this->studentQuery()->findOrFail($this->selectedStudentId);
-        $activeCount = $club->members()->wherePivot('status', 'active')->count();
+        $activeCount = $club->members()->wherePivotIn('status', ['active', 'pending_leave'])->count();
         if ($club->capacity && $activeCount >= $club->capacity && ! $club->members()->whereKey($student->id)->wherePivot('status', 'active')->exists()) {
             $this->addError('selectedStudentId', 'This club has reached its capacity.');
 
@@ -433,9 +463,7 @@ class ClubHub extends Component
             return $query->whereHas('instructors', fn (Builder $q) => $q->where('users.id', $user->id));
         }
         if ($user->hasRole('parent')) {
-            $childIds = $user->children()->pluck('users.id');
-
-            return $query->whereHas('members', fn (Builder $q) => $q->whereIn('users.id', $childIds)->where('club_memberships.status', 'active'));
+            return $query->where('is_active', true);
         }
 
         return $query->where('is_active', true);
@@ -460,6 +488,23 @@ class ClubHub extends Component
     {
         $user = auth()->user();
         abort_unless($user?->can('manage clubs') || ($user?->can('manage assigned clubs') && $club->instructors()->whereKey($user->id)->exists()), 403);
+    }
+
+    protected function resolveMembershipStudent(?int $studentId): User
+    {
+        $user = auth()->user();
+        if ($user->hasRole('student')) {
+            abort_unless($user->can('join clubs'), 403);
+            abort_if($studentId && $studentId !== $user->id, 403);
+
+            return $user;
+        }
+
+        abort_unless($user->hasRole('parent'), 403);
+
+        return $user->children()
+            ->where('users.school_id', $user->school_id)
+            ->findOrFail($studentId);
     }
 
     protected function resetClubForms(): void
@@ -495,12 +540,12 @@ class ClubHub extends Component
     public function render()
     {
         $user = auth()->user();
-        $clubs = $this->visibleClubQuery()->withCount(['members as active_members_count' => fn (Builder $q) => $q->where('club_memberships.status', 'active')])
+        $clubs = $this->visibleClubQuery()->withCount(['members as active_members_count' => fn (Builder $q) => $q->whereIn('club_memberships.status', ['active', 'pending_leave'])])
             ->when($this->search !== '', fn (Builder $q) => $q->where(fn (Builder $q) => $q->where('name', 'like', '%'.$this->search.'%')->orWhere('category', 'like', '%'.$this->search.'%')))
             ->orderByDesc('is_active')->orderBy('name')->get();
         $selectedClub = $this->selectedClubId ? $this->visibleClubQuery()->with([
             'instructors:id,name,email',
-            'members' => fn ($q) => $q->wherePivot('status', 'active')
+            'members' => fn ($q) => $q->wherePivotIn('status', ['active', 'pending_leave'])
                 ->when($user->hasRole('parent'), fn ($q) => $q->whereIn('users.id', $user->children()->pluck('users.id')))
                 ->with('studentRecord.baseClass'),
             'activities' => fn ($q) => $q->orderByDesc('starts_at'),
@@ -511,7 +556,7 @@ class ClubHub extends Component
             $this->selectedClubId = $clubs->first()->id;
             $selectedClub = $this->visibleClubQuery()->with([
                 'instructors:id,name,email',
-                'members' => fn ($q) => $q->wherePivot('status', 'active')
+                'members' => fn ($q) => $q->wherePivotIn('status', ['active', 'pending_leave'])
                     ->when($user->hasRole('parent'), fn ($q) => $q->whereIn('users.id', $user->children()->pluck('users.id')))
                     ->with('studentRecord.baseClass'),
                 'activities' => fn ($q) => $q->orderByDesc('starts_at'),
@@ -519,18 +564,35 @@ class ClubHub extends Component
                     ->where('semester_id', $user->school?->semester_id)->with(['academicYear', 'semester', 'agendas' => fn ($q) => $q->orderBy('week_number')]),
             ])->find($this->selectedClubId);
         }
-        $isJoined = $selectedClub && $user->hasRole('student') ? $selectedClub->members()->whereKey($user->id)->wherePivot('status', 'active')->exists() : false;
-        $canViewActivities = $selectedClub && ($user->can('manage clubs') || $user->hasRole('teacher') || $user->hasRole('parent') || $isJoined);
+        $membershipStatus = $selectedClub && $user->hasRole('student')
+            ? $selectedClub->members()->whereKey($user->id)->first()?->pivot?->status
+            : null;
+        $isJoined = $membershipStatus === 'active' || $membershipStatus === 'pending_leave';
+        $childIds = $user->hasRole('parent') ? $user->children()->pluck('users.id') : collect();
+        $parentHasActiveMember = $selectedClub && $user->hasRole('parent')
+            ? $selectedClub->members()->whereIn('users.id', $childIds)->wherePivotIn('status', ['active', 'pending_leave'])->exists()
+            : false;
+        $canViewActivities = $selectedClub && ($user->can('manage clubs') || $user->hasRole('teacher') || $isJoined || $parentHasActiveMember);
         $canManageSelected = $selectedClub && ($user->can('manage clubs') || ($user->can('manage assigned clubs') && $selectedClub->instructors->contains('id', $user->id)));
+        $membershipRequests = $canManageSelected
+            ? $selectedClub->members()->wherePivotIn('status', ['pending_join', 'pending_leave'])->with('studentRecord.baseClass')->orderBy('name')->get()
+            : collect();
+        $wardMemberships = $user->hasRole('parent') && $selectedClub
+            ? $user->children()->orderBy('name')->get()->map(function (User $child) use ($selectedClub) {
+                $child->setAttribute('club_membership_status', $selectedClub->members()->whereKey($child->id)->first()?->pivot?->status);
+                return $child;
+            })
+            : collect();
         $termPlan = $selectedClub?->termPlans->first();
         if (! $canViewActivities || (! $canManageSelected && ! $termPlan?->published_at)) {
             $termPlan = null;
         }
 
         return view('livewire.clubs.club-hub', [
-            'clubs' => $clubs, 'selectedClub' => $selectedClub, 'isJoined' => $isJoined,
+            'clubs' => $clubs, 'selectedClub' => $selectedClub, 'isJoined' => $isJoined, 'membershipStatus' => $membershipStatus,
             'canViewActivities' => $canViewActivities, 'canManageAll' => $user->can('manage clubs'),
             'canManageSelected' => $canManageSelected,
+            'membershipRequests' => $membershipRequests, 'wardMemberships' => $wardMemberships,
             'termPlan' => $termPlan,
             'teachers' => $user->can('manage clubs') ? $this->teacherQuery()->get(['id', 'name']) : collect(),
             'students' => $user->can('manage clubs') ? $this->studentQuery()->get(['id', 'name']) : collect(),

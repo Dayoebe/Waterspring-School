@@ -1,0 +1,62 @@
+<div class="space-y-6">
+    @if(session('success'))<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800"><i class="fas fa-circle-check mr-2"></i>{{ session('success') }}</div>@endif
+
+    <section class="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 text-white shadow-xl">
+        <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div><p class="text-xs font-black uppercase tracking-[0.22em] text-violet-200">Student support</p><h1 class="mt-3 text-3xl font-black sm:text-4xl">Behaviour reports</h1><p class="mt-3 max-w-3xl leading-7 text-slate-200">A private, accountable conversation between parents and the class or subject teachers assigned to a student. Record observations, recognise positive conduct, agree follow-up actions, and close the matter when resolved.</p></div>
+            @if($canCreate)<button wire:click="openComposer" class="rounded-2xl bg-amber-300 px-5 py-3 font-black text-slate-950 shadow-lg hover:bg-amber-200"><i class="fas fa-plus mr-2"></i>New report</button>@endif
+        </div>
+    </section>
+
+    @if($showComposer)
+        <section class="rounded-3xl border border-violet-200 bg-white p-6 shadow-lg sm:p-8">
+            <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-widest text-violet-700">Private report</p><h2 class="mt-1 text-2xl font-black text-slate-950">Start a student support conversation</h2><p class="mt-2 text-sm text-slate-600">Only the selected parent, assigned teacher, and authorised school leadership can access this thread.</p></div><button wire:click="closeComposer" class="rounded-xl p-2 text-slate-400 hover:bg-slate-100" aria-label="Close"><i class="fas fa-times"></i></button></div>
+            @if($contactOptions->isEmpty())
+                <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><i class="fas fa-triangle-exclamation mr-2"></i>No eligible parent–teacher connection is available. Confirm the student’s parent and class or subject teacher assignments first.</div>
+            @else
+                <div class="mt-6 grid gap-5 lg:grid-cols-2">
+                    <label class="lg:col-span-2"><span class="text-sm font-bold text-slate-800">Student and recipient</span><select wire:model="contactKey" class="mt-2 w-full rounded-xl border-slate-300"><option value="">Choose a student and assigned contact</option>@foreach($contactOptions as $option)<option value="{{ $option['key'] }}">{{ $option['label'] }}</option>@endforeach</select>@error('contactKey')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror</label>
+                    <label><span class="text-sm font-bold text-slate-800">Report category</span><select wire:model="category" class="mt-2 w-full rounded-xl border-slate-300">@foreach($categories as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                    <label><span class="text-sm font-bold text-slate-800">Priority</span><select wire:model="severity" class="mt-2 w-full rounded-xl border-slate-300"><option value="positive">Positive recognition</option><option value="observation">Observation</option><option value="concern">Concern</option><option value="urgent">Urgent concern</option></select></label>
+                    <label><span class="text-sm font-bold text-slate-800">Date observed</span><input type="date" wire:model="occurredOn" max="{{ now()->toDateString() }}" class="mt-2 w-full rounded-xl border-slate-300">@error('occurredOn')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror</label>
+                    <label><span class="text-sm font-bold text-slate-800">Short title</span><input wire:model="title" maxlength="180" placeholder="e.g. Improved participation in Mathematics" class="mt-2 w-full rounded-xl border-slate-300">@error('title')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror</label>
+                    <label class="lg:col-span-2"><span class="text-sm font-bold text-slate-800">Observation and suggested follow-up</span><textarea wire:model="initialMessage" rows="5" maxlength="5000" placeholder="Describe what was observed, its context, any immediate action taken, and what support or response you recommend." class="mt-2 w-full rounded-xl border-slate-300"></textarea>@error('initialMessage')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror</label>
+                </div>
+                <div class="mt-6 flex justify-end gap-3"><button wire:click="closeComposer" class="rounded-xl border border-slate-300 px-5 py-3 font-bold text-slate-700">Cancel</button><button wire:click="createReport" wire:loading.attr="disabled" class="rounded-xl bg-violet-700 px-5 py-3 font-black text-white hover:bg-violet-800"><span wire:loading.remove wire:target="createReport">Send private report</span><span wire:loading wire:target="createReport">Sending…</span></button></div>
+            @endif
+        </section>
+    @endif
+
+    <div class="grid min-h-[650px] gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <aside class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 p-5"><div class="relative"><i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i><input wire:model.live.debounce.300ms="search" placeholder="Search student or title" class="w-full rounded-xl border-slate-300 pl-11 text-sm"></div><div class="mt-3 grid grid-cols-3 gap-2">@foreach(['active' => 'Active', 'resolved' => 'Resolved', 'all' => 'All'] as $value => $label)<button wire:click="$set('statusFilter', '{{ $value }}')" class="rounded-lg px-3 py-2 text-xs font-black {{ $statusFilter === $value ? 'bg-violet-700 text-white' : 'bg-slate-100 text-slate-600' }}">{{ $label }}</button>@endforeach</div></div>
+            <div class="max-h-[600px] divide-y divide-slate-100 overflow-y-auto">
+                @forelse($reports as $report)
+                    <button wire:click="selectReport({{ $report->id }})" class="w-full p-5 text-left transition {{ $selectedReportId === $report->id ? 'bg-violet-50' : 'hover:bg-slate-50' }}">
+                        <div class="flex items-start justify-between gap-3"><p class="font-black text-slate-950">{{ $report->student->name }}</p>@if($report->unread_count)<span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-violet-700 px-2 text-xs font-black text-white">{{ $report->unread_count }}</span>@endif</div>
+                        <p class="mt-1 line-clamp-2 text-sm font-semibold text-slate-700">{{ $report->title }}</p><div class="mt-3 flex items-center justify-between gap-2 text-xs"><span class="rounded-full px-2.5 py-1 font-bold {{ $report->severity === 'urgent' ? 'bg-red-100 text-red-700' : ($report->severity === 'positive' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800') }}">{{ ucfirst($report->severity) }}</span><span class="text-slate-400">{{ $report->last_message_at->diffForHumans() }}</span></div>
+                    </button>
+                @empty<div class="p-8 text-center"><i class="fas fa-comments text-3xl text-slate-300"></i><p class="mt-3 font-bold text-slate-700">No reports found</p><p class="mt-1 text-sm text-slate-500">New and ongoing conversations will appear here.</p></div>@endforelse
+            </div>
+            @if($reports->hasPages())<div class="border-t border-slate-200 p-4">{{ $reports->links() }}</div>@endif
+        </aside>
+
+        <main class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            @if($selectedReport)
+                <header class="border-b border-slate-200 bg-slate-50 p-6"><div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div class="flex flex-wrap items-center gap-2"><span class="rounded-full bg-violet-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-violet-800">{{ $categories[$selectedReport->category] ?? ucfirst($selectedReport->category) }}</span><span class="rounded-full px-3 py-1 text-xs font-black {{ $selectedReport->status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">{{ ucfirst($selectedReport->status) }}</span></div><h2 class="mt-3 text-2xl font-black text-slate-950">{{ $selectedReport->title }}</h2><p class="mt-2 text-sm text-slate-600"><strong>{{ $selectedReport->student->name }}</strong> · {{ $selectedReport->student->studentRecord?->baseClass?->name ?: 'Class unavailable' }} · Observed {{ $selectedReport->occurred_on->format('j M Y') }}</p></div>@if($canResolve)@if($selectedReport->status === 'resolved')<button wire:click="reopenReport" class="rounded-xl border border-violet-300 px-4 py-2 text-sm font-bold text-violet-800">Reopen report</button>@else<button wire:click="resolveReport" wire:confirm="Mark this conversation resolved and make it read-only?" class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white">Mark resolved</button>@endif@endif</div>
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2"><div class="rounded-xl border border-slate-200 bg-white p-3"><p class="text-xs font-bold uppercase text-slate-400">Parent</p><p class="mt-1 font-bold text-slate-800">{{ $selectedReport->parent->name }}</p></div><div class="rounded-xl border border-slate-200 bg-white p-3"><p class="text-xs font-bold uppercase text-slate-400">{{ $selectedReport->teacher_context === 'class' ? 'Class teacher' : 'Subject teacher' }}</p><p class="mt-1 font-bold text-slate-800">{{ $selectedReport->teacher->name }}@if($selectedReport->subject) · {{ $selectedReport->subject->name }}@endif</p></div></div>
+                </header>
+                <div class="max-h-[520px] space-y-5 overflow-y-auto bg-slate-50/60 p-6">
+                    @foreach($selectedReport->messages as $message)
+                        @php($mine = $message->author_id === auth()->id())
+                        <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}"><article class="max-w-2xl rounded-2xl px-5 py-4 shadow-sm {{ $mine ? 'bg-violet-700 text-white' : 'border border-slate-200 bg-white text-slate-800' }}"><div class="flex items-center gap-2 text-xs font-bold {{ $mine ? 'text-violet-100' : 'text-slate-500' }}"><span>{{ $message->author->name }}</span><span>·</span><time>{{ $message->created_at->format('j M Y, g:i A') }}</time></div><p class="mt-2 whitespace-pre-line text-sm leading-6">{{ $message->body }}</p></article></div>
+                    @endforeach
+                    @if($selectedReport->status === 'resolved')<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-sm text-emerald-800"><i class="fas fa-circle-check mr-2"></i>Resolved {{ $selectedReport->resolved_at?->diffForHumans() }}@if($selectedReport->resolver) by {{ $selectedReport->resolver->name }}@endif.</div>@endif
+                </div>
+                @if($selectedReport->status !== 'resolved')<footer class="border-t border-slate-200 p-5"><label class="sr-only" for="behaviour-reply">Reply</label><textarea id="behaviour-reply" wire:model="reply" rows="3" maxlength="5000" placeholder="Write a respectful, factual follow-up…" class="w-full rounded-xl border-slate-300"></textarea>@error('reply')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror<div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-slate-500"><i class="fas fa-lock mr-1"></i>Private to this parent–teacher conversation.</p><button wire:click="sendReply" wire:loading.attr="disabled" class="rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-black text-white"><i class="fas fa-paper-plane mr-2"></i>Send reply</button></div></footer>@endif
+            @else
+                <div class="flex min-h-[650px] items-center justify-center p-8 text-center"><div><span class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-2xl text-violet-700"><i class="fas fa-user-shield"></i></span><h2 class="mt-4 text-xl font-black text-slate-900">Select a behaviour report</h2><p class="mt-2 max-w-md text-sm leading-6 text-slate-500">Choose a conversation from the list, or start a new private report with an assigned parent or teacher.</p></div></div>
+            @endif
+        </main>
+    </div>
+</div>

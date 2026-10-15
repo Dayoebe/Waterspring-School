@@ -11,7 +11,7 @@
     </section>
 
     @if($children->isNotEmpty())
-        <section class="rounded-2xl border border-violet-200 bg-violet-50 p-5"><p class="text-xs font-bold uppercase tracking-widest text-violet-700">Your wards</p><div class="mt-3 flex flex-wrap gap-2">@foreach($children as $child)<span class="rounded-full bg-white px-4 py-2 text-sm font-bold text-violet-900 shadow-sm"><i class="fas fa-child-reaching mr-2 text-violet-500"></i>{{ $child->name }}</span>@endforeach</div><p class="mt-3 text-sm text-violet-800">Only clubs joined by your wards are shown below.</p></section>
+        <section class="rounded-2xl border border-violet-200 bg-violet-50 p-5"><p class="text-xs font-bold uppercase tracking-widest text-violet-700">Your wards</p><div class="mt-3 flex flex-wrap gap-2">@foreach($children as $child)<span class="rounded-full bg-white px-4 py-2 text-sm font-bold text-violet-900 shadow-sm"><i class="fas fa-child-reaching mr-2 text-violet-500"></i>{{ $child->name }}</span>@endforeach</div><p class="mt-3 text-sm text-violet-800">Browse every available club. Club plans and activities unlock only for wards with an active membership.</p></section>
     @endif
 
     @if($showClubForm && $canManageAll)
@@ -54,10 +54,53 @@
                 <section class="overflow-hidden rounded-3xl bg-gradient-to-br {{ $colourClasses[$selectedClub->colour] ?? $colourClasses['sky'] }} text-white shadow-lg">
                     <div class="p-6 sm:p-8"><div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-[0.2em] text-white/70">{{ $selectedClub->category ?: 'School club' }}</p><h2 class="mt-2 text-3xl font-black">{{ $selectedClub->name }}</h2><p class="mt-4 max-w-3xl leading-7 text-white/85">{{ $selectedClub->description }}</p></div>@if($canManageAll)<div class="flex gap-2"><button wire:click="editClub({{ $selectedClub->id }})" class="rounded-xl bg-white/15 px-4 py-2 text-sm font-bold hover:bg-white/25"><i class="fas fa-pen mr-2"></i>Edit</button><button wire:click="deleteClub({{ $selectedClub->id }})" wire:confirm="Delete this club, its memberships, instructors and activities?" class="rounded-xl bg-red-950/30 px-4 py-2 text-sm font-bold hover:bg-red-950/50"><i class="fas fa-trash mr-2"></i>Delete</button></div>@endif</div>
                         <div class="mt-6 flex flex-wrap gap-3 text-sm"><span class="rounded-full bg-white/15 px-4 py-2"><i class="fas fa-calendar-day mr-2"></i>{{ $selectedClub->meeting_day ?: 'Flexible day' }}{{ $selectedClub->meeting_time ? ' · '.date('g:i A', strtotime($selectedClub->meeting_time)) : '' }}</span>@if($selectedClub->meeting_location)<span class="rounded-full bg-white/15 px-4 py-2"><i class="fas fa-location-dot mr-2"></i>{{ $selectedClub->meeting_location }}</span>@endif<span class="rounded-full bg-white/15 px-4 py-2"><i class="fas fa-users mr-2"></i>{{ $selectedClub->members->count() }} active</span></div>
-                        @if(auth()->user()->hasRole('student'))<div class="mt-6">@if($isJoined)<button wire:click="leaveClub({{ $selectedClub->id }})" wire:confirm="Leave {{ $selectedClub->name }}?" class="rounded-xl border border-white/40 px-5 py-2.5 font-bold hover:bg-white/10">Leave club</button>@elseif($selectedClub->is_active)<button wire:click="joinClub({{ $selectedClub->id }})" class="rounded-xl bg-amber-300 px-5 py-2.5 font-black text-slate-950 hover:bg-amber-200">Join this club</button>@endif</div>@endif
+                        @if(auth()->user()->hasRole('student'))
+                            <div class="mt-6">
+                                @if($membershipStatus === 'pending_join')
+                                    <span class="inline-flex rounded-xl bg-amber-300 px-5 py-2.5 font-black text-slate-950"><i class="fas fa-clock mr-2"></i>Join request pending</span>
+                                @elseif($membershipStatus === 'pending_leave')
+                                    <span class="inline-flex rounded-xl bg-amber-300 px-5 py-2.5 font-black text-slate-950"><i class="fas fa-clock mr-2"></i>Leave request pending</span>
+                                @elseif($isJoined)
+                                    <button wire:click="leaveClub({{ $selectedClub->id }})" wire:confirm="Request moderator approval to leave {{ $selectedClub->name }}? You remain a member until approved." class="rounded-xl border border-white/40 px-5 py-2.5 font-bold hover:bg-white/10">Request to leave</button>
+                                @elseif($selectedClub->is_active)
+                                    <button wire:click="joinClub({{ $selectedClub->id }})" wire:confirm="Send a request to the club moderators?" class="rounded-xl bg-amber-300 px-5 py-2.5 font-black text-slate-950 hover:bg-amber-200">Request to join</button>
+                                @endif
+                            </div>
+                        @endif
+
+                        @if(auth()->user()->hasRole('parent') && $wardMemberships->isNotEmpty())
+                            <div class="mt-6 grid gap-2 sm:grid-cols-2">
+                                @foreach($wardMemberships as $ward)
+                                    <div class="flex flex-col gap-3 rounded-xl bg-white/10 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div><p class="font-bold">{{ $ward->name }}</p><p class="text-xs text-white/70">{{ str_replace('_', ' ', $ward->club_membership_status ?: 'not a member') }}</p></div>
+                                        @if($ward->club_membership_status === 'pending_join' || $ward->club_membership_status === 'pending_leave')
+                                            <span class="rounded-lg bg-amber-300 px-3 py-2 text-xs font-black text-slate-950">Pending approval</span>
+                                        @elseif($ward->club_membership_status === 'active')
+                                            <button wire:click="leaveClub({{ $selectedClub->id }}, {{ $ward->id }})" wire:confirm="Request approval for {{ $ward->name }} to leave this club?" class="rounded-lg border border-white/30 px-3 py-2 text-xs font-bold">Request leave</button>
+                                        @elseif($selectedClub->is_active)
+                                            <button wire:click="joinClub({{ $selectedClub->id }}, {{ $ward->id }})" wire:confirm="Request membership for {{ $ward->name }}?" class="rounded-lg bg-amber-300 px-3 py-2 text-xs font-black text-slate-950">Request join</button>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </section>
 
+                @if($canManageSelected && $membershipRequests->isNotEmpty())
+                    <section class="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                        <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-widest text-amber-700">Moderator action required</p><h3 class="mt-1 text-xl font-black text-slate-900">Membership requests</h3><p class="mt-1 text-sm text-slate-600">Approve or decline requests to join and leave this club.</p></div><span class="rounded-full bg-amber-200 px-3 py-1 text-xs font-black text-amber-900">{{ $membershipRequests->count() }} pending</span></div>
+                        <div class="mt-5 grid gap-3 lg:grid-cols-2">
+                            @foreach($membershipRequests as $requestStudent)
+                                <article class="rounded-xl border border-amber-200 bg-white p-4">
+                                    <div class="flex items-start justify-between gap-3"><div><p class="font-black text-slate-900">{{ $requestStudent->name }}</p><p class="mt-1 text-xs text-slate-500">{{ $requestStudent->studentRecord?->baseClass?->name ?: 'Student' }}</p><span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $requestStudent->pivot->status === 'pending_join' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">{{ $requestStudent->pivot->status === 'pending_join' ? 'Wants to join' : 'Wants to leave' }}</span></div><div class="flex gap-2"><button wire:click="reviewMembershipRequest({{ $requestStudent->id }}, 'reject')" wire:confirm="Decline this request?" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700">Decline</button><button wire:click="reviewMembershipRequest({{ $requestStudent->id }}, 'approve')" wire:confirm="Approve this request?" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Approve</button></div></div>
+                                </article>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                @if($canViewActivities || $canManageSelected)
                 <div class="grid gap-6 lg:grid-cols-2">
                     <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <div class="flex items-center justify-between"><div><p class="text-xs font-bold uppercase tracking-widest text-violet-700">Guidance</p><h3 class="mt-1 text-xl font-black">Club instructors</h3></div><span class="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">{{ $selectedClub->instructors->count() }}</span></div>
@@ -69,6 +112,9 @@
                         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Participation</p><h3 class="mt-1 text-xl font-black">{{ auth()->user()->hasRole('parent') ? 'Your wards in this club' : 'Student members' }}</h3></div><span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">{{ $selectedClub->members->count() }}</span></div><div class="mt-5 max-h-64 space-y-2 overflow-y-auto">@forelse($selectedClub->members as $student)<div class="flex items-center justify-between rounded-xl bg-slate-50 p-3"><div><p class="font-bold">{{ $student->name }}</p><p class="text-xs text-slate-500">{{ $student->studentRecord?->baseClass?->name ?: 'Student' }} · Joined {{ \Carbon\Carbon::parse($student->pivot->joined_on)->format('j M Y') }}</p></div>@if($canManageAll)<button wire:click="removeStudent({{ $student->id }})" wire:confirm="Remove this student from the club?" class="text-red-600" aria-label="Remove student"><i class="fas fa-times"></i></button>@endif</div>@empty<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No active student memberships yet.</p>@endforelse</div>@if($canManageAll)<div class="mt-4 flex gap-2"><select wire:model="selectedStudentId" class="min-w-0 flex-1 rounded-xl border-slate-300 text-sm"><option value="">Choose a student</option>@foreach($students as $student)<option value="{{ $student->id }}">{{ $student->name }}</option>@endforeach</select><button wire:click="addStudent" class="rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white">Add</button></div>@error('selectedStudentId')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror@endif</section>
                     @endif
                 </div>
+                @else
+                    <section class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"><span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-xl text-slate-400"><i class="fas fa-lock"></i></span><h3 class="mt-4 text-lg font-black text-slate-900">Membership details are private</h3><p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">A moderator must approve the membership request before club instructors, members, plans, weekly agendas, and activities become available.</p></section>
+                @endif
 
                 <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
                     <div class="flex flex-col gap-3 border-b border-indigo-100 bg-indigo-50 p-6 sm:flex-row sm:items-center sm:justify-between">

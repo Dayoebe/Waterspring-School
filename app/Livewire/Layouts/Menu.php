@@ -587,6 +587,13 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'icon' => 'fas fa-user-shield',
+                        'text' => 'Behaviour Reports',
+                        'route' => 'behaviour-reports.index',
+                        'permissions' => ['access behavioural reports'],
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'icon' => 'fas fa-envelope',
                         'text' => 'Website Enquiries',
                         'route' => 'contacts.messages.index',

@@ -185,7 +185,7 @@
             Skip to content
         </a>
 
-        <div x-data="{ menuOpen: false }">
+        <div id="top" x-data="{ menuOpen: false }">
             @include('partials.header')
             <main id="main" class="min-h-screen">
                 @yield('content')

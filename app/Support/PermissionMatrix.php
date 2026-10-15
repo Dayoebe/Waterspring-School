@@ -111,6 +111,8 @@ class PermissionMatrix
             'read school resources',
             'view clubs',
             'manage assigned clubs',
+            'access behavioural reports',
+            'manage behavioural reports',
             'view schemes of work',
             'manage schemes of work',
             'manage assignment',
@@ -200,6 +202,7 @@ class PermissionMatrix
             'grade assignment',
             'view clubs',
             'manage assigned clubs',
+            'access behavioural reports',
             'view schemes of work',
             'manage assigned schemes of work',
 
@@ -255,6 +258,7 @@ class PermissionMatrix
             'read own child attendance',
             'read own child discipline',
             'view own broadcasts',
+            'access behavioural reports',
         ];
 
         $basicUser = [
@@ -310,6 +314,8 @@ class PermissionMatrix
             'manage clubs',
             'manage assigned clubs',
             'join clubs',
+            'access behavioural reports',
+            'manage behavioural reports',
             'view schemes of work',
             'manage schemes of work',
             'manage assigned schemes of work',

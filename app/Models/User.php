@@ -182,6 +182,21 @@ class User extends Authenticatable
             ->withPivot(['joined_on', 'status', 'added_by'])->withTimestamps();
     }
 
+    public function behaviourReportsAsStudent()
+    {
+        return $this->hasMany(BehaviourReport::class, 'student_id');
+    }
+
+    public function behaviourReportsAsParent()
+    {
+        return $this->hasMany(BehaviourReport::class, 'parent_id');
+    }
+
+    public function behaviourReportsAsTeacher()
+    {
+        return $this->hasMany(BehaviourReport::class, 'teacher_id');
+    }
+
     public function broadcastMessageRecipients()
     {
         return $this->hasMany(BroadcastMessageRecipient::class);
