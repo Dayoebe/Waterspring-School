@@ -10,29 +10,59 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class ManageSyllabi extends Component
 {
-    use WithFileUploads;
-    use WithPagination;
     use ResolvesRestrictedTeacherAssignments;
+    use WithPagination;
 
     public string $mode = 'list';
+
     public ?int $syllabusId = null;
+
     public ?Syllabus $selectedSyllabus = null;
 
     public string $search = '';
+
     public int $perPage = 10;
 
     public $class = '';
+
     public $subject = '';
+
     public string $name = '';
+
     public string $description = '';
-    public $file;
+
+    public string $overview = '';
+
+    public string $aims = '';
+
+    public string $learningOutcomes = '';
+
+    public string $scopeAndSequence = '';
+
+    public string $prerequisites = '';
+
+    public string $teachingMethodology = '';
+
+    public string $assessmentPlan = '';
+
+    public string $learningResources = '';
+
+    public string $differentiation = '';
+
+    public string $crossCurricularLinks = '';
+
+    public string $homeworkPolicy = '';
+
+    public string $references = '';
+
+    public bool $isPublished = true;
 
     public $classes;
+
     public $subjects;
 
     protected $queryString = [
@@ -49,12 +79,12 @@ class ManageSyllabi extends Component
         $this->hydrateModeFromRoute($syllabus);
         $this->loadClasses();
 
-        if ($this->mode === 'create' && !$this->modeIsAllowed('create')) {
+        if ($this->mode === 'create' && ! $this->modeIsAllowed('create')) {
             $this->mode = 'list';
         }
 
         if ($this->mode === 'show') {
-            if (!$this->modeIsAllowed('show') || !$this->syllabusId) {
+            if (! $this->modeIsAllowed('show') || ! $this->syllabusId) {
                 $this->mode = 'list';
                 $this->syllabusId = null;
             } else {
@@ -70,12 +100,14 @@ class ManageSyllabi extends Component
         if ($routeName === 'syllabi.create') {
             $this->mode = 'create';
             $this->syllabusId = null;
+
             return;
         }
 
         if ($routeName === 'syllabi.show') {
             $this->mode = 'show';
             $this->syllabusId = $this->resolveRouteModelId($syllabus ?? request()->route('syllabus'));
+
             return;
         }
 
@@ -104,6 +136,7 @@ class ManageSyllabi extends Component
         if ($user->hasRole('student')) {
             $this->class = $studentClassId ?: '';
             $this->loadSubjectsForClass();
+
             return;
         }
 
@@ -118,6 +151,7 @@ class ManageSyllabi extends Component
                 $this->classes = collect();
                 $this->class = '';
                 $this->loadSubjectsForClass();
+
                 return;
             }
 
@@ -126,7 +160,7 @@ class ManageSyllabi extends Component
 
         $this->classes = $classesQuery->get(['my_classes.id', 'my_classes.name']);
 
-        if ($this->classes->isNotEmpty() && !$this->classes->contains('id', (int) $this->class)) {
+        if ($this->classes->isNotEmpty() && ! $this->classes->contains('id', (int) $this->class)) {
             $this->class = (string) $this->classes->first()->id;
         }
 
@@ -137,7 +171,7 @@ class ManageSyllabi extends Component
     {
         if (auth()->user()->hasRole('student')) {
             $this->class = (string) (auth()->user()->studentRecord?->myClass?->id ?: '');
-        } elseif ($this->class !== '' && !$this->classBelongsToCurrentSchool((int) $this->class)) {
+        } elseif ($this->class !== '' && ! $this->classBelongsToCurrentSchool((int) $this->class)) {
             $this->class = (string) ($this->classes->first()?->id ?: '');
         }
 
@@ -149,9 +183,10 @@ class ManageSyllabi extends Component
     {
         $classId = $this->class !== '' ? (int) $this->class : null;
 
-        if (!$classId) {
+        if (! $classId) {
             $this->subjects = collect();
             $this->subject = '';
+
             return;
         }
 
@@ -177,14 +212,14 @@ class ManageSyllabi extends Component
                 ->values();
         }
 
-        if (!$this->subjects->contains('id', (int) $this->subject)) {
+        if (! $this->subjects->contains('id', (int) $this->subject)) {
             $this->subject = (string) ($this->subjects->first()?->id ?: '');
         }
     }
 
     public function switchMode(string $mode, ?int $syllabusId = null)
     {
-        if (!$this->modeIsAllowed($mode)) {
+        if (! $this->modeIsAllowed($mode)) {
             return;
         }
 
@@ -195,11 +230,13 @@ class ManageSyllabi extends Component
         if ($mode === 'create') {
             $this->resetCreateForm();
             $this->loadSubjectsForClass();
+
             return;
         }
 
         if ($mode === 'show' && $syllabusId) {
             $this->loadSyllabusForShow();
+
             return;
         }
 
@@ -212,8 +249,20 @@ class ManageSyllabi extends Component
             'subject',
             'name',
             'description',
-            'file',
+            'overview',
+            'aims',
+            'learningOutcomes',
+            'scopeAndSequence',
+            'prerequisites',
+            'teachingMethodology',
+            'assessmentPlan',
+            'learningResources',
+            'differentiation',
+            'crossCurricularLinks',
+            'homeworkPolicy',
+            'references',
         ]);
+        $this->isPublished = true;
     }
 
     public function createSyllabus()
@@ -221,8 +270,9 @@ class ManageSyllabi extends Component
         $this->ensurePermission('create syllabus');
 
         $semesterId = auth()->user()->school?->semester_id;
-        if (!$semesterId) {
+        if (! $semesterId) {
             $this->addError('semester', 'Set an active term before creating a syllabus.');
+
             return;
         }
 
@@ -230,30 +280,69 @@ class ManageSyllabi extends Component
             'class' => 'required|integer',
             'subject' => 'required|integer',
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:5000',
-            'file' => 'required|file|mimes:pdf|max:10240',
+            'description' => 'required|string|max:5000',
+            'overview' => 'required|string|max:10000',
+            'aims' => 'required|string|max:10000',
+            'learningOutcomes' => 'required|string|max:15000',
+            'scopeAndSequence' => 'required|string|max:30000',
+            'prerequisites' => 'nullable|string|max:5000',
+            'teachingMethodology' => 'required|string|max:10000',
+            'assessmentPlan' => 'required|string|max:10000',
+            'learningResources' => 'required|string|max:10000',
+            'differentiation' => 'nullable|string|max:10000',
+            'crossCurricularLinks' => 'nullable|string|max:10000',
+            'homeworkPolicy' => 'nullable|string|max:5000',
+            'references' => 'nullable|string|max:10000',
+            'isPublished' => 'boolean',
         ]);
 
         $classId = (int) $this->class;
-        if (!$this->classBelongsToCurrentSchool($classId)) {
+        if (! $this->classBelongsToCurrentSchool($classId)) {
             $this->addError('class', 'Selected class is not in your current school.');
+
             return;
         }
 
         $subject = $this->getSubjectForCurrentSchool((int) $this->subject);
-        if (!$subject || !$this->subjectMatchesClass($subject, $classId)) {
+        if (! $subject || ! $this->subjectMatchesClass($subject, $classId)) {
             $this->addError('subject', 'Selected subject is not valid for the selected class.');
+
             return;
         }
 
-        $filePath = $this->file->store('syllabi', 'public');
+        $duplicateExists = Syllabus::query()
+            ->where('subject_id', $subject->id)
+            ->where('my_class_id', $classId)
+            ->where('semester_id', $semesterId)
+            ->exists();
+        if ($duplicateExists) {
+            $this->addError('subject', 'A syllabus already exists for this class, subject, and term.');
+
+            return;
+        }
 
         Syllabus::create([
-            'name' => $this->name,
-            'description' => $this->description ?: null,
-            'file' => $filePath,
+            'name' => trim($this->name),
+            'description' => trim($this->description),
+            'overview' => trim($this->overview),
+            'aims' => trim($this->aims),
+            'learning_outcomes' => trim($this->learningOutcomes),
+            'scope_and_sequence' => trim($this->scopeAndSequence),
+            'prerequisites' => trim($this->prerequisites) ?: null,
+            'teaching_methodology' => trim($this->teachingMethodology),
+            'assessment_plan' => trim($this->assessmentPlan),
+            'learning_resources' => trim($this->learningResources),
+            'differentiation' => trim($this->differentiation) ?: null,
+            'cross_curricular_links' => trim($this->crossCurricularLinks) ?: null,
+            'homework_policy' => trim($this->homeworkPolicy) ?: null,
+            'references' => trim($this->references) ?: null,
             'subject_id' => $subject->id,
             'semester_id' => $semesterId,
+            'academic_year_id' => auth()->user()->school?->academic_year_id,
+            'my_class_id' => $classId,
+            'teacher_id' => auth()->id(),
+            'is_published' => $this->isPublished,
+            'published_at' => $this->isPublished ? now() : null,
         ]);
 
         session()->flash('success', 'Syllabus created successfully.');
@@ -271,7 +360,9 @@ class ManageSyllabi extends Component
         $this->ensurePermission('delete syllabus');
 
         $syllabus = $this->getSyllabusForCurrentSchool($syllabusId);
-        Storage::disk('public')->delete($syllabus->file);
+        if ($syllabus->file) {
+            Storage::disk('public')->delete($syllabus->file);
+        }
         $syllabus->delete();
 
         session()->flash('success', 'Syllabus deleted successfully.');
@@ -284,7 +375,7 @@ class ManageSyllabi extends Component
     protected function getSyllabiQuery(): Builder
     {
         $query = Syllabus::query()
-            ->with('subject')
+            ->with(['subject', 'schoolClass', 'teacher'])
             ->forSchool(auth()->user()->school_id)
             ->forSemester(auth()->user()->school?->semester_id)
             ->forClass($this->class !== '' ? (int) $this->class : null)
@@ -357,7 +448,7 @@ class ManageSyllabi extends Component
     protected function getSyllabusForCurrentSchool(?int $syllabusId): Syllabus
     {
         $query = Syllabus::query()
-            ->with('subject')
+            ->with(['subject', 'schoolClass', 'teacher', 'academicYear', 'semester'])
             ->forSchool(auth()->user()->school_id)
             ->whereKey($syllabusId);
 
