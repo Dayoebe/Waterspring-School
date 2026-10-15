@@ -17,7 +17,9 @@ class StudentSupportHub extends Component
 {
     public ?int $selectedCaseId = null;
     public bool $showComposer = false;
-    public string $contactKey = '';
+    public string $selectedStudentId = '';
+    public string $selectedParentId = '';
+    public string $selectedLeadTeacherId = '';
     public string $category = 'academic';
     public string $priority = 'medium';
     public string $title = '';
@@ -52,7 +54,7 @@ class StudentSupportHub extends Component
     public function closeComposer(): void
     {
         $this->showComposer = false;
-        $this->reset(['contactKey', 'title', 'concern', 'goal']);
+        $this->reset(['selectedStudentId', 'selectedParentId', 'selectedLeadTeacherId', 'title', 'concern', 'goal']);
         $this->category = 'academic'; $this->priority = 'medium';
         $this->reviewOn = now()->addWeeks(2)->toDateString();
     }
@@ -61,12 +63,17 @@ class StudentSupportHub extends Component
     {
         abort_unless($this->canOpen(), 403);
         $this->validate([
-            'contactKey' => ['required'], 'category' => ['required', Rule::in(array_keys($this->categories()))],
+            'selectedStudentId' => ['required', 'integer'], 'selectedParentId' => ['required', 'integer'], 'selectedLeadTeacherId' => ['required', 'integer'],
+            'category' => ['required', Rule::in(array_keys($this->categories()))],
             'priority' => ['required', Rule::in(['low', 'medium', 'high', 'urgent'])],
             'title' => ['required', 'string', 'max:180'], 'concern' => ['required', 'string', 'min:10', 'max:5000'],
             'goal' => ['required', 'string', 'min:5', 'max:3000'], 'reviewOn' => ['required', 'date', 'after_or_equal:today'],
         ]);
-        $contact = $this->caseContacts()->firstWhere('key', $this->contactKey);
+        $contact = $this->caseContacts()->first(fn (array $contact) =>
+            $contact['student_id'] === (int) $this->selectedStudentId
+            && $contact['parent_id'] === (int) $this->selectedParentId
+            && $contact['teacher_id'] === (int) $this->selectedLeadTeacherId
+        );
         abort_unless($contact, 403, 'That parent–teacher assignment is no longer available.');
         $case = DB::transaction(function () use ($contact) {
             $case = StudentSupportCase::create([
@@ -86,6 +93,21 @@ class StudentSupportHub extends Component
     }
 
     public function selectCase(int $caseId): void { $this->visibleCases()->findOrFail($caseId); $this->selectedCaseId = $caseId; }
+
+    public function updatedSelectedStudentId(): void
+    {
+        $this->selectedParentId = auth()->user()->hasRole('parent') && $this->selectedStudentId !== ''
+            ? (string) auth()->id()
+            : '';
+        $this->selectedLeadTeacherId = '';
+        $this->resetValidation(['selectedStudentId', 'selectedParentId', 'selectedLeadTeacherId']);
+    }
+
+    public function updatedSelectedParentId(): void
+    {
+        $this->selectedLeadTeacherId = '';
+        $this->resetValidation(['selectedParentId', 'selectedLeadTeacherId']);
+    }
 
     public function acknowledge(StudentSupportNotificationService $notifications): void
     {
@@ -229,7 +251,14 @@ class StudentSupportHub extends Component
             ->when($this->statusFilter === 'active', fn ($q) => $q->where('status', '!=', 'completed'))->when($this->statusFilter === 'completed', fn ($q) => $q->where('status', 'completed'))
             ->when($this->search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('title', 'like', '%'.$this->search.'%')->orWhereHas('student', fn ($student) => $student->where('name', 'like', '%'.$this->search.'%'))))->latest('updated_at')->get();
         $case = $this->selectedCaseId ? $this->visibleCases()->with(['student.studentRecord.baseClass', 'parent', 'leadTeacher', 'openedBy', 'actions.owner', 'updates' => fn ($q) => $q->when(auth()->user()->hasRole('parent'), fn ($u) => $u->where('parent_visible', true))->with('author')->latest()])->find($this->selectedCaseId) : null;
-        return view('livewire.support.student-support-hub', ['cases' => $cases, 'case' => $case, 'contacts' => $this->canOpen() ? $this->caseContacts() : collect(), 'categories' => $this->categories(), 'signals' => $this->signals($case), 'canManage' => $this->canManage(), 'canOpen' => $this->canOpen()])
+        $contacts = $this->canOpen() ? $this->caseContacts() : collect();
+        $studentOptions = User::query()->whereIn('id', $contacts->pluck('student_id')->unique())->orderBy('name')->get(['id', 'name']);
+        $parentOptions = User::query()->whereIn('id', $contacts->where('student_id', (int) $this->selectedStudentId)->pluck('parent_id')->unique())->orderBy('name')->get(['id', 'name']);
+        $teacherOptions = User::query()->whereIn('id', $contacts
+            ->where('student_id', (int) $this->selectedStudentId)
+            ->when($this->selectedParentId !== '', fn (Collection $rows) => $rows->where('parent_id', (int) $this->selectedParentId))
+            ->pluck('teacher_id')->unique())->orderBy('name')->get(['id', 'name']);
+        return view('livewire.support.student-support-hub', ['cases' => $cases, 'case' => $case, 'contacts' => $contacts, 'studentOptions' => $studentOptions, 'parentOptions' => $parentOptions, 'teacherOptions' => $teacherOptions, 'categories' => $this->categories(), 'signals' => $this->signals($case), 'canManage' => $this->canManage(), 'canOpen' => $this->canOpen()])
             ->layout('layouts.dashboard', ['breadcrumbs' => [['href' => route('dashboard'), 'text' => 'Dashboard'], ['href' => route('student-support.index'), 'text' => 'Student Support Centre', 'active' => true]]])->title('Student Support Centre');
     }
 }

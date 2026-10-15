@@ -25,6 +25,7 @@ class Menu extends Component
             $this->overviewMenu(),
             $this->peopleMenu(),
             $this->academicsMenu(),
+            $this->studentSupportMenu(),
             $this->operationsMenu(),
             $this->communicationMenu(),
             $this->administrationMenu(),
@@ -62,13 +63,40 @@ class Menu extends Component
                     ],
                 ])),
             ],
+            [
+                'text' => 'My Account',
+                'icon' => 'fas fa-user-circle',
+                'submenu' => [
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-briefcase',
+                        'text' => 'My Responsibilities',
+                        'route' => 'dashboard.responsibilities',
+                        'permissions' => ['view dashboard'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-user',
+                        'text' => 'Profile',
+                        'route' => 'profile.edit',
+                        'permissions' => ['manage own profile'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-key',
+                        'text' => 'Change Password',
+                        'route' => 'password.change',
+                        'permissions' => ['change own password'],
+                    ],
+                ],
+            ],
         ];
     }
 
     protected function peopleMenu(): array
     {
         return [
-            ['header' => 'People'],
+            ['header' => 'School Community'],
             [
                 'text' => 'Students & Parents',
                 'icon' => 'fas fa-user-graduate',
@@ -94,6 +122,14 @@ class Menu extends Component
                         'params' => ['mode' => 'create'],
                         'permissions' => ['create student'],
                         'section' => 'Students & Admissions',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Student Login Readiness',
+                        'icon' => 'fas fa-user-shield',
+                        'route' => 'students.credentials',
+                        'permissions' => ['update student'],
+                        'section' => 'Student Account Access',
                     ],
                     [
                         'type' => 'menu-item',
@@ -209,20 +245,13 @@ class Menu extends Component
         $canAccessSubjectResultTools = $this->currentUserCanAccessSubjectResultTools();
 
         return [
-            ['header' => 'Academics'],
+            ['header' => 'Teaching & Learning'],
             [
                 'type' => 'menu-item',
                 'text' => 'Assignments',
                 'icon' => 'fas fa-clipboard-list',
                 'route' => 'assignments.index',
                 'permissions' => ['view assignment'],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Clubs & Activities',
-                'icon' => 'fas fa-people-group',
-                'route' => 'clubs.index',
-                'permissions' => ['view clubs'],
             ],
             [
                 'text' => 'Classes & Subjects',
@@ -477,40 +506,78 @@ class Menu extends Component
         ];
     }
 
-    protected function operationsMenu(): array
+    protected function studentSupportMenu(): array
     {
         return [
-            ['header' => 'School Operations'],
+            ['header' => 'Student Support & Wellbeing'],
             [
-                'type' => 'menu-item',
-                'text' => 'Library, Inventory & Assets',
-                'icon' => 'fas fa-boxes-stacked',
-                'route' => 'resources.index',
-                'permissions' => ['read school resources'],
-            ],
-            [
-                'text' => 'Attendance & Discipline',
+                'text' => 'Attendance & Welfare',
                 'icon' => 'fas fa-user-check',
-                'submenu' => array_values(array_filter([
+                'submenu' => [
                     [
                         'type' => 'menu-item',
                         'text' => 'Daily Attendance',
                         'route' => 'attendance.index',
                         'permissions' => ['read attendance'],
+                        'section' => 'School Attendance',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'My Child’s Attendance',
+                        'route' => 'parent.student-welfare',
+                        'roles' => ['parent'],
+                        'permissions' => ['read own child attendance', 'read own child discipline'],
+                        'section' => 'Parent View',
+                    ],
+                ],
+            ],
+            [
+                'text' => 'Behaviour & Intervention',
+                'icon' => 'fas fa-shield-heart',
+                'submenu' => [
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Student Support Centre',
+                        'route' => 'student-support.index',
+                        'permissions' => ['access student support'],
+                        'section' => 'Support Plans',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Behaviour Reports',
+                        'route' => 'behaviour-reports.index',
+                        'permissions' => ['access behavioural reports'],
+                        'section' => 'Behaviour Communication',
                     ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Discipline Incidents',
                         'route' => 'discipline.index',
                         'permissions' => ['read discipline incident'],
+                        'section' => 'Formal Discipline',
                     ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'My Child’s Attendance & Discipline',
-                        'route' => 'parent.student-welfare',
-                        'permissions' => ['read own child attendance', 'read own child discipline'],
-                    ],
-                ])),
+                ],
+            ],
+            [
+                'type' => 'menu-item',
+                'text' => 'Clubs & Activities',
+                'icon' => 'fas fa-people-group',
+                'route' => 'clubs.index',
+                'permissions' => ['view clubs'],
+            ],
+        ];
+    }
+
+    protected function operationsMenu(): array
+    {
+        return [
+            ['header' => 'Operations & Finance'],
+            [
+                'type' => 'menu-item',
+                'text' => 'Library, Inventory & Assets',
+                'icon' => 'fas fa-boxes-stacked',
+                'route' => 'resources.index',
+                'permissions' => ['read school resources'],
             ],
             [
                 'text' => 'Fees & Payments',
@@ -560,7 +627,7 @@ class Menu extends Component
     protected function communicationMenu(): array
     {
         return [
-            ['header' => 'Communication'],
+            ['header' => 'Communication & Engagement'],
             [
                 'text' => 'Messages & Notices',
                 'icon' => 'fas fa-comments',
@@ -587,20 +654,6 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
-                        'icon' => 'fas fa-user-shield',
-                        'text' => 'Behaviour Reports',
-                        'route' => 'behaviour-reports.index',
-                        'permissions' => ['access behavioural reports'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-hands-holding-child',
-                        'text' => 'Student Support Centre',
-                        'route' => 'student-support.index',
-                        'permissions' => ['access student support'],
-                    ],
-                    [
-                        'type' => 'menu-item',
                         'icon' => 'fas fa-envelope',
                         'text' => 'Website Enquiries',
                         'route' => 'contacts.messages.index',
@@ -608,6 +661,7 @@ class Menu extends Component
                     ],
                 ])),
             ],
+            ['header' => 'Website & Public Presence'],
             [
                 'text' => 'Website & Media',
                 'icon' => 'fas fa-globe',
@@ -618,13 +672,6 @@ class Menu extends Component
                         'icon' => 'fas fa-sliders-h',
                         'route' => 'schools.settings',
                         'permissions' => ['manage school settings'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Student Login Readiness',
-                        'icon' => 'fas fa-user-shield',
-                        'route' => 'students.credentials',
-                        'permissions' => ['update student'],
                     ],
                     [
                         'type' => 'menu-item',
@@ -648,7 +695,7 @@ class Menu extends Component
     protected function administrationMenu(): array
     {
         return [
-            ['header' => 'Administration'],
+            ['header' => 'Leadership & Administration'],
             [
                 'text' => 'Reports & Analytics',
                 'icon' => 'fas fa-chart-pie',
@@ -696,33 +743,6 @@ class Menu extends Component
                         'route' => 'schools.index',
                         'params' => ['mode' => 'create'],
                         'permissions' => ['create school'],
-                    ],
-                ])),
-            ],
-            [
-                'text' => 'My Account',
-                'icon' => 'fas fa-user',
-                'submenu' => array_values(array_filter([
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-briefcase',
-                        'text' => 'My Responsibilities',
-                        'route' => 'dashboard.responsibilities',
-                        'permissions' => ['view dashboard'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-user',
-                        'text' => 'Profile',
-                        'route' => 'profile.edit',
-                        'permissions' => ['manage own profile'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'icon' => 'fas fa-key',
-                        'text' => 'Change Password',
-                        'route' => 'password.change',
-                        'permissions' => ['change own password'],
                     ],
                 ])),
             ],

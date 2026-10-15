@@ -21,7 +21,9 @@ class BehaviourReportHub extends Component
     public string $statusFilter = 'active';
     public ?int $selectedReportId = null;
     public bool $showComposer = false;
-    public string $contactKey = '';
+    public string $reportStudentId = '';
+    public string $reportParentId = '';
+    public string $reportTeacherId = '';
     public string $category = 'conduct';
     public string $severity = 'observation';
     public string $title = '';
@@ -58,7 +60,7 @@ class BehaviourReportHub extends Component
     public function closeComposer(): void
     {
         $this->showComposer = false;
-        $this->reset(['contactKey', 'title', 'initialMessage']);
+        $this->reset(['reportStudentId', 'reportParentId', 'reportTeacherId', 'title', 'initialMessage']);
         $this->category = 'conduct';
         $this->severity = 'observation';
         $this->occurredOn = now()->toDateString();
@@ -69,7 +71,9 @@ class BehaviourReportHub extends Component
     {
         abort_unless($this->canCreate(), 403);
         $this->validate([
-            'contactKey' => ['required', 'string'],
+            'reportStudentId' => ['required', 'integer'],
+            'reportParentId' => ['required', 'integer'],
+            'reportTeacherId' => ['required', 'integer'],
             'category' => ['required', Rule::in(array_keys($this->categories()))],
             'severity' => ['required', Rule::in(['positive', 'observation', 'concern', 'urgent'])],
             'title' => ['required', 'string', 'max:180'],
@@ -77,7 +81,11 @@ class BehaviourReportHub extends Component
             'initialMessage' => ['required', 'string', 'min:10', 'max:5000'],
         ]);
 
-        $contact = $this->contactOptions()->firstWhere('key', $this->contactKey);
+        $contact = $this->contactOptions()->first(fn (array $contact) =>
+            $contact['student_id'] === (int) $this->reportStudentId
+            && $contact['parent_id'] === (int) $this->reportParentId
+            && $contact['teacher_id'] === (int) $this->reportTeacherId
+        );
         abort_unless($contact, 403, 'That student and teacher assignment is no longer available.');
 
         $report = DB::transaction(function () use ($contact) {
@@ -107,6 +115,20 @@ class BehaviourReportHub extends Component
         $this->selectedReportId = $report->id;
         $this->closeComposer();
         session()->flash('success', 'Behaviour report sent privately.');
+    }
+
+    public function updatedReportStudentId(): void
+    {
+        $user = auth()->user();
+        $this->reportParentId = $user->hasRole('parent') && $this->reportStudentId !== '' ? (string) $user->id : '';
+        $this->reportTeacherId = $user->hasRole('teacher') && $this->reportStudentId !== '' ? (string) $user->id : '';
+        $this->resetValidation(['reportStudentId', 'reportParentId', 'reportTeacherId']);
+    }
+
+    public function updatedReportParentId(): void
+    {
+        if (! auth()->user()->hasRole('teacher')) $this->reportTeacherId = '';
+        $this->resetValidation(['reportParentId', 'reportTeacherId']);
     }
 
     public function selectReport(int $reportId): void
@@ -270,9 +292,15 @@ class BehaviourReportHub extends Component
             ->latest('last_message_at')->paginate(15);
         $selectedReport = $this->selectedReportId ? $this->visibleReports()->with(['student.studentRecord.baseClass', 'parent', 'teacher', 'subject', 'initiator', 'resolver', 'messages.author'])->find($this->selectedReportId) : null;
 
+        $contacts = $this->canCreate() ? $this->contactOptions() : collect();
+        $studentOptions = User::query()->whereIn('id', $contacts->pluck('student_id')->unique())->orderBy('name')->get(['id', 'name']);
+        $parentOptions = User::query()->whereIn('id', $contacts->where('student_id', (int) $this->reportStudentId)->pluck('parent_id')->unique())->orderBy('name')->get(['id', 'name']);
+        $teacherOptions = User::query()->whereIn('id', $contacts->where('student_id', (int) $this->reportStudentId)->where('parent_id', (int) $this->reportParentId)->pluck('teacher_id')->unique())->orderBy('name')->get(['id', 'name']);
+
         return view('livewire.behaviour.behaviour-report-hub', [
             'reports' => $reports, 'selectedReport' => $selectedReport,
-            'contactOptions' => $this->canCreate() ? $this->contactOptions() : collect(),
+            'contactOptions' => $contacts, 'studentOptions' => $studentOptions,
+            'parentOptions' => $parentOptions, 'teacherOptions' => $teacherOptions,
             'categories' => $this->categories(), 'canCreate' => $this->canCreate(),
             'canResolve' => $selectedReport ? $this->canResolve($selectedReport) : false,
         ])->layout('layouts.dashboard', [
