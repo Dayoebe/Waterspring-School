@@ -1,3 +1,9 @@
+@php
+    $assignedClasses = $subject->classes;
+    if ($assignedClasses->isEmpty() && $subject->myClass) {
+        $assignedClasses = collect([$subject->myClass]);
+    }
+@endphp
 <div x-data="{ activeTab: @entangle('activeTab') }" class="space-y-6">
 
     <!-- Header Card -->
@@ -17,12 +23,13 @@
                     </span>
                     <span class="flex items-center">
                         <i class="fas fa-school mr-2"></i>
-                        Class: {{ $subject->myClass->name ?? 'N/A' }}
+                        {{ $assignedClasses->count() === 1 ? 'Class' : 'Classes' }}:
+                        {{ $assignedClasses->pluck('name')->join(', ') ?: 'Not assigned' }}
                     </span>
-                    @if($subject->myClass && $subject->myClass->classGroup)
+                    @if($assignedClasses->pluck('classGroup.name')->filter()->isNotEmpty())
                         <span class="flex items-center">
                             <i class="fas fa-layer-group mr-2"></i>
-                            Group: {{ $subject->myClass->classGroup->name }}
+                            {{ $assignedClasses->pluck('classGroup.name')->filter()->unique()->join(', ') }}
                         </span>
                     @endif
                     <span class="flex items-center">
@@ -112,9 +119,9 @@
                                     <div class="flex items-center">
                                         <i class="fas fa-school text-purple-600 text-2xl mr-4"></i>
                                         <div>
-                                            <p class="text-sm text-gray-600">Class</p>
+                                            <p class="text-sm text-gray-600">Assigned {{ $assignedClasses->count() === 1 ? 'Class' : 'Classes' }}</p>
                                             <p class="text-lg font-bold text-gray-900">
-                                                {{ $subject->myClass->name ?? 'Not Assigned' }}
+                                                {{ $assignedClasses->pluck('name')->join(', ') ?: 'Not assigned' }}
                                             </p>
                                         </div>
                                     </div>
@@ -135,44 +142,23 @@
                         </div>
 
                         <!-- Class Information -->
-                        @if($subject->myClass)
+                        @if($assignedClasses->isNotEmpty())
                             <div class="bg-gradient-to-r from-teal-50 to-green-50 rounded-lg p-6">
-                                <h3 class="text-xl font-bold text-gray-900 mb-4">Class Information</h3>
+                                <div class="mb-4 flex items-center justify-between gap-4"><h3 class="text-xl font-bold text-gray-900">Assigned Classes</h3><span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-teal-700 shadow-sm">{{ $assignedClasses->count() }} total</span></div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    @foreach($assignedClasses as $assignedClass)
+                                    <article class="bg-white p-4 rounded-lg shadow-sm">
                                         <div class="flex items-center">
                                             <i class="fas fa-users-class text-teal-600 text-2xl mr-4"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-600">Class Name</p>
-                                                <p class="text-lg font-bold text-gray-900">{{ $subject->myClass->name }}</p>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-lg font-bold text-gray-900">{{ $assignedClass->name }}</p>
+                                                <p class="mt-1 text-sm text-gray-600">{{ $assignedClass->classGroup?->name ?: 'No class group' }}</p>
+                                                <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-teal-700">{{ $assignedClass->studentsForAcademicYear()->count() }} current student(s)</p>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                                        <div class="flex items-center">
-                                            <i class="fas fa-layer-group text-blue-600 text-2xl mr-4"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-600">Class Group</p>
-                                                <p class="text-lg font-bold text-gray-900">
-                                                    {{ $subject->myClass->classGroup->name ?? 'N/A' }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                                        <div class="flex items-center">
-                                            <i class="fas fa-users text-green-600 text-2xl mr-4"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-600">Total Students</p>
-                                                <p class="text-lg font-bold text-gray-900">
-                                                    {{ $subject->myClass->studentsForAcademicYear()->count() }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    </article>
+                                    @endforeach
                                 </div>
                             </div>
                         @endif
