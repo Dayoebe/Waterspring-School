@@ -20,9 +20,25 @@ class Club extends Model
 
     protected $casts = ['is_active' => 'boolean'];
 
-    public function school(): BelongsTo { return $this->belongsTo(School::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function activities(): HasMany { return $this->hasMany(ClubActivity::class); }
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(ClubActivity::class);
+    }
+
+    public function termPlans(): HasMany
+    {
+        return $this->hasMany(ClubTermPlan::class);
+    }
 
     public function instructors(): BelongsToMany
     {

@@ -5,6 +5,8 @@ namespace App\Livewire\Dashboard;
 use App\Models\AdmissionRegistration;
 use App\Models\AttendanceRecord;
 use App\Models\ClassGroup;
+use App\Models\ClubActivity;
+use App\Models\ClubWeeklyAgenda;
 use App\Models\ContactMessage;
 use App\Models\Exam;
 use App\Models\FeeInvoice;
@@ -21,6 +23,7 @@ use App\Support\TeacherResponsibilityBuilder;
 use App\Traits\RestrictsTeacherPortalAccess;
 use App\Traits\RestrictsTeacherResultViewing;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Livewire\Component;
 
@@ -54,6 +57,8 @@ class DashboardStats extends Component
     public $studentPanel = [];
 
     public $parentPanel = [];
+
+    public $clubPanel = [];
 
     public $academicContext = [];
 
@@ -116,6 +121,10 @@ class DashboardStats extends Component
 
         if ($this->isParent) {
             $this->loadParentPanel($user);
+        }
+
+        if (($this->isStudent || $this->isParent) && $user->can('view clubs')) {
+            $this->loadClubPanel($user);
         }
 
         $this->loading = false;
@@ -1058,6 +1067,68 @@ class DashboardStats extends Component
             'hidden_count' => max($children->count() - $limit, 0),
             'children' => $displayChildren,
         ];
+    }
+
+    private function loadClubPanel(User $user): void
+    {
+        $students = $this->isStudent
+            ? collect([$user])
+            : $user->children()->where('users.school_id', $user->school_id)->whereNull('users.deleted_at')->get(['users.id', 'users.name']);
+        $studentIds = $students->pluck('id');
+
+        if ($studentIds->isEmpty()) {
+            $this->clubPanel = ['clubs_count' => 0, 'activities' => [], 'agendas' => []];
+
+            return;
+        }
+
+        $clubIds = DB::table('club_memberships')
+            ->whereIn('student_id', $studentIds)
+            ->where('status', 'active')
+            ->pluck('club_id')
+            ->unique();
+        $wardNamesByClub = DB::table('club_memberships')
+            ->whereIn('student_id', $studentIds)
+            ->whereIn('club_id', $clubIds)
+            ->where('status', 'active')
+            ->get(['club_id', 'student_id'])
+            ->groupBy('club_id')
+            ->map(fn ($memberships) => $memberships->map(fn ($membership) => $students->firstWhere('id', $membership->student_id)?->name)->filter()->values()->all());
+
+        $activities = ClubActivity::query()
+            ->whereIn('club_id', $clubIds)
+            ->where('status', '!=', 'cancelled')
+            ->with('club:id,name,colour')
+            ->orderByRaw('case when starts_at >= ? then 0 else 1 end', [now()])
+            ->orderByRaw('case when starts_at >= ? then starts_at end asc', [now()])
+            ->orderByRaw('case when starts_at < ? then starts_at end desc', [now()])
+            ->limit(6)
+            ->get()
+            ->map(fn (ClubActivity $activity) => [
+                'title' => $activity->title, 'club' => $activity->club->name,
+                'starts_at' => $activity->starts_at->format('D, j M Y · g:i A'),
+                'location' => $activity->location, 'status' => $activity->status,
+                'wards' => $this->isParent ? ($wardNamesByClub[$activity->club_id] ?? []) : [],
+            ])->all();
+
+        $agendas = ClubWeeklyAgenda::query()
+            ->whereHas('termPlan', fn ($query) => $query->whereIn('club_id', $clubIds)
+                ->where('academic_year_id', $user->school?->academic_year_id)
+                ->where('semester_id', $user->school?->semester_id)
+                ->whereNotNull('published_at'))
+            ->with('termPlan.club:id,name,colour')
+            ->orderByRaw("case when status = 'planned' then 0 else 1 end")
+            ->orderBy('week_number')
+            ->limit(6)
+            ->get()
+            ->map(fn (ClubWeeklyAgenda $agenda) => [
+                'title' => $agenda->title, 'club' => $agenda->termPlan->club->name,
+                'week' => $agenda->week_number, 'date' => $agenda->scheduled_for?->format('j M Y'),
+                'status' => $agenda->status,
+                'wards' => $this->isParent ? ($wardNamesByClub[$agenda->termPlan->club_id] ?? []) : [],
+            ])->all();
+
+        $this->clubPanel = ['clubs_count' => $clubIds->count(), 'activities' => $activities, 'agendas' => $agendas];
     }
 
     private function loadTeacherPanel(User $user): void

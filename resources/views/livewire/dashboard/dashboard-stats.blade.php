@@ -793,6 +793,19 @@
                     </section>
                 @endif
 
+                @if (($isStudent || $isParent) && $clubPanel !== [])
+                    <section class="overflow-hidden rounded-xl border border-indigo-200 bg-white shadow-sm">
+                        <div class="flex items-center justify-between gap-4 border-b border-indigo-100 bg-indigo-50 p-6">
+                            <div><p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Clubs & activities</p><h3 class="mt-2 text-2xl font-bold text-slate-900">{{ $isParent ? 'Your wards’ club programme' : 'Your club programme' }}</h3><p class="mt-1 text-sm text-slate-600">{{ $clubPanel['clubs_count'] ?? 0 }} active club membership(s)</p></div>
+                            <a href="{{ route('clubs.index') }}" wire:navigate class="shrink-0 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-800">Open clubs <i class="fas fa-arrow-right ml-2"></i></a>
+                        </div>
+                        <div class="grid gap-6 p-6 xl:grid-cols-2">
+                            <div><div class="flex items-center justify-between"><h4 class="font-black text-slate-900">Activities</h4><i class="fas fa-calendar-days text-sky-600"></i></div><div class="mt-4 space-y-3">@forelse($clubPanel['activities'] ?? [] as $activity)<article class="rounded-2xl border border-slate-200 p-4"><div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-widest text-sky-700">{{ $activity['club'] }}</p><h5 class="mt-1 font-bold text-slate-900">{{ $activity['title'] }}</h5></div><span class="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase text-amber-800">{{ $activity['status'] }}</span></div><p class="mt-2 text-sm font-semibold text-slate-600">{{ $activity['starts_at'] }}@if($activity['location']) · {{ $activity['location'] }}@endif</p>@if($isParent && $activity['wards'] !== [])<p class="mt-2 text-xs text-violet-700"><i class="fas fa-child-reaching mr-1"></i>{{ implode(', ', $activity['wards']) }}</p>@endif</article>@empty<p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No club activities have been scheduled yet.</p>@endforelse</div></div>
+                            <div><div class="flex items-center justify-between"><h4 class="font-black text-slate-900">Weekly agenda</h4><i class="fas fa-list-check text-emerald-600"></i></div><div class="mt-4 space-y-3">@forelse($clubPanel['agendas'] ?? [] as $agenda)<article class="rounded-2xl border border-slate-200 p-4"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $agenda['status'] === 'done' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }} text-xs font-black">W{{ $agenda['week'] }}</span><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-widest text-emerald-700">{{ $agenda['club'] }}</p><h5 class="mt-1 font-bold text-slate-900">{{ $agenda['title'] }}</h5><p class="mt-1 text-xs font-semibold text-slate-500">{{ $agenda['date'] ?: ucfirst($agenda['status']) }}@if($agenda['date']) · {{ ucfirst($agenda['status']) }}@endif</p>@if($isParent && $agenda['wards'] !== [])<p class="mt-2 text-xs text-violet-700"><i class="fas fa-child-reaching mr-1"></i>{{ implode(', ', $agenda['wards']) }}</p>@endif</div></div></article>@empty<p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No weekly club agenda has been published yet.</p>@endforelse</div></div>
+                        </div>
+                    </section>
+                @endif
+
             </div>
         </div>
 
