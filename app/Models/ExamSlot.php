@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExamSlot extends Model
 {
@@ -22,11 +21,4 @@ class ExamSlot extends Model
         return $this->belongsTo(Exam::class);
     }
 
-    /**
-     * Get all of the examRecords for the ExamSlot.
-     */
-    public function examRecords(): HasMany
-    {
-        return $this->hasMany(ExamRecord::class);
-    }
 }

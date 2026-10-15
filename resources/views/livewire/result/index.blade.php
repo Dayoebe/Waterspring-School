@@ -36,14 +36,6 @@
                     <i class="fas fa-users-cog mr-2"></i> Bulk Upload
                 </button>
 
-                @if($canManageResultRelease && in_array('release-control', $availableTabs, true))
-                    <button @click="activeTab = 'release-control'"
-                        :class="activeTab === 'release-control' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                        class="py-4 px-6 border-b-2 font-medium text-sm transition-colors">
-                        <i class="fas fa-paper-plane mr-2"></i> Result Release Control
-                    </button>
-                @endif
-
                 @if(in_array('view', $availableTabs, true))
                     <button @click="activeTab = 'view'"
                         :class="activeTab === 'view' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
@@ -56,7 +48,7 @@
                     <button @click="activeTab = 'settings'"
                         :class="activeTab === 'settings' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="py-4 px-6 border-b-2 font-medium text-sm transition-colors">
-                        <i class="fas fa-cog mr-2"></i> Term Settings
+                        <i class="fas fa-sliders mr-2"></i> Results Settings
                     </button>
                 @endif
 
@@ -103,12 +95,6 @@
             <div x-show="activeTab === 'bulk'" x-transition>
                 <livewire:result.upload.bulk-upload />
             </div>
-
-            @if($canManageResultRelease && in_array('release-control', $availableTabs, true))
-                <div x-show="activeTab === 'release-control'" x-transition>
-                    <livewire:dashboard.result-publication-manager :show-exam-participation="true" />
-                </div>
-            @endif
 
             @if(in_array('view', $availableTabs, true))
                 <div x-show="activeTab === 'view'" x-transition>
@@ -157,8 +143,24 @@
             @endif
 
             @if($canManageTermSettings)
-                <div x-show="activeTab === 'settings'" x-transition>
+                <div x-show="activeTab === 'settings'" x-transition class="space-y-6">
+                    <section class="overflow-hidden rounded-3xl bg-gray-500 text-white shadow-xl">
+                        <div class="grid gap-6 px-6 py-7 lg:grid-cols-[1fr_auto] lg:items-end lg:px-8">
+                            <div>
+                                <div class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-indigo-200"><i class="fas fa-sliders"></i> Result configuration</div>
+                                <h2 class="mt-4 text-3xl font-black tracking-tight">Results Settings</h2>
+                                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Configure report cards, review completion readiness, and control when families can see results.</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-center text-xs font-bold uppercase tracking-wider text-slate-300">
+                                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><i class="fas fa-file-lines mb-2 block text-lg text-indigo-300"></i>Report details</div>
+                                @if($canManageResultRelease)<div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><i class="fas fa-eye mb-2 block text-lg text-emerald-300"></i>Publication</div>@endif
+                            </div>
+                        </div>
+                    </section>
                     <livewire:result.term-settings-manager />
+                    @if($canManageResultRelease)
+                        <livewire:dashboard.result-publication-manager :show-exam-participation="true" />
+                    @endif
                 </div>
             @endif
 

@@ -445,14 +445,6 @@ class Menu extends Component
                         'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
                         'section' => 'Results',
                     ] : null,
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Result Checker',
-                        'route' => 'exams.result-checker',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['check result'],
-                        'section' => 'Results',
-                    ],
                 ])),
             ],
             [

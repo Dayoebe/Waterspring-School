@@ -1,18 +1,21 @@
-<section class="rounded-[1.75rem] border border-violet-200 bg-violet-50 p-6 shadow-sm">
+<section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
     <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div class="max-w-2xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-violet-700">Result Release Control</p>
-            <h2 class="mt-2 text-2xl font-bold text-slate-900">Publish results when computation is complete</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-600">
+        <div class="flex max-w-2xl items-start gap-4">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 font-black text-indigo-700">02</span>
+            <div>
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-700">Publication settings</p>
+            <h2 class="mt-1 text-xl font-bold text-slate-900">Release results to families</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-600">
                 Unpublished results remain available to staff for computation and review, but are hidden from parent and student accounts.
             </p>
+            </div>
         </div>
 
         <div class="grid w-full gap-3 sm:grid-cols-2 xl:max-w-xl">
             <label class="block">
                 <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Academic year</span>
                 <select wire:model.live="academicYearId"
-                    class="w-full rounded-xl border-violet-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-400 focus:ring-violet-300">
+                    class="w-full rounded-xl border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">Select academic year</option>
                     @foreach($academicYears as $academicYear)
                         <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
@@ -23,7 +26,7 @@
             <label class="block">
                 <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-600">Term</span>
                 <select wire:model.live="semesterId"
-                    class="w-full rounded-xl border-violet-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-400 focus:ring-violet-300">
+                    class="w-full rounded-xl border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">Select term</option>
                     @foreach($semesters as $semester)
                         <option value="{{ $semester->id }}">{{ $semester->name }}</option>
@@ -110,23 +113,23 @@
     </div>
 
     @if($showExamParticipation)
-    <div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
         <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-sky-700">Class Exam Participation</p>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-700">Class exam participation</p>
                 <h3 class="mt-1 text-lg font-bold text-slate-900">Record classes without internal examinations</h3>
                 <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
                     Use this when an entire class wrote WAEC, NECO, BECE, or did not sit the school examination.
                     Students remain active, but the class stops blocking internal result publication for the selected term.
                 </p>
             </div>
-            <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">Super admin only</span>
+            <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-800">Super admin only</span>
         </div>
 
         <form wire:submit="saveExamParticipation" class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <label class="block">
                 <span class="mb-1 block text-sm font-semibold text-slate-700">Class</span>
-                <select wire:model="examClassId" class="w-full rounded-xl border-sky-200 bg-white px-3 py-2.5 text-sm">
+                <select wire:model="examClassId" class="w-full rounded-xl border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">Select class</option>
                     @foreach($classes as $classOption)
                         <option value="{{ $classOption->id }}">{{ $classOption->name }}</option>
@@ -137,7 +140,7 @@
 
             <label class="block">
                 <span class="mb-1 block text-sm font-semibold text-slate-700">Participation status</span>
-                <select wire:model.live="examParticipationStatus" class="w-full rounded-xl border-sky-200 bg-white px-3 py-2.5 text-sm">
+                <select wire:model.live="examParticipationStatus" class="w-full rounded-xl border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="external">External examination</option>
                     <option value="exempt">Exempt from internal exam</option>
                     <option value="postponed">Internal exam postponed</option>
@@ -149,7 +152,7 @@
                 <span class="mb-1 block text-sm font-semibold text-slate-700">External examination</span>
                 <input wire:model="externalExaminationName" type="text" maxlength="100"
                     placeholder="e.g. WAEC"
-                    class="w-full rounded-xl border-sky-200 bg-white px-3 py-2.5 text-sm">
+                    class="w-full rounded-xl border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                 @error('externalExaminationName') <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
             </label>
 
@@ -157,7 +160,7 @@
                 <span class="mb-1 block text-sm font-semibold text-slate-700">Reason</span>
                 <input wire:model="examParticipationReason" type="text" maxlength="255"
                     placeholder="e.g. SS3 wrote WAEC instead of the school examination"
-                    class="w-full rounded-xl border-sky-200 bg-white px-3 py-2.5 text-sm">
+                    class="w-full rounded-xl border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                 @error('examParticipationReason') <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
             </label>
 
@@ -165,14 +168,14 @@
                 <span class="mb-1 block text-sm font-semibold text-slate-700">Internal note <span class="font-normal text-slate-500">(optional)</span></span>
                 <textarea wire:model="examParticipationNotes" rows="2" maxlength="1000"
                     placeholder="Add approval or examination details"
-                    class="w-full rounded-xl border-sky-200 bg-white px-3 py-2.5 text-sm"></textarea>
+                    class="w-full rounded-xl border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
             </label>
 
             <div class="flex items-end">
                 <button type="submit"
                     wire:confirm="Confirm this entire class did not participate in the selected internal examination?"
                     @disabled(!$academicYearId || !$semesterId)
-                    class="inline-flex w-full items-center justify-center rounded-xl bg-sky-700 px-5 py-3 text-sm font-bold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    class="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
                     <i class="fas fa-file-signature mr-2"></i>Save participation
                 </button>
             </div>
@@ -181,11 +184,11 @@
         @if($examParticipations->isNotEmpty())
             <div class="mt-5 grid gap-3 md:grid-cols-2">
                 @foreach($examParticipations as $participation)
-                    <div class="rounded-xl border border-sky-200 bg-white p-4">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-bold text-slate-900">{{ $participation->myClass?->name }}</p>
-                                <p class="mt-1 text-sm font-semibold capitalize text-sky-800">
+                                <p class="mt-1 text-sm font-semibold capitalize text-indigo-800">
                                     {{ str_replace('_', ' ', $participation->status) }}
                                     @if($participation->examination_name)
                                         · {{ $participation->examination_name }}

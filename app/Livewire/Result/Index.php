@@ -50,10 +50,6 @@ class Index extends Component
             return $tabs;
         }
 
-        if (auth()->user()?->hasAnyRole(['super-admin', 'super_admin'])) {
-            $tabs[] = 'release-control';
-        }
-
         if ($this->availableViewTabs() !== []) {
             $tabs[] = 'view';
         }

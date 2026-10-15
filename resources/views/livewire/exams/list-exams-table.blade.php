@@ -114,20 +114,6 @@
                         </a>
                     @endcan
 
-                    @can('read exam record')
-                        <a href="{{ route('exam-records.index') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20">
-                            <i class="fas fa-clipboard-list text-cyan-200"></i>
-                            Exam records
-                        </a>
-                    @endcan
-
-                    @can('check result')
-                        <a href="{{ route('exams.result-checker') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20">
-                            <i class="fas fa-chart-column text-emerald-200"></i>
-                            Result checker
-                        </a>
-                    @endcan
-
                 </div>
             </div>
 
@@ -196,9 +182,9 @@
         <div class="rounded-3xl border border-amber-100 bg-white p-5 shadow-lg shadow-amber-100/60">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-600">Result publishing</p>
-                    <p class="mt-3 text-3xl font-black text-slate-900">{{ number_format($stats['published_results']) }}</p>
-                    <p class="mt-2 text-sm text-slate-500">Exams with published results</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-600">Published papers</p>
+                    <p class="mt-3 text-3xl font-black text-slate-900">{{ number_format($stats['published_papers']) }}</p>
+                    <p class="mt-2 text-sm text-slate-500">Exam papers visible to students</p>
                 </div>
                 <div class="rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-3 text-white shadow-lg">
                     <i class="fas fa-bullhorn text-lg"></i>
@@ -326,7 +312,6 @@
                         ['property' => 'start_date'],
                         ['property' => 'stop_date'],
                         ['property' => 'active', 'type' => 'boolean-switch', 'action' => 'exams.set-active-status', 'field' => 'status', 'true-statement' => 'Active', 'false-statement' => 'Inactive',  'can' => 'update exam'],
-                        ['property' => 'publish_result','type' => 'boolean-switch', 'action' => 'exams.set-publish-result-status', 'field' => 'status', 'true-statement' => 'Published', 'false-statement' => 'Not published',  'can' => 'update exam'],
                         ['name' => 'Actions', 'type' => 'dropdown' , 'links' => [
                             ['href' => 'exams.edit', 'text' => 'Manage exam setup', 'icon' => 'fas fa-cog', 'can' => 'update exam'],
                             ['href' => 'exam-slots.index', 'text' => 'Manage/View exam slots', 'icon' => 'fas fa-calendar-alt',  'can' => 'read exam slot'],

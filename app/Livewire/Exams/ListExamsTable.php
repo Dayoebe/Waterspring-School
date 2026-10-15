@@ -30,7 +30,6 @@ class ListExamsTable extends Component
         $stats = [
             'total_exams' => 0,
             'active_exams' => 0,
-            'published_results' => 0,
             'exams_with_slots' => 0,
             'uploaded_papers' => 0,
             'exams_with_papers' => 0,
@@ -64,7 +63,6 @@ class ListExamsTable extends Component
             $stats = [
                 'total_exams' => $exams->count(),
                 'active_exams' => $exams->where('active', true)->count(),
-                'published_results' => $exams->where('publish_result', true)->count(),
                 'exams_with_slots' => $exams->filter(fn (Exam $exam) => $exam->exam_slots_count > 0)->count(),
                 'uploaded_papers' => (int) $exams->sum('papers_count'),
                 'exams_with_papers' => $exams->filter(fn (Exam $exam) => $exam->papers_count > 0)->count(),

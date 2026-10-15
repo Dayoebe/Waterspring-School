@@ -104,26 +104,6 @@ class ExamController extends Controller
     }
 
     /**
-     * Tabulation for exams.
-     */
-    public function examTabulation(): View
-    {
-        $this->authorize('viewAny', Exam::class);
-
-        return view('livewire.exams.pages.tabulation');
-    }
-
-    /**
-     * Tabulation for semester results.
-     */
-    public function semesterResultTabulation(): View
-    {
-        $this->authorize('viewAny', Exam::class);
-
-        return view('livewire.exams.pages.semester-result-tabulation');
-    }
-
-    /**
      * Tabulation for academic year results.
      */
     public function academicYearResultTabulation(): RedirectResponse
@@ -133,16 +113,6 @@ class ExamController extends Controller
         return redirect()
             ->route('result.annual')
             ->with('status', 'Annual result tabulation has been moved to Annual Class Results.');
-    }
-
-    /**
-     * Result checker.
-     */
-    public function resultChecker(): View
-    {
-        $this->authorize('checkResult', Exam::class);
-
-        return view('livewire.exams.pages.result-checker');
     }
 
     /**
@@ -158,23 +128,4 @@ class ExamController extends Controller
         return back()->with('success', 'Exam status updated successfully');
     }
 
-    /**
-     * Set publish result status.
-     *
-     * @param UpdateExamStatusRequest $request
-     */
-    public function setPublishResultStatus(Exam $exam, UpdateExamStatusRequest $request): RedirectResponse
-    {
-        $this->authorize('update', $exam);
-        //get status from request
-        $status = $request->status;
-
-        if ($exam->examSlots()->count() <= 0 && (bool) $status === true) {
-            return back()->with('danger', 'Cannot publish result for exam without exam slots');
-        }
-
-        $exam->update(['publish_result' => $status]);
-
-        return back()->with('success', 'Result published status updated successfully');
-    }
 }

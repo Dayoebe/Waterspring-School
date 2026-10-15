@@ -1,125 +1,86 @@
-<div class="space-y-6">
-    <!-- Success Message -->
-    @if($showSuccess)
-        <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
-            <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-600 text-xl mr-3"></i>
-                <p class="text-green-800 font-medium">{{ $successMessage }}</p>
+<section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-4">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 font-black text-indigo-700">01</span>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-700">Report details</p>
+                <h3 class="mt-1 text-xl font-bold text-slate-900">Report card information</h3>
+                <p class="mt-1 text-sm text-slate-600">Set the announcement and resumption date shown to families.</p>
             </div>
-            <button wire:click="$set('showSuccess', false)" class="text-green-600 hover:text-green-800">
-                <i class="fas fa-times"></i>
-            </button>
         </div>
-    @endif
-
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-white mb-2">Term Settings</h2>
-        <p class="text-purple-100">Manage announcements and resumption dates for the selected term</p>
+        <span class="inline-flex self-start rounded-full bg-slate-200 px-3 py-1 text-xs font-bold text-slate-700 sm:self-center">Global or class-specific</span>
     </div>
 
-    <!-- Settings Form -->
-    <div class="bg-white rounded-2xl shadow-lg p-6">
-        <div class="space-y-6">
+    <div class="space-y-6 p-6">
+        @if($showSuccess)
+            <div class="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div class="flex items-center"><i class="fas fa-check-circle mr-3 text-xl text-emerald-600"></i><p class="font-semibold text-emerald-800">{{ $successMessage }}</p></div>
+                <button wire:click="$set('showSuccess', false)" class="text-emerald-600 hover:text-emerald-800" aria-label="Dismiss message"><i class="fas fa-times"></i></button>
+            </div>
+        @endif
 
-            @if($academicYearId && $semesterId)
-                <!-- Scope Selection -->
-                <div class="border-t border-gray-200 pt-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-3">Settings Scope</label>
-                    <div class="flex space-x-4">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="radio" wire:model.live="isGlobal" value="1" class="mr-2">
-                            <span class="text-sm font-medium text-gray-700">
-                                <i class="fas fa-globe text-blue-600 mr-1"></i> Global (All Classes)
-                            </span>
-                        </label>
-                        <label class="flex items-center cursor-pointer">
-                            <input type="radio" wire:model.live="isGlobal" value="0" class="mr-2">
-                            <span class="text-sm font-medium text-gray-700">
-                                <i class="fas fa-school text-purple-600 mr-1"></i> Specific Class
-                            </span>
-                        </label>
-                    </div>
+        @if($academicYearId && $semesterId)
+            <div>
+                <label class="mb-3 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Settings scope</label>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="flex cursor-pointer items-center rounded-xl border border-slate-200 bg-slate-50 p-4 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50">
+                        <input type="radio" wire:model.live="isGlobal" value="1" class="mr-3 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-sm font-semibold text-slate-700"><i class="fas fa-globe mr-2 text-indigo-600"></i>All classes</span>
+                    </label>
+                    <label class="flex cursor-pointer items-center rounded-xl border border-slate-200 bg-slate-50 p-4 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50">
+                        <input type="radio" wire:model.live="isGlobal" value="0" class="mr-3 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-sm font-semibold text-slate-700"><i class="fas fa-school mr-2 text-indigo-600"></i>Specific class</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid gap-5 lg:grid-cols-2">
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700"><i class="fas fa-calendar-alt mr-2 text-indigo-600"></i>Resumption date</label>
+                    <input type="date" wire:model="resumptionDate" class="w-full rounded-xl border-slate-300 bg-white px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500">
+                    @error('resumptionDate')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
-                <!-- Class Selection (if not global) -->
                 @if(!$isGlobal)
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
-                        <select wire:model.live="selectedClassId"
-                            class="w-full border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500">
-                            <option value="">Select Class</option>
-                            @foreach($classes as $class)
-                                <option value="{{ $class->id }}">{{ $class->name }}</option>
-                            @endforeach
+                        <label class="mb-2 block text-sm font-semibold text-slate-700"><i class="fas fa-school mr-2 text-indigo-600"></i>Class</label>
+                        <select wire:model.live="selectedClassId" class="w-full rounded-xl border-slate-300 bg-white px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">Select class</option>
+                            @foreach($classes as $class)<option value="{{ $class->id }}">{{ $class->name }}</option>@endforeach
                         </select>
-                        @error('selectedClassId')
-                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                        @error('selectedClassId')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
                 @endif
+            </div>
 
-                <!-- Resumption Date -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar-alt text-indigo-600 mr-1"></i> Resumption Date
-                    </label>
-                    <input type="date" wire:model="resumptionDate"
-                        class="w-full border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500">
-                    @error('resumptionDate')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700"><i class="fas fa-bullhorn mr-2 text-indigo-600"></i>Report announcement</label>
+                <textarea wire:model="generalAnnouncement" rows="4" class="w-full rounded-xl border-slate-300 bg-white px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Enter the message families should see on this term's report..."></textarea>
+                <p class="mt-2 text-sm text-slate-500">Shown on reports for {{ !$isGlobal && $selectedClassId ? ($classes->firstWhere('id', $selectedClassId)->name ?? 'the selected class') : 'all classes' }}.</p>
+                @error('generalAnnouncement')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
 
-                <!-- General Announcement -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-bullhorn text-indigo-600 mr-1"></i> General Announcement
-                    </label>
-                    <textarea wire:model="generalAnnouncement" rows="4"
-                        class="w-full border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Enter announcement for this term..."></textarea>
-                    <p class="text-sm text-gray-500 mt-1">
-                        This announcement will appear on all student reports for this term
-                        @if(!$isGlobal && $selectedClassId)
-                            in {{ $classes->firstWhere('id', $selectedClassId)->name ?? 'the selected class' }}
-                        @endif
-                    </p>
-                    @error('generalAnnouncement')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Preview -->
-                @if($generalAnnouncement || $resumptionDate)
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                        <h4 class="font-semibold text-blue-900 mb-2">
-                            <i class="fas fa-eye mr-2"></i>Preview
-                        </h4>
-                        <div class="text-sm text-gray-700 space-y-2">
-                            @if($generalAnnouncement)
-                                <p><strong>Announcement:</strong> {{ $generalAnnouncement }}</p>
-                            @endif
-                            @if($resumptionDate)
-                                <p><strong>Resumption Date:</strong> {{ \Carbon\Carbon::parse($resumptionDate)->format('d/m/Y') }}</p>
-                            @endif
-                        </div>
+            @if($generalAnnouncement || $resumptionDate)
+                <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-indigo-700"><i class="fas fa-eye mr-2"></i>Family-facing preview</p>
+                    <div class="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+                        @if($generalAnnouncement)<p><strong class="text-slate-900">Announcement:</strong> {{ $generalAnnouncement }}</p>@endif
+                        @if($resumptionDate)<p><strong class="text-slate-900">Resumption date:</strong> {{ \Carbon\Carbon::parse($resumptionDate)->format('d M Y') }}</p>@endif
                     </div>
-                @endif
-
-                <!-- Save Button -->
-                <div class="flex justify-end">
-                    <button wire:click="save"
-                        class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 flex items-center">
-                        <i class="fas fa-save mr-2"></i> Save Settings
-                    </button>
-                </div>
-            @else
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-                    <i class="fas fa-info-circle text-yellow-600 text-3xl mb-3"></i>
-                    <p class="text-yellow-800 font-medium">Please select an academic year and term to manage settings</p>
                 </div>
             @endif
-        </div>
+
+            <div class="flex justify-end border-t border-slate-100 pt-5">
+                <button wire:click="save" wire:loading.attr="disabled" wire:target="save" class="inline-flex items-center rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50">
+                    <span wire:loading.remove wire:target="save"><i class="fas fa-save mr-2"></i>Save report settings</span>
+                    <span wire:loading wire:target="save"><i class="fas fa-spinner fa-spin mr-2"></i>Saving...</span>
+                </button>
+            </div>
+        @else
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center">
+                <i class="fas fa-info-circle mb-3 text-3xl text-amber-600"></i>
+                <p class="font-semibold text-amber-900">Select an academic year and term to manage report settings.</p>
+            </div>
+        @endif
     </div>
-</div>
+</section>

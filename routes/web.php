@@ -53,7 +53,6 @@ use App\Http\Controllers\{
     NoticeController,
     ResultController,
     ExamController,
-    ExamRecordController,
     ExamSlotController,
     GradeSystemController,
     LockUserAccountController,
@@ -718,17 +717,6 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
                 Route::post('exams/{exam}/set-active-status', [ExamController::class, 'setExamActiveStatus'])
                     ->middleware('permission:update exam')
                     ->name('exams.set-active-status');
-                Route::post('exams/{exam}/set-publish-result-status', [ExamController::class, 'setPublishResultStatus'])
-                    ->middleware('permission:update exam')
-                    ->name('exams.set-publish-result-status');
-
-                Route::resource('exams/exam-records', ExamRecordController::class)
-                    ->only(['index'])
-                    ->middleware('permission:read exam record');
-                Route::resource('exams/exam-records', ExamRecordController::class)
-                    ->only(['create', 'store'])
-                    ->middleware('permission:create exam record');
-
                 Route::scopeBindings()->group(function () {
                     Route::resource('exams/{exam}/manage/exam-slots', ExamSlotController::class)
                         ->only(['index', 'show'])
@@ -776,19 +764,9 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
                     ->middleware('permission:read exam paper|view exam paper')
                     ->name('exam-papers.print');
 
-                // Exam Reports
-                Route::get('exams/tabulation-sheet', [ExamController::class, 'examTabulation'])
-                    ->middleware('permission:read exam')
-                    ->name('exams.tabulation');
-                Route::get('exams/semester-result-tabulation', [ExamController::class, 'semesterResultTabulation'])
-                    ->middleware('permission:read exam')
-                    ->name('exams.semester-result-tabulation');
                 Route::get('exams/academic-year-result-tabulation', [ExamController::class, 'academicYearResultTabulation'])
                     ->middleware('permission:read exam')
                     ->name('exams.academic-year-result-tabulation');
-                Route::get('exams/result-checker', [ExamController::class, 'resultChecker'])
-                    ->middleware('permission:check result')
-                    ->name('exams.result-checker');
 
                 // Grade Systems
                 Route::resource('grade-systems', GradeSystemController::class)

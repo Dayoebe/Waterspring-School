@@ -91,8 +91,4 @@ class Exam extends Model
         return $totalMarks;
     }
 
-    public function calculateStudentTotalMarkInSubjectForSemester(Semester $semester, User $user, Subject $subject)
-    {
-        return $this->examRecordService->getAllUserExamRecordInSemesterForSubject($semester, $user->id, $subject->id)->pluck('student_marks')->sum();
-    }
 }

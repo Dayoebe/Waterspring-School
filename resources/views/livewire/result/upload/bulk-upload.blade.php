@@ -56,7 +56,7 @@
                 @endif
 
                 @if($selectedClass && !$semesterId)
-                    <p class="mt-2 text-sm text-red-600">No term is configured for this academic year. Set it in Result Term Settings first.</p>
+                    <p class="mt-2 text-sm text-red-600">No term is configured for this academic year. Set it in Results Settings first.</p>
                 @endif
             </div>
 

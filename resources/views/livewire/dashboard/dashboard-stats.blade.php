@@ -115,9 +115,9 @@
                                 'icon' => 'fas fa-calendar-alt',
                             ],
                             [
-                                'label' => 'Published Exams',
+                                'label' => 'Published CBT Results',
                                 'value' => $snapshot['published_exams'] ?? 0,
-                                'helper' => 'Exams with visible results',
+                                'helper' => 'CBT assessments with visible results',
                                 'icon' => 'fas fa-check-circle',
                             ],
                             [

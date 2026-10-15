@@ -218,8 +218,11 @@ class DashboardStats extends Component
                 ->whereDate('start_date', '>', $today)
                 ->count();
 
-            $publishedExams = (clone $examQuery)
-                ->where('publish_result', true)
+            $publishedExams = Assessment::query()
+                ->whereHas('course.classGroup', fn ($query) => $query->where('school_id', $schoolId))
+                ->when($user->school?->academic_year_id, fn ($query, $yearId) => $query->where('academic_year_id', $yearId))
+                ->when($user->school?->semester_id, fn ($query, $semesterId) => $query->where('semester_id', $semesterId))
+                ->whereNotNull('results_published_at')
                 ->count();
 
             if ($user->school?->academic_year_id && $user->school?->semester_id) {
