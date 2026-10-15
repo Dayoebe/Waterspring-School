@@ -687,6 +687,10 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
                     ->middleware('permission:read syllabus')
                     ->name('syllabi.show');
 
+                Route::get('schemes-of-work', \App\Livewire\Schemes\SchemeOfWorkHub::class)
+                    ->middleware('permission:view schemes of work')
+                    ->name('schemes.index');
+
    
                 
                 // Exams

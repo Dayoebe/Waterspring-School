@@ -114,6 +114,8 @@ class PermissionMatrix
             'read school resources',
             'view clubs',
             'manage assigned clubs',
+            'view schemes of work',
+            'manage schemes of work',
             'manage assignment',
             'grade assignment',
 
@@ -202,6 +204,10 @@ class PermissionMatrix
             'view assignment',
             'manage assignment',
             'grade assignment',
+            'view clubs',
+            'manage assigned clubs',
+            'view schemes of work',
+            'manage assigned schemes of work',
 
             'read timetable',
             'read custom timetable item',
@@ -234,6 +240,7 @@ class PermissionMatrix
             'read school calendar',
             'view clubs',
             'join clubs',
+            'view schemes of work',
             'submit assignment',
             'view own broadcasts',
         ];
@@ -250,6 +257,7 @@ class PermissionMatrix
             'read school resources',
             'read school calendar',
             'view clubs',
+            'view schemes of work',
             'read own child attendance',
             'read own child discipline',
             'view own broadcasts',
@@ -308,6 +316,9 @@ class PermissionMatrix
             'manage clubs',
             'manage assigned clubs',
             'join clubs',
+            'view schemes of work',
+            'manage schemes of work',
+            'manage assigned schemes of work',
             'read analytics dashboard',
 
             'read admin',

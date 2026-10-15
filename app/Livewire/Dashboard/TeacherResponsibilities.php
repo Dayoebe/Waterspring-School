@@ -4,8 +4,8 @@ namespace App\Livewire\Dashboard;
 
 use App\Models\Result;
 use App\Models\User;
-use App\Support\TeacherResponsibilityBuilder;
 use App\Support\ResultPublicationStatus;
+use App\Support\TeacherResponsibilityBuilder;
 use App\Traits\RestrictsTeacherResultViewing;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
@@ -16,17 +16,27 @@ class TeacherResponsibilities extends Component
     use RestrictsTeacherResultViewing;
 
     public bool $isTeacher = false;
+
     public bool $isStudent = false;
+
     public bool $isParent = false;
+
     public bool $isStaff = false;
+
     public bool $isSuperAdmin = false;
 
     public array $teacherPanel = [];
+
     public array $studentPanel = [];
+
     public array $parentPanel = [];
+
     public array $staffPanel = [];
+
     public array $pageActions = [];
+
     public array $academicContext = [];
+
     public string $roleLabel = 'User';
 
     public function mount(): void
@@ -73,7 +83,7 @@ class TeacherResponsibilities extends Component
 
         $this->pageActions = $this->buildPageActions($user);
 
-        if ($this->isStaff && !$this->isTeacher) {
+        if ($this->isStaff && ! $this->isTeacher) {
             $this->staffPanel = [
                 'action_count' => count($this->pageActions),
                 'actions' => $this->pageActions,
@@ -109,8 +119,9 @@ class TeacherResponsibilities extends Component
     {
         $studentRecord = $user->studentRecord;
 
-        if (!$studentRecord) {
+        if (! $studentRecord) {
             $this->studentPanel = [];
+
             return;
         }
 
@@ -133,7 +144,7 @@ class TeacherResponsibilities extends Component
                 (int) $currentSemesterId
             );
 
-        if (!$resultPublished) {
+        if (! $resultPublished) {
             $resultQuery->whereRaw('1 = 0');
         }
 
@@ -249,6 +260,15 @@ class TeacherResponsibilities extends Component
                 'requires_teaching_assignments' => true,
             ],
             [
+                'title' => 'Schemes of Work',
+                'description' => 'Plan weekly topics and track completion for assigned classes and subjects.',
+                'icon' => 'fas fa-book-open-reader',
+                'route' => 'schemes.index',
+                'roles' => ['teacher'],
+                'permissions' => ['view schemes of work'],
+                'tone' => 'bg-indigo-600 text-white',
+            ],
+            [
                 'title' => 'Timetable',
                 'description' => 'View the timetable for your classes and teaching schedule.',
                 'icon' => 'fas fa-clock',
@@ -362,11 +382,11 @@ class TeacherResponsibilities extends Component
         $teachingAssignmentCount = (int) ($this->teacherPanel['teaching_assignments'] ?? 0);
 
         return array_values(array_filter($items, function (array $item) use ($managedClassCount, $teachingAssignmentCount, $user): bool {
-            if (empty($item['route']) || !Route::has($item['route'])) {
+            if (empty($item['route']) || ! Route::has($item['route'])) {
                 return false;
             }
 
-            if (!empty($item['roles']) && is_array($item['roles']) && !$user->hasAnyRole($item['roles'])) {
+            if (! empty($item['roles']) && is_array($item['roles']) && ! $user->hasAnyRole($item['roles'])) {
                 return false;
             }
 
@@ -378,7 +398,7 @@ class TeacherResponsibilities extends Component
                 return false;
             }
 
-            if (!empty($item['permissions'])) {
+            if (! empty($item['permissions'])) {
                 foreach ($item['permissions'] as $permission) {
                     if (is_string($permission) && $user->can($permission)) {
                         return true;

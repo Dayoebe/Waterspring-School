@@ -806,6 +806,22 @@
                     </section>
                 @endif
 
+                @if (($isStudent || $isParent) && $schemePanel !== [])
+                    <section class="overflow-hidden rounded-xl border border-sky-200 bg-white shadow-sm">
+                        <div class="flex items-center justify-between gap-4 border-b border-sky-100 bg-sky-50 p-6">
+                            <div><p class="text-xs font-semibold uppercase tracking-wide text-sky-700">Teaching progress</p><h3 class="mt-2 text-2xl font-bold text-slate-900">{{ $isParent ? 'Your wards’ weekly learning' : 'Your weekly learning' }}</h3><p class="mt-1 text-sm text-slate-600">{{ $schemePanel['schemes_count'] ?? 0 }} published scheme(s) this term</p></div>
+                            <a href="{{ route('schemes.index') }}" wire:navigate class="shrink-0 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-sky-800">View schemes <i class="fas fa-arrow-right ml-2"></i></a>
+                        </div>
+                        <div class="grid gap-3 p-6 sm:grid-cols-2">
+                            @forelse($schemePanel['topics'] ?? [] as $schemeTopic)
+                                <article class="rounded-2xl border border-slate-200 p-4"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $schemeTopic['status'] === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }} text-xs font-black">W{{ $schemeTopic['week'] }}</span><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-widest text-sky-700">{{ $schemeTopic['subject'] }} · {{ $schemeTopic['class'] }}</p><h4 class="mt-1 font-bold text-slate-900">{{ $schemeTopic['topic'] }}</h4><p class="mt-1 text-xs text-slate-500">{{ $schemeTopic['date'] ?: ucfirst($schemeTopic['status']) }}@if($schemeTopic['date']) · {{ ucfirst($schemeTopic['status']) }}@endif</p>@if($isParent && $schemeTopic['wards'] !== [])<p class="mt-2 text-xs text-violet-700"><i class="fas fa-child-reaching mr-1"></i>{{ implode(', ', $schemeTopic['wards']) }}</p>@endif</div></div></article>
+                            @empty
+                                <p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 sm:col-span-2">No weekly topics have been published for this term yet.</p>
+                            @endforelse
+                        </div>
+                    </section>
+                @endif
+
             </div>
         </div>
 

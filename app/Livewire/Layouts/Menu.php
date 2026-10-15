@@ -278,6 +278,14 @@ class Menu extends Component
                         'permissions' => ['read syllabus', 'create syllabus'],
                         'section' => 'Subjects & Syllabi',
                     ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Schemes of Work',
+                        'icon' => 'fas fa-list-check',
+                        'route' => 'schemes.index',
+                        'permissions' => ['view schemes of work'],
+                        'section' => 'Subjects & Syllabi',
+                    ],
                 ])),
             ],
             [

@@ -14,6 +14,7 @@ use App\Models\MyClass;
 use App\Models\Notice;
 use App\Models\Result;
 use App\Models\School;
+use App\Models\SchemeOfWork;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\Subject;
@@ -59,6 +60,8 @@ class DashboardStats extends Component
     public $parentPanel = [];
 
     public $clubPanel = [];
+
+    public $schemePanel = [];
 
     public $academicContext = [];
 
@@ -125,6 +128,10 @@ class DashboardStats extends Component
 
         if (($this->isStudent || $this->isParent) && $user->can('view clubs')) {
             $this->loadClubPanel($user);
+        }
+
+        if (($this->isStudent || $this->isParent) && $user->can('view schemes of work')) {
+            $this->loadSchemePanel($user);
         }
 
         $this->loading = false;
@@ -484,6 +491,16 @@ class DashboardStats extends Component
                 'group' => 'Academic',
                 'roles' => $adminAndStaffRoles,
                 'permissions' => ['read syllabus', 'create syllabus'],
+            ],
+            [
+                'title' => 'Schemes of Work',
+                'description' => $this->isTeacher
+                    ? 'Plan weekly topics and record progress for your assigned classes and subjects.'
+                    : 'View term aims, objectives, weekly topics, and teaching progress.',
+                'icon' => 'fas fa-book-open-reader',
+                'route' => 'schemes.index',
+                'group' => 'Academic',
+                'permissions' => ['view schemes of work'],
             ],
             [
                 'title' => 'Notices',
@@ -1131,6 +1148,41 @@ class DashboardStats extends Component
         $this->clubPanel = ['clubs_count' => $clubIds->count(), 'activities' => $activities, 'agendas' => $agendas];
     }
 
+    private function loadSchemePanel(User $user): void
+    {
+        $students = $this->isStudent
+            ? collect([$user->loadMissing('studentRecord')])
+            : $user->children()->where('users.school_id', $user->school_id)->whereNull('users.deleted_at')->with('studentRecord')->get(['users.id', 'users.name']);
+        $classIds = $students->pluck('studentRecord.my_class_id')->filter()->unique();
+        $wardNamesByClass = $students->filter(fn (User $student) => $student->studentRecord?->my_class_id)
+            ->groupBy(fn (User $student) => $student->studentRecord->my_class_id)
+            ->map(fn ($classStudents) => $classStudents->pluck('name')->values()->all());
+
+        $schemes = SchemeOfWork::query()
+            ->where('academic_year_id', $user->school?->academic_year_id)
+            ->where('semester_id', $user->school?->semester_id)
+            ->whereIn('my_class_id', $classIds)
+            ->whereNotNull('published_at')
+            ->with(['schoolClass:id,name', 'subject:id,name', 'topics' => fn ($query) => $query
+                ->orderByRaw("case when status = 'planned' then 0 else 1 end")
+                ->orderBy('week_number')])
+            ->orderBy('title')
+            ->get();
+
+        $topics = $schemes->flatMap(fn (SchemeOfWork $scheme) => $scheme->topics->map(fn ($topic) => [
+            'scheme' => $scheme->title,
+            'subject' => $scheme->subject?->name ?: 'Class teacher plan',
+            'class' => $scheme->schoolClass?->name,
+            'week' => $topic->week_number,
+            'topic' => $topic->topic,
+            'status' => $topic->status,
+            'date' => $topic->scheduled_for?->format('j M Y'),
+            'wards' => $this->isParent ? ($wardNamesByClass[$scheme->my_class_id] ?? []) : [],
+        ]))->take(8)->values()->all();
+
+        $this->schemePanel = ['schemes_count' => $schemes->count(), 'topics' => $topics];
+    }
+
     private function loadTeacherPanel(User $user): void
     {
         $teacherPanel = app(TeacherResponsibilityBuilder::class)->build($user);
@@ -1204,6 +1256,16 @@ class DashboardStats extends Component
                 'tone' => 'bg-rose-600 text-white',
                 'cta' => 'Open page',
                 'requires_teaching_assignments' => true,
+            ],
+            [
+                'title' => 'Schemes of Work',
+                'description' => 'Plan weekly topics, learning objectives, activities, and completion progress.',
+                'icon' => 'fas fa-book-open-reader',
+                'route' => 'schemes.index',
+                'roles' => ['teacher'],
+                'permissions' => ['view schemes of work'],
+                'tone' => 'bg-indigo-600 text-white',
+                'cta' => 'Open page',
             ],
             [
                 'title' => 'Timetable',
