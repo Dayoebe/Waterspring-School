@@ -124,6 +124,20 @@ class ManageTimetables extends Component
             } else {
                 $this->classes = collect();
             }
+        } elseif (auth()->user()->hasRole('parent')) {
+            $classIds = auth()->user()->children()
+                ->where('users.school_id', auth()->user()->school_id)
+                ->with('studentRecord:id,user_id,my_class_id')
+                ->get()
+                ->pluck('studentRecord.my_class_id')
+                ->filter()
+                ->unique();
+
+            $this->classes = MyClass::query()
+                ->whereIn('id', $classIds)
+                ->whereHas('classGroup', fn ($query) => $query->where('school_id', auth()->user()->school_id))
+                ->orderBy('name')
+                ->get();
         } else {
             $query = MyClass::whereHas('classGroup', function($q) {
                 $q->where('school_id', auth()->user()->school_id);
@@ -714,6 +728,10 @@ class ManageTimetables extends Component
         $query = Timetable::whereHas('myClass.classGroup', function ($query) {
             $query->where('school_id', auth()->user()->school_id);
         })->where('semester_id', $this->activeSemesterId);
+
+        if (auth()->user()->hasAnyRole(['student', 'parent'])) {
+            $query->whereIn('my_class_id', $this->classes?->pluck('id') ?? collect());
+        }
 
         if ($this->isRestrictedTeacher()) {
             $classIds = $this->restrictedTeacherAllClassIds();

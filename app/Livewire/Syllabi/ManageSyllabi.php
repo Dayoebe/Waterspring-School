@@ -140,6 +140,30 @@ class ManageSyllabi extends Component
             return;
         }
 
+        if ($user->hasRole('parent')) {
+            $classIds = $user->children()
+                ->where('users.school_id', $user->school_id)
+                ->with('studentRecord:id,user_id,my_class_id')
+                ->get()
+                ->pluck('studentRecord.my_class_id')
+                ->filter()
+                ->unique();
+
+            $this->classes = MyClass::query()
+                ->whereIn('id', $classIds)
+                ->whereHas('classGroup', fn (Builder $query) => $query->where('school_id', $user->school_id))
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            if ($this->classes->isNotEmpty() && ! $this->classes->contains('id', (int) $this->class)) {
+                $this->class = (string) $this->classes->first()->id;
+            }
+
+            $this->loadSubjectsForClass();
+
+            return;
+        }
+
         $classesQuery = $user->school
             ->myClasses()
             ->orderBy('my_classes.name');
@@ -391,6 +415,12 @@ class ManageSyllabi extends Component
             })
             ->latest();
 
+        if (auth()->user()->hasAnyRole(['student', 'parent'])) {
+            $query->where('is_published', true)
+                ->whereNotNull('published_at')
+                ->whereIn('my_class_id', $this->classes->pluck('id')->push((int) $this->class)->filter()->unique());
+        }
+
         if ($this->isRestrictedTeacher()) {
             $query->whereHas('subject', function (Builder $subjectQuery) {
                 $subjectQuery->whereIn(
@@ -407,6 +437,11 @@ class ManageSyllabi extends Component
 
     protected function classBelongsToCurrentSchool(int $classId): bool
     {
+        if (auth()->user()->hasAnyRole(['student', 'parent'])) {
+            return $this->classes->contains('id', $classId)
+                || (auth()->user()->hasRole('student') && (int) auth()->user()->studentRecord?->my_class_id === $classId);
+        }
+
         if ($this->isRestrictedTeacher()) {
             return $this->restrictedTeacherCanAccessSubjectClass($classId);
         }
@@ -451,6 +486,16 @@ class ManageSyllabi extends Component
             ->with(['subject', 'schoolClass', 'teacher', 'academicYear', 'semester'])
             ->forSchool(auth()->user()->school_id)
             ->whereKey($syllabusId);
+
+        if (auth()->user()->hasAnyRole(['student', 'parent'])) {
+            $allowedClassIds = auth()->user()->hasRole('student')
+                ? collect([auth()->user()->studentRecord?->my_class_id])
+                : $this->classes->pluck('id');
+
+            $query->where('is_published', true)
+                ->whereNotNull('published_at')
+                ->whereIn('my_class_id', $allowedClassIds->filter()->unique());
+        }
 
         if ($this->isRestrictedTeacher()) {
             $query->whereHas('subject', function (Builder $subjectQuery) {

@@ -5,16 +5,10 @@
         </div>
     @endif
 
-    @if ($smsInfoMessage)
-        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {{ $smsInfoMessage }}
-        </div>
-    @endif
-
     @if ($canCreateBroadcast)
         <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-xl font-bold text-slate-900">Compose Broadcast</h2>
-            <p class="mt-1 text-sm text-slate-600">Send notices by school, class, or role using portal, email, and SMS channels.</p>
+            <p class="mt-1 text-sm text-slate-600">Send notices by school, class, or role using portal notices and email.</p>
 
             <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
@@ -86,10 +80,6 @@
                         <input type="checkbox" wire:model="sendEmail" class="rounded border-slate-300 text-indigo-600" />
                         Email
                     </label>
-                    <label class="inline-flex items-center gap-2">
-                        <input type="checkbox" wire:model="sendSms" class="rounded border-slate-300 text-indigo-600" />
-                        SMS
-                    </label>
                 </div>
                 @error('sendPortal') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
@@ -149,10 +139,6 @@
                                 <div class="space-y-1 text-xs">
                                     <p>Portal: <strong>{{ $message->send_portal ? 'Yes' : 'No' }}</strong></p>
                                     <p>Email: <strong>{{ $message->send_email ? 'Yes' : 'No' }}</strong></p>
-                                    <p>SMS: <strong>{{ $message->send_sms ? 'Yes' : 'No' }}</strong></p>
-                                    @if ($message->send_sms)
-                                        <p>Status: <strong>{{ $message->sms_status ?? 'pending' }}</strong></p>
-                                    @endif
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-700">
@@ -160,7 +146,6 @@
                                     <p>Total: <strong>{{ $message->recipients_count }}</strong></p>
                                     <p>Portal: <strong>{{ $message->portal_recipient_count }}</strong></p>
                                     <p>Email: <strong>{{ $message->email_recipient_count }}</strong></p>
-                                    <p>SMS: <strong>{{ $message->sms_recipient_count }}</strong></p>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-700">{{ $message->sent_at?->toDayDateTimeString() ?? '-' }}</td>

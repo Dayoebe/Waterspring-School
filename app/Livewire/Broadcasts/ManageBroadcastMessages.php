@@ -37,10 +37,6 @@ class ManageBroadcastMessages extends Component
 
     public bool $sendEmail = false;
 
-    public bool $sendSms = false;
-
-    public string $smsInfoMessage = '';
-
     /** @var array<int, array<string, mixed>> */
     public array $classes = [];
 
@@ -96,10 +92,9 @@ class ManageBroadcastMessages extends Component
             'targetRole' => ['nullable', 'string', 'required_if:targetType,role'],
             'sendPortal' => ['boolean'],
             'sendEmail' => ['boolean'],
-            'sendSms' => ['boolean'],
         ]);
 
-        if (!$this->sendPortal && !$this->sendEmail && !$this->sendSms) {
+        if (!$this->sendPortal && !$this->sendEmail) {
             $this->addError('sendPortal', 'Select at least one delivery channel.');
             return;
         }
@@ -114,9 +109,6 @@ class ManageBroadcastMessages extends Component
         $schoolId = (int) auth()->user()?->school_id;
         $now = now();
 
-        $smsEnabled = (bool) config('services.sms.enabled', false);
-        $smsStatus = $this->sendSms ? ($smsEnabled ? 'queued' : 'not_configured') : null;
-
         $broadcastMessage = BroadcastMessage::query()->create([
             'school_id' => $schoolId,
             'title' => trim($validated['title']),
@@ -125,16 +117,15 @@ class ManageBroadcastMessages extends Component
             'target_meta' => $targetMeta,
             'send_portal' => $this->sendPortal,
             'send_email' => $this->sendEmail,
-            'send_sms' => $this->sendSms,
+            'send_sms' => false,
             'sent_at' => $now,
-            'sms_status' => $smsStatus,
+            'sms_status' => null,
             'created_by' => auth()->id(),
         ]);
 
         $channels = array_values(array_filter([
             $this->sendPortal ? 'portal' : null,
             $this->sendEmail ? 'email' : null,
-            $this->sendSms ? 'sms' : null,
         ]));
 
         $recipientRows = [];
@@ -150,7 +141,7 @@ class ManageBroadcastMessages extends Component
                 'portal_delivered_at' => $this->sendPortal ? $now : null,
                 'email_delivered_at' => null,
                 'sms_delivered_at' => null,
-                'sms_status' => $smsStatus,
+                'sms_status' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -189,12 +180,6 @@ class ManageBroadcastMessages extends Component
             ]);
         }
 
-        if ($this->sendSms && !$smsEnabled) {
-            $this->smsInfoMessage = 'SMS delivery is not configured. Message was saved for portal/email only.';
-        } else {
-            $this->smsInfoMessage = '';
-        }
-
         $this->reset([
             'title',
             'body',
@@ -202,7 +187,6 @@ class ManageBroadcastMessages extends Component
             'targetSectionId',
             'targetRole',
             'sendEmail',
-            'sendSms',
         ]);
         $this->targetType = 'school';
         $this->sendPortal = true;
@@ -370,9 +354,6 @@ class ManageBroadcastMessages extends Component
                 },
                 'recipients as email_recipient_count' => function ($query): void {
                     $query->whereNotNull('email_delivered_at');
-                },
-                'recipients as sms_recipient_count' => function ($query): void {
-                    $query->whereNotNull('sms_delivered_at');
                 },
             ])
             ->when($this->search !== '', function ($query): void {

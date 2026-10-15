@@ -18,6 +18,8 @@ use App\Models\School;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\Subject;
+use App\Models\Syllabus;
+use App\Models\Timetable;
 use App\Models\User;
 use App\Support\ResultPublicationStatus;
 use App\Support\TeacherResponsibilityBuilder;
@@ -62,6 +64,8 @@ class DashboardStats extends Component
     public $clubPanel = [];
 
     public $schemePanel = [];
+
+    public $learningPanel = [];
 
     public $academicContext = [];
 
@@ -132,6 +136,10 @@ class DashboardStats extends Component
 
         if (($this->isStudent || $this->isParent) && $user->can('view schemes of work')) {
             $this->loadSchemePanel($user);
+        }
+
+        if ($this->isStudent || $this->isParent) {
+            $this->loadLearningPanel($user);
         }
 
         $this->loading = false;
@@ -1181,6 +1189,64 @@ class DashboardStats extends Component
         ]))->take(8)->values()->all();
 
         $this->schemePanel = ['schemes_count' => $schemes->count(), 'topics' => $topics];
+    }
+
+    private function loadLearningPanel(User $user): void
+    {
+        $students = $this->isStudent
+            ? collect([$user->loadMissing('studentRecord.myClass')])
+            : $user->children()
+                ->where('users.school_id', $user->school_id)
+                ->whereNull('users.deleted_at')
+                ->with('studentRecord.myClass')
+                ->orderBy('users.name')
+                ->get(['users.id', 'users.name']);
+
+        $classIds = $students->pluck('studentRecord.my_class_id')->filter()->unique();
+        $semesterId = $user->school?->semester_id;
+        $academicYearId = $user->school?->academic_year_id;
+
+        $timetables = Timetable::query()
+            ->where('semester_id', $semesterId)
+            ->whereIn('my_class_id', $classIds)
+            ->withCount('timeSlots')
+            ->latest()
+            ->get()
+            ->keyBy('my_class_id');
+
+        $syllabiByClass = Syllabus::query()
+            ->where('semester_id', $semesterId)
+            ->where('academic_year_id', $academicYearId)
+            ->whereIn('my_class_id', $classIds)
+            ->where('is_published', true)
+            ->whereNotNull('published_at')
+            ->selectRaw('my_class_id, count(*) as aggregate')
+            ->groupBy('my_class_id')
+            ->pluck('aggregate', 'my_class_id');
+
+        $schemesByClass = SchemeOfWork::query()
+            ->where('semester_id', $semesterId)
+            ->where('academic_year_id', $academicYearId)
+            ->whereIn('my_class_id', $classIds)
+            ->whereNotNull('published_at')
+            ->selectRaw('my_class_id, count(*) as aggregate')
+            ->groupBy('my_class_id')
+            ->pluck('aggregate', 'my_class_id');
+
+        $this->learningPanel = $students->map(function (User $student) use ($timetables, $syllabiByClass, $schemesByClass) {
+            $classId = $student->studentRecord?->my_class_id;
+            $timetable = $classId ? $timetables->get($classId) : null;
+
+            return [
+                'student' => $student->name,
+                'class_id' => $classId,
+                'class_name' => $student->studentRecord?->myClass?->name ?: 'Class not assigned',
+                'timetable_name' => $timetable?->name,
+                'period_count' => $timetable?->time_slots_count ?? 0,
+                'syllabi_count' => (int) ($syllabiByClass[$classId] ?? 0),
+                'schemes_count' => (int) ($schemesByClass[$classId] ?? 0),
+            ];
+        })->values()->all();
     }
 
     private function loadTeacherPanel(User $user): void
