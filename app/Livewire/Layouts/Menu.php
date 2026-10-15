@@ -346,32 +346,24 @@ class Menu extends Component
                 ])),
             ],
             [
-                'text' => 'Exams & Results',
+                'text' => 'Grading & Results',
                 'icon' => 'fas fa-chart-line',
                 'submenu' => array_values(array_filter([
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Manage Exams',
-                        'route' => 'exams.index',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['read exam'],
-                        'section' => 'Exams',
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Exam Records',
-                        'route' => 'exam-records.index',
-                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
-                        'permissions' => ['read exam record'],
-                        'section' => 'Exams',
-                    ],
                     [
                         'type' => 'menu-item',
                         'text' => 'Grading Systems',
                         'route' => 'grade-systems.index',
                         'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
                         'permissions' => ['read grade system', 'create grade system'],
-                        'section' => 'Exams',
+                        'section' => 'Grading',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Printable Exam Papers',
+                        'route' => 'exams.index',
+                        'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'],
+                        'permissions' => ['read exam paper', 'create exam paper'],
+                        'section' => 'Paper Exams',
                     ],
                     [
                         'type' => 'menu-item',

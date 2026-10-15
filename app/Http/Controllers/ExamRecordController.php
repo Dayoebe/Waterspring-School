@@ -14,7 +14,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class ExamRecordController extends Controller
 {
@@ -28,9 +27,11 @@ class ExamRecordController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        return view('livewire.exams.pages.exam-record.index');
+        return redirect()
+            ->route('result.upload.individual')
+            ->with('info', 'Exam Records have been consolidated into official Term Results. Published CBT scores can now be transferred from Manage CBT.');
     }
 
     /**

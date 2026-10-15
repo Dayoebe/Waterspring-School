@@ -8,7 +8,7 @@ use App\Models\ClassGroup;
 use App\Models\ClubActivity;
 use App\Models\ClubWeeklyAgenda;
 use App\Models\ContactMessage;
-use App\Models\Exam;
+use App\Models\Assessment\Assessment;
 use App\Models\FeeInvoice;
 use App\Models\MyClass;
 use App\Models\Notice;
@@ -374,13 +374,13 @@ class DashboardStats extends Component
                 'permissions' => ['read academic year'],
             ],
             [
-                'title' => 'Exams',
-                'description' => 'Configure exams and exam records.',
-                'icon' => 'fas fa-file-signature',
-                'route' => 'exams.index',
+                'title' => 'CBT Assessments',
+                'description' => 'Create online assessments and transfer published scores to report cards.',
+                'icon' => 'fas fa-laptop-file',
+                'route' => 'cbt.manage',
                 'group' => 'Assessment',
                 'roles' => $adminAndStaffRoles,
-                'permissions' => ['read exam', 'read exam record'],
+                'permissions' => ['manage cbt'],
             ],
             [
                 'title' => 'Results',
@@ -930,13 +930,11 @@ class DashboardStats extends Component
             'teachers' => User::where('school_id', $schoolId)->role('teacher')->count(),
             'parents' => User::where('school_id', $schoolId)->role('parent')->count(),
             'total_notices' => $schoolId ? Notice::query()->count() : 0,
-            'total_exams' => $schoolId ? Exam::whereHas('semester', function ($q) use ($schoolId, $user) {
-                $q->where('school_id', $schoolId);
-
-                if ($user->school?->semester_id) {
-                    $q->where('id', $user->school->semester_id);
-                }
-            })->count() : 0,
+            'total_exams' => $schoolId ? Assessment::query()
+                ->whereHas('course.classGroup', fn ($query) => $query->where('school_id', $schoolId))
+                ->when($user->school?->academic_year_id, fn ($query, $yearId) => $query->where('academic_year_id', $yearId))
+                ->when($user->school?->semester_id, fn ($query, $semesterId) => $query->where('semester_id', $semesterId))
+                ->count() : 0,
         ];
     }
 

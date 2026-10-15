@@ -177,11 +177,11 @@
                     'permissions' => ['read subject'],
                 ],
                 [
-                    'label' => 'Exams',
+                    'label' => 'CBT Assessments',
                     'value' => $stats['total_exams'] ?? 0,
-                    'route' => 'exams.index',
+                    'route' => 'cbt.manage',
                     'visible' => $isStaff,
-                    'permissions' => ['read exam', 'read exam record'],
+                    'permissions' => ['manage cbt'],
                 ],
                 [
                     'label' => 'Notices',

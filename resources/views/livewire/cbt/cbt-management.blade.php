@@ -426,6 +426,33 @@
                                 </a>
                             @endif
 
+                            @if($canPublishCbtResults && $assessment->results_published_at)
+                                <div class="rounded-xl border border-violet-200 bg-violet-50 p-3 sm:col-span-2">
+                                    <div class="mb-3">
+                                        <p class="text-sm font-bold text-violet-950">Send to official report card</p>
+                                        <p class="mt-1 text-xs leading-5 text-violet-700">The student's best attempt is scaled to 10 marks for CA or 60 marks for Exam. Re-importing updates the selected column.</p>
+                                    </div>
+                                    <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                        <select wire:model="resultImportTargets.{{ $assessment->id }}" class="rounded-xl border-violet-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-violet-500 focus:ring-violet-500">
+                                            <option value="exam_score">Exam score (60 marks)</option>
+                                            <option value="ca1_score">CA 1 (10 marks)</option>
+                                            <option value="ca2_score">CA 2 (10 marks)</option>
+                                            <option value="ca3_score">CA 3 (10 marks)</option>
+                                            <option value="ca4_score">CA 4 (10 marks)</option>
+                                        </select>
+                                        <button type="button"
+                                            wire:click="importResultsToReportCard({{ $assessment->id }})"
+                                            wire:confirm="Transfer the best CBT attempt for every submitted student? Existing scores in the selected report-card column will be replaced."
+                                            wire:loading.attr="disabled"
+                                            wire:target="importResultsToReportCard({{ $assessment->id }})"
+                                            class="rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50">
+                                            <i class="fas fa-arrow-right-to-bracket mr-2"></i>Transfer scores
+                                        </button>
+                                    </div>
+                                    @error('importTarget')<p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
+                                </div>
+                            @endif
+
                             @if($assessment->can_manage_content)
                                 <button wire:click="editAssessment({{ $assessment->id }})"
                                     class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100">

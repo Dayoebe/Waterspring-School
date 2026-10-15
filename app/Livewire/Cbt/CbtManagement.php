@@ -18,6 +18,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
+use App\Services\CbtResultImporter;
 
 #[Layout('layouts.dashboard', ['title' => 'CBT Exam Management', 'description' => 'Manage CBT exams', 'icon' => 'fas fa-microphone-alt'])]
 class CbtManagement extends Component
@@ -52,6 +53,7 @@ class CbtManagement extends Component
     public $lesson_id = null;
 
     public $selectedAssessment = null;
+    public array $resultImportTargets = [];
     public $editingAssessment = null;
     public $editingQuestion = null;
 
@@ -436,6 +438,36 @@ class CbtManagement extends Component
         ]);
 
         session()->flash('message', 'CBT results unpublished.');
+    }
+
+    public function importResultsToReportCard(int $assessmentId, CbtResultImporter $importer): void
+    {
+        if (!$this->currentUserCanPublishCbtResults()) {
+            session()->flash('error', 'Only admin-level staff can transfer CBT scores to report cards.');
+            return;
+        }
+
+        $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
+        if (!$assessment) {
+            session()->flash('error', 'Assessment not found.');
+            return;
+        }
+
+        $target = $this->resultImportTargets[$assessmentId] ?? 'exam_score';
+        $summary = $importer->import($assessment, $target, (int) auth()->id());
+        $label = match ($target) {
+            'ca1_score' => 'CA 1',
+            'ca2_score' => 'CA 2',
+            'ca3_score' => 'CA 3',
+            'ca4_score' => 'CA 4',
+            default => 'Exam',
+        };
+
+        session()->flash(
+            'message',
+            "Transferred {$summary['imported']} CBT score(s) into {$label}."
+            .($summary['skipped'] ? " {$summary['skipped']} student(s) were skipped because their academic record or subject enrolment was unavailable." : '')
+        );
     }
 
     public function toggleAssessmentLock($assessmentId): void
