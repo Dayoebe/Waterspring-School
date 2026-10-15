@@ -16,6 +16,14 @@ class TimetableTimeSlot extends Model
         'start_time',
         'stop_time',
         'timetable_id',
+        'label',
+        'is_break',
+        'sort_order',
+    ];
+
+    protected $casts = [
+        'is_break' => 'boolean',
+        'sort_order' => 'integer',
     ];
 
     protected $getDateFormat = 'H:i';

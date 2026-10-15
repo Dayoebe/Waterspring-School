@@ -40,7 +40,7 @@
                                     <option value="">Create time slot first</option>
                                 @else
                                     @foreach($timeSlots as $slot)
-                                        <option value="{{ $slot->id }}">{{ $slot->name }}</option>
+                                        @if(!$slot->is_break)<option value="{{ $slot->id }}">{{ $slot->label ?: 'Lesson' }} · {{ $slot->name }}</option>@endif
                                     @endforeach
                                 @endif
                             </select>
@@ -148,7 +148,10 @@
                     <tbody class="divide-y divide-gray-200">
                         @forelse($timeSlots as $slot)
                             <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $slot->name }}</td>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                    <span class="block">{{ $slot->label ?: 'Lesson period' }}</span>
+                                    @if($slot->is_break)<span class="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">School-wide break</span>@endif
+                                </td>
                                 <td class="px-4 py-3 text-sm text-gray-600">{{ $slot->start_time }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-600">{{ $slot->stop_time }}</td>
                                 <td class="px-4 py-3 text-right text-sm">

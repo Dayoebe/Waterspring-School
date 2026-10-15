@@ -9,7 +9,10 @@
                     </th>
                     @foreach($timeSlots as $timeSlot)
                         <th class="border-2 border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 whitespace-nowrap">
-                            <div class="text-xs">{{ $timeSlot->start_time }}<br>to<br>{{ $timeSlot->stop_time }}</div>
+                            <div class="text-xs">
+                                <span class="mb-1 block font-extrabold {{ $timeSlot->is_break ? 'text-amber-700' : 'text-slate-800' }}">{{ $timeSlot->label ?: 'Lesson' }}</span>
+                                {{ date('g:i', strtotime($timeSlot->start_time)) }}<br>–<br>{{ date('g:i', strtotime($timeSlot->stop_time)) }}
+                            </div>
                         </th>
                     @endforeach
                 </tr>
@@ -21,15 +24,17 @@
                             {{ $weekday->name }}
                         </td>
                         @foreach($timeSlots as $timeSlot)
-                            <td class="border-2 border-gray-300 px-3 py-3 {{ $canUpdateTimetable ? 'cursor-pointer hover:bg-indigo-50' : 'cursor-default bg-gray-50/40' }} transition"
-                                @if($canUpdateTimetable)
+                            <td class="border-2 border-gray-300 px-3 py-3 {{ $timeSlot->is_break ? 'bg-amber-50' : ($canUpdateTimetable ? 'cursor-pointer hover:bg-indigo-50' : 'cursor-default bg-gray-50/40') }} transition"
+                                @if($canUpdateTimetable && !$timeSlot->is_break)
                                     wire:click="selectCell({{ $timeSlot->id }}, {{ $weekday->id }})"
                                 @endif>
                                 @php
                                     $pivot = $timeSlot->weekdays->find($weekday->id)?->timetableRecord;
                                 @endphp
 
-                                @if($pivot)
+                                @if($timeSlot->is_break)
+                                    <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700"><i class="fas fa-mug-hot"></i>{{ $timeSlot->label }}</span>
+                                @elseif($pivot)
                                     @if($pivot->timetable_time_slot_weekdayable_type === "App\\Models\\Subject")
                                         <span class="inline-flex px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
                                             {{ $subjects->find($pivot->timetable_time_slot_weekdayable_id)?->name }}

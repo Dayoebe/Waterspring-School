@@ -11,6 +11,7 @@ use App\Traits\ResolvesRestrictedTeacherAssignments;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class ManageTimetables extends Component
 {
@@ -27,6 +28,13 @@ class ManageTimetables extends Component
     public $name = '';
     public $description = '';
     public $my_class_id = '';
+    public $schoolDayStartsAt = '08:00';
+    public $lessonDuration = 40;
+    public $lessonCount = 8;
+    public $shortBreakAfter = 3;
+    public $shortBreakDuration = 20;
+    public $lunchAfter = 6;
+    public $lunchDuration = 40;
     
     // Building timetable
     public $selectedTimeSlot;
@@ -170,11 +178,12 @@ class ManageTimetables extends Component
             ->with(['timeSlots.weekdays', 'myClass.subjects'])
             ->findOrFail($timetableId);
         
-        $this->timeSlots = $this->currentTimetable->timeSlots->sortBy('start_time');
+        $this->timeSlots = $this->currentTimetable->timeSlots
+            ->sortBy(fn ($slot) => sprintf('%05d-%s', $slot->sort_order, $slot->start_time));
         $this->subjects = $this->currentTimetable->myClass->subjects;
         
         if ($this->timeSlots->isNotEmpty()) {
-            $this->selectedTimeSlot = $this->timeSlots->first()->id;
+            $this->selectedTimeSlot = $this->timeSlots->firstWhere('is_break', false)?->id;
         }
     }
 
@@ -260,6 +269,13 @@ class ManageTimetables extends Component
             ],
             'description' => 'nullable|string',
             'my_class_id' => 'required|exists:my_classes,id',
+            'schoolDayStartsAt' => 'required|date_format:H:i',
+            'lessonDuration' => 'required|integer|min:20|max:120',
+            'lessonCount' => 'required|integer|min:1|max:12',
+            'shortBreakAfter' => 'nullable|integer|min:1|lt:lessonCount',
+            'shortBreakDuration' => 'nullable|required_with:shortBreakAfter|integer|min:5|max:60',
+            'lunchAfter' => 'nullable|integer|min:1|lt:lessonCount|different:shortBreakAfter',
+            'lunchDuration' => 'nullable|required_with:lunchAfter|integer|min:10|max:120',
         ]);
 
         if (!$this->classExistsInScope((int) $this->my_class_id)) {
@@ -267,12 +283,26 @@ class ManageTimetables extends Component
             return;
         }
 
-        $timetable = Timetable::create([
-            'name' => $this->name,
-            'description' => $this->description,
-            'my_class_id' => $this->my_class_id,
-            'semester_id' => $this->activeSemesterId,
-        ]);
+        $timetable = DB::transaction(function () {
+            $timetable = Timetable::create([
+                'name' => $this->name,
+                'description' => $this->description,
+                'my_class_id' => $this->my_class_id,
+                'semester_id' => $this->activeSemesterId,
+            ]);
+
+            foreach ($this->generatedSchedulePreview() as $index => $slot) {
+                $timetable->timeSlots()->create([
+                    'label' => $slot['label'],
+                    'start_time' => $slot['start'],
+                    'stop_time' => $slot['stop'],
+                    'is_break' => $slot['is_break'],
+                    'sort_order' => $index + 1,
+                ]);
+            }
+
+            return $timetable;
+        });
 
         session()->flash('success', 'Timetable created successfully');
         $this->switchMode('build', $timetable->id);
@@ -347,6 +377,8 @@ class ManageTimetables extends Component
             'start_time' => $this->startTime,
             'stop_time' => $this->stopTime,
             'timetable_id' => $timetable->id,
+            'label' => 'Period '.($timetable->timeSlots()->where('is_break', false)->count() + 1),
+            'sort_order' => ($timetable->timeSlots()->max('sort_order') ?? 0) + 1,
         ]);
 
         $this->reset(['startTime', 'stopTime']);
@@ -383,7 +415,7 @@ class ManageTimetables extends Component
 
         $timeSlot = TimetableTimeSlot::whereHas('timetable.myClass.classGroup', function ($query) {
             $query->where('school_id', auth()->user()->school_id);
-        })->findOrFail($this->selectedTimeSlot);
+        })->where('is_break', false)->findOrFail($this->selectedTimeSlot);
 
         if ((int) $timeSlot->timetable_id !== (int) $this->timetableId) {
             session()->flash('error', 'Selected time slot does not belong to the current timetable.');
@@ -448,6 +480,7 @@ class ManageTimetables extends Component
         $exists = TimetableTimeSlot::query()
             ->where('id', $timeSlotId)
             ->where('timetable_id', $this->timetableId)
+            ->where('is_break', false)
             ->exists();
 
         if (!$exists) {
@@ -538,6 +571,46 @@ class ManageTimetables extends Component
     public function resetTimetableForm()
     {
         $this->reset(['timetableId', 'name', 'description', 'my_class_id']);
+        $this->schoolDayStartsAt = '08:00';
+        $this->lessonDuration = 40;
+        $this->lessonCount = 8;
+        $this->shortBreakAfter = 3;
+        $this->shortBreakDuration = 20;
+        $this->lunchAfter = 6;
+        $this->lunchDuration = 40;
+    }
+
+    public function generatedSchedulePreview(): array
+    {
+        try {
+            $cursor = Carbon::createFromFormat('H:i', $this->schoolDayStartsAt ?: '08:00');
+        } catch (\Throwable) {
+            $cursor = Carbon::createFromFormat('H:i', '08:00');
+        }
+        $slots = [];
+        $lessonCount = max(1, min(12, (int) $this->lessonCount));
+
+        for ($period = 1; $period <= $lessonCount; $period++) {
+            if ($period > 1 && (int) $this->shortBreakAfter === $period - 1) {
+                $slots[] = $this->makePreviewSlot($cursor, (int) $this->shortBreakDuration, 'Short break', true);
+            }
+
+            if ($period > 1 && (int) $this->lunchAfter === $period - 1) {
+                $slots[] = $this->makePreviewSlot($cursor, (int) $this->lunchDuration, 'Lunch break', true);
+            }
+
+            $slots[] = $this->makePreviewSlot($cursor, max(20, (int) $this->lessonDuration), 'Period '.$period, false);
+        }
+
+        return $slots;
+    }
+
+    protected function makePreviewSlot(Carbon &$cursor, int $minutes, string $label, bool $isBreak): array
+    {
+        $start = $cursor->format('H:i');
+        $cursor = $cursor->copy()->addMinutes(max(1, $minutes));
+
+        return ['label' => $label, 'start' => $start, 'stop' => $cursor->format('H:i'), 'is_break' => $isBreak];
     }
 
     public function resetCustomItemForm()
