@@ -94,7 +94,7 @@
             <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-200 px-4 py-3">
                     <h3 class="text-lg font-semibold text-slate-900">Discipline Reports</h3>
-                    <p class="text-xs text-slate-500">Only parent-visible incidents are shown.</p>
+                    
                 </div>
                 <div class="max-h-[460px] overflow-y-auto">
                     <div class="space-y-3 p-4">
