@@ -107,6 +107,40 @@
 
         <div class="space-y-6 p-6">
             @if($canUpdateTimetable)
+                @if($editingTimeSlotId)
+                    <div class="rounded-xl border-2 border-sky-200 bg-sky-50 p-5">
+                        <div class="mb-4 flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-sky-700">Editing period</p>
+                                <h5 class="text-lg font-bold text-slate-900">Change its name, time or purpose</h5>
+                            </div>
+                            <button type="button" wire:click="cancelTimeSlotEdit" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Cancel</button>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                            <div>
+                                <label class="mb-2 block text-sm font-semibold text-gray-700">Period name</label>
+                                <input type="text" wire:model="timeSlotLabel" placeholder="e.g. Period 1 or Assembly" class="w-full rounded-lg border border-gray-300 p-2.5 focus:border-sky-500 focus:ring-sky-500">
+                                @error('timeSlotLabel')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-semibold text-gray-700">Start time</label>
+                                <input type="time" wire:model="startTime" class="w-full rounded-lg border border-gray-300 p-2.5 focus:border-sky-500 focus:ring-sky-500">
+                                @error('startTime')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-semibold text-gray-700">End time</label>
+                                <input type="time" wire:model="stopTime" class="w-full rounded-lg border border-gray-300 p-2.5 focus:border-sky-500 focus:ring-sky-500">
+                                @error('stopTime')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                            <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 md:self-end">
+                                <input type="checkbox" wire:model="timeSlotIsBreak" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                                <span><span class="block text-sm font-bold text-gray-800">Break period</span><span class="block text-xs text-gray-500">No subjects can be assigned</span></span>
+                            </label>
+                        </div>
+                        <button type="button" wire:click="updateTimeSlot" class="mt-4 rounded-lg bg-sky-600 px-6 py-2.5 font-semibold text-white hover:bg-sky-700"><i class="fas fa-save mr-2"></i>Save period changes</button>
+                    </div>
+                @endif
+
                 <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
                     <h5 class="mb-4 text-lg font-bold text-gray-800">Create New Time Slot</h5>
 
@@ -156,6 +190,11 @@
                                 <td class="px-4 py-3 text-sm text-gray-600">{{ $slot->stop_time }}</td>
                                 <td class="px-4 py-3 text-right text-sm">
                                     @if($canUpdateTimetable)
+                                        <button wire:click="editTimeSlot({{ $slot->id }})"
+                                            class="mr-1 rounded-lg bg-sky-100 px-3 py-1.5 text-sky-700 hover:bg-sky-200"
+                                            title="Edit period">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
                                         <button wire:click="deleteTimeSlot({{ $slot->id }})"
                                             wire:confirm="Delete this time slot? All associated records will be removed."
                                             class="rounded-lg bg-red-100 px-3 py-1.5 text-red-700 hover:bg-red-200">

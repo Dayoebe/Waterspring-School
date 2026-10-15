@@ -43,6 +43,9 @@ class ManageTimetables extends Component
     public $recordId;
     public $startTime = '';
     public $stopTime = '';
+    public $editingTimeSlotId;
+    public $timeSlotLabel = '';
+    public bool $timeSlotIsBreak = false;
 
     // Custom item form
     public $customItemId;
@@ -402,6 +405,72 @@ class ManageTimetables extends Component
         $this->loadTimetableForBuilding($this->timetableId);
     }
 
+    public function editTimeSlot($timeSlotId): void
+    {
+        $this->ensureCan(['update timetable']);
+
+        $slot = TimetableTimeSlot::whereHas('timetable.myClass.classGroup', function ($query) {
+            $query->where('school_id', auth()->user()->school_id);
+        })->where('timetable_id', $this->timetableId)->findOrFail($timeSlotId);
+
+        $this->editingTimeSlotId = $slot->id;
+        $this->timeSlotLabel = $slot->label ?: 'Lesson period';
+        $this->startTime = $slot->start_time;
+        $this->stopTime = $slot->stop_time;
+        $this->timeSlotIsBreak = (bool) $slot->is_break;
+        $this->resetValidation();
+    }
+
+    public function updateTimeSlot(): void
+    {
+        $this->ensureCan(['update timetable']);
+
+        $this->validate([
+            'timeSlotLabel' => 'required|string|max:80',
+            'startTime' => 'required|date_format:H:i',
+            'stopTime' => 'required|date_format:H:i|after:startTime',
+            'timeSlotIsBreak' => 'boolean',
+        ]);
+
+        $slot = TimetableTimeSlot::whereHas('timetable.myClass.classGroup', function ($query) {
+            $query->where('school_id', auth()->user()->school_id);
+        })->where('timetable_id', $this->timetableId)->findOrFail($this->editingTimeSlotId);
+
+        $hasOverlap = TimetableTimeSlot::query()
+            ->where('timetable_id', $slot->timetable_id)
+            ->where('id', '!=', $slot->id)
+            ->where('start_time', '<', $this->stopTime)
+            ->where('stop_time', '>', $this->startTime)
+            ->exists();
+
+        if ($hasOverlap) {
+            $this->addError('startTime', 'This time overlaps another period.');
+            return;
+        }
+
+        $slot->update([
+            'label' => trim($this->timeSlotLabel),
+            'start_time' => $this->startTime,
+            'stop_time' => $this->stopTime,
+            'is_break' => $this->timeSlotIsBreak,
+        ]);
+
+        if ($this->timeSlotIsBreak) {
+            $slot->weekdays()->detach();
+        }
+
+        $this->cancelTimeSlotEdit();
+        $this->loadTimetableForBuilding($this->timetableId);
+        session()->flash('success', 'Period updated successfully.');
+    }
+
+    public function cancelTimeSlotEdit(): void
+    {
+        $this->reset(['editingTimeSlotId', 'timeSlotLabel', 'startTime', 'stopTime']);
+        $this->timeSlotIsBreak = false;
+        $this->resetValidation();
+    }
+
     // Timetable records
     public function attachRecord()
     {
@@ -489,6 +558,19 @@ class ManageTimetables extends Component
 
         $this->selectedTimeSlot = $timeSlotId;
         $this->selectedWeekday = $weekdayId;
+
+        $slot = $this->currentTimetable?->timeSlots->firstWhere('id', (int) $timeSlotId);
+        $record = $slot?->weekdays->firstWhere('id', (int) $weekdayId)?->timetableRecord;
+
+        if ($record) {
+            $this->recordType = $record->timetable_time_slot_weekdayable_type === \App\Models\Subject::class
+                ? 'subject'
+                : 'customTimetableItem';
+            $this->recordId = $record->timetable_time_slot_weekdayable_id;
+        } else {
+            $this->recordType = 'subject';
+            $this->recordId = null;
+        }
         
         $this->dispatch('scroll-to-form');
     }
