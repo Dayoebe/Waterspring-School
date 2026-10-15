@@ -478,6 +478,15 @@ class DashboardStats extends Component
                 'permissions' => ['read own child attendance', 'read own child discipline'],
             ],
             [
+                'title' => 'Student Support',
+                'description' => 'Raise a concern and follow support plans for your wards.',
+                'icon' => 'fas fa-hands-holding-child',
+                'route' => 'student-support.index',
+                'group' => 'Student Support',
+                'roles' => ['parent'],
+                'permissions' => ['access student support'],
+            ],
+            [
                 'title' => 'Attendance',
                 'description' => $attendanceDescription,
                 'icon' => 'fas fa-user-check',
@@ -663,7 +672,7 @@ class DashboardStats extends Component
                 'result.view.class', 'result.view.subject', 'cbt.manage', 'syllabi.index',
             ],
             $this->isParent => [
-                'result.view.student', 'parent.student-welfare', 'result.history',
+                'student-support.index', 'result.view.student', 'parent.student-welfare', 'result.history',
                 'broadcasts.inbox', 'profile.edit',
             ],
             $this->isStudent => [
@@ -1045,6 +1054,8 @@ class DashboardStats extends Component
                 'total_children' => 0,
                 'hidden_count' => 0,
                 'children' => [],
+                'active_support_count' => 0,
+                'parent_actions_due' => 0,
             ];
 
             return;
@@ -1093,6 +1104,8 @@ class DashboardStats extends Component
             'total_children' => $children->count(),
             'hidden_count' => max($children->count() - $limit, 0),
             'children' => $displayChildren,
+            'active_support_count' => DB::table('student_support_cases')->where('parent_id', $user->id)->where('status', '!=', 'completed')->count(),
+            'parent_actions_due' => DB::table('student_support_actions as action')->join('student_support_cases as support_case', 'support_case.id', '=', 'action.student_support_case_id')->where('support_case.parent_id', $user->id)->where('action.owner_id', $user->id)->where('action.status', 'pending')->count(),
         ];
     }
 

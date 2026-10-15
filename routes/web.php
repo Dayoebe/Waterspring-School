@@ -234,6 +234,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->middleware('permission:access behavioural reports')
         ->name('behaviour-reports.index');
 
+    Route::get('/dashboard/student-support', \App\Livewire\Support\StudentSupportHub::class)
+        ->middleware('permission:access student support')
+        ->name('student-support.index');
+
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->middleware('permission:manage own profile')

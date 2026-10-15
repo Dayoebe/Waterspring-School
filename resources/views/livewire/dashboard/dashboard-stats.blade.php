@@ -779,6 +779,17 @@
                             </div>
                         @endif
 
+                        @if ($user->can('access student support'))
+                            <a href="{{ route('student-support.index') }}" wire:navigate class="mt-5 flex flex-col gap-4 rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-widest text-cyan-700">Student Support Centre</p>
+                                    <h4 class="mt-1 text-lg font-black text-slate-950">Raise a concern or follow your wards’ plans</h4>
+                                    <p class="mt-1 text-sm text-slate-600">{{ $parentPanel['active_support_count'] ?? 0 }} active plan(s) · {{ $parentPanel['parent_actions_due'] ?? 0 }} action(s) waiting for you</p>
+                                </div>
+                                <span class="shrink-0 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white">Open support <i class="fas fa-arrow-right ml-2"></i></span>
+                            </a>
+                        @endif
+
                         @if ($user->can('view result'))
                             <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
                                 <div class="mb-3">

@@ -594,6 +594,13 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'icon' => 'fas fa-hands-holding-child',
+                        'text' => 'Student Support Centre',
+                        'route' => 'student-support.index',
+                        'permissions' => ['access student support'],
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'icon' => 'fas fa-envelope',
                         'text' => 'Website Enquiries',
                         'route' => 'contacts.messages.index',

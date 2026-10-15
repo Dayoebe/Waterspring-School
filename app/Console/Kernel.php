@@ -23,6 +23,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('results:cleanup')
             ->weeklyOn(0, '3:00')
             ->onOneServer(); // If using multiple servers
+
+        $schedule->command('support:send-review-reminders')
+            ->dailyAt('07:00')
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**
