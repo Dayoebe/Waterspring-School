@@ -718,6 +718,36 @@
                             @endforeach
                         </div>
 
+                        <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">Class subjects</p>
+                                    <h4 class="mt-1 text-lg font-bold text-slate-900">Your subjects and teachers</h4>
+                                </div>
+                                <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">{{ count($studentPanel['subjects'] ?? []) }} subjects</span>
+                            </div>
+
+                            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                @forelse($studentPanel['subjects'] ?? [] as $subject)
+                                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                        <div class="flex items-start gap-3">
+                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700"><i class="fas fa-book-open"></i></span>
+                                            <div class="min-w-0">
+                                                <h5 class="font-bold text-slate-900">{{ $subject['name'] }}</h5>
+                                                @if($subject['short_name'])<p class="mt-0.5 text-xs font-semibold text-slate-500">{{ $subject['short_name'] }}</p>@endif
+                                                <p class="mt-2 text-sm text-slate-600">
+                                                    <i class="fas fa-chalkboard-user mr-1 text-sky-600"></i>
+                                                    {{ $subject['teachers'] !== [] ? implode(', ', $subject['teachers']) : 'Teacher not assigned yet' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </article>
+                                @empty
+                                    <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 md:col-span-2 xl:col-span-3">No subjects have been assigned to your class yet.</p>
+                                @endforelse
+                            </div>
+                        </div>
+
                         @if ($user->can('view result'))
                             <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
                                 <div class="mb-3">

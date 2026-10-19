@@ -1036,14 +1036,55 @@ class DashboardStats extends Component
             $resultQuery->whereRaw('1 = 0');
         }
 
-        $className = $studentRecord->academicYearClass?->name ?? $studentRecord->myClass?->name ?? 'Not assigned';
+        $currentClass = $studentRecord->getClassForYear($currentAcademicYearId) ?? $studentRecord->baseClass;
+        $className = $currentClass?->name ?? 'Not assigned';
         $sectionName = $studentRecord->academicYearSection?->name ?? $studentRecord->section?->name ?? 'Not assigned';
+        $subjects = $studentRecord->currentClassSubjectsQuery()
+            ->orderBy('subjects.name')
+            ->get(['subjects.id', 'subjects.name', 'subjects.short_name']);
+        $teacherAssignments = collect();
+
+        if ($currentClass && $subjects->isNotEmpty()) {
+            $teacherAssignments = DB::table('subject_teacher as st')
+                ->join('users', 'users.id', '=', 'st.user_id')
+                ->where('st.school_id', $user->school_id)
+                ->where('users.school_id', $user->school_id)
+                ->whereNull('users.deleted_at')
+                ->whereIn('st.subject_id', $subjects->pluck('id'))
+                ->where(fn ($query) => $query
+                    ->where('st.my_class_id', $currentClass->id)
+                    ->orWhere('st.is_general', true))
+                ->select('st.subject_id', 'st.my_class_id', 'st.is_general', 'users.name')
+                ->orderBy('users.name')
+                ->get()
+                ->groupBy(fn ($assignment) => (int) $assignment->subject_id);
+        }
+
+        $subjectsWithTeachers = $subjects->map(function (Subject $subject) use ($teacherAssignments, $currentClass): array {
+            $assignments = $teacherAssignments->get((int) $subject->id, collect());
+            $classAssignments = $currentClass
+                ? $assignments->where('my_class_id', $currentClass->id)
+                : collect();
+            $teachers = ($classAssignments->isNotEmpty() ? $classAssignments : $assignments->where('is_general', true))
+                ->pluck('name')
+                ->unique()
+                ->values()
+                ->all();
+
+            return [
+                'id' => (int) $subject->id,
+                'name' => $subject->name,
+                'short_name' => $subject->short_name,
+                'teachers' => $teachers,
+            ];
+        })->values()->all();
 
         $this->studentPanel = [
             'admission_number' => $studentRecord->admission_number ?: 'N/A',
             'class_name' => $className,
             'section_name' => $sectionName,
-            'subject_count' => $studentRecord->currentClassSubjectsQuery()->count(),
+            'subject_count' => count($subjectsWithTeachers),
+            'subjects' => $subjectsWithTeachers,
             'result_count' => (clone $resultQuery)->count(),
             'approved_result_count' => (clone $resultQuery)->where('approved', true)->count(),
             'average_score' => number_format((float) ((clone $resultQuery)->avg('total_score') ?? 0), 1),
