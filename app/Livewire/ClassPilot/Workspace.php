@@ -60,6 +60,8 @@ class Workspace extends Component
 
     public array $sourceSummary = [];
 
+    public string $revisionPrompt = '';
+
     public ?int $activeSessionId = null;
 
     public ?string $notice = null;
@@ -162,6 +164,53 @@ class Workspace extends Component
         $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
         $material->update(['status' => 'archived']);
         $this->notice = 'Material archived.';
+    }
+
+    public function openMaterial(int $id): void
+    {
+        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $this->selectedMaterialId = $material->id;
+        $this->editableMaterial = $material->content;
+        $this->generated = $material->content;
+        $this->sourceSummary = $material->curriculum_sources ?? [];
+        $this->materialType = $material->type;
+        $this->classId = (string) ($material->my_class_id ?? '');
+        $this->subjectId = (string) ($material->subject_id ?? '');
+        $this->topic = $material->topic ?? '';
+        $this->revisionPrompt = '';
+        $this->resetValidation();
+        $this->notice = 'Material opened. You can edit this draft or ask ClassPilot to create a revised copy.';
+    }
+
+    public function reviseMaterial(CurriculumContext $curriculum, Manager $manager): void
+    {
+        $data = $this->validate(['revisionPrompt' => ['required', 'string', 'min:3', 'max:1500']]);
+        $original = $this->ownedMaterial();
+        $user = auth()->user();
+        $context = $curriculum->forSelection($user->school_id, $original->my_class_id, $original->subject_id, $original->academic_year_id, $original->semester_id, $original->topic);
+        $input = [
+            'class' => $original->schoolClass?->name,
+            'subject' => $original->subject?->name,
+            'topic' => $original->topic,
+            'revision_request' => $data['revisionPrompt'],
+            'original_material' => $original->content,
+            'instruction' => 'Revise the supplied original material according to the request. Preserve useful original content unless the request asks to change it.',
+        ];
+        $this->run(fn () => $manager->generate($user, $original->type, $input, $context));
+        if ($this->generated === []) {
+            return;
+        }
+        $revision = Material::query()->create([
+            'school_id' => $original->school_id, 'author_id' => $user->id, 'academic_year_id' => $original->academic_year_id,
+            'semester_id' => $original->semester_id, 'my_class_id' => $original->my_class_id, 'subject_id' => $original->subject_id,
+            'source_material_id' => $original->id, 'type' => $original->type, 'title' => $this->generated['title'], 'topic' => $original->topic,
+            'status' => 'draft', 'content' => $this->generated, 'curriculum_sources' => $context['sources'],
+        ]);
+        $this->selectedMaterialId = $revision->id;
+        $this->editableMaterial = $this->generated;
+        $this->sourceSummary = $context['sources'];
+        $this->revisionPrompt = '';
+        $this->notice = "Revised draft #{$revision->id} created. The original material #{$original->id} is unchanged.";
     }
 
     public function askTutor(Access $access, CurriculumContext $curriculum, Manager $manager): void

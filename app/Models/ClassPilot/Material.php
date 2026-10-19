@@ -52,4 +52,14 @@ class Material extends Model
     {
         return $this->belongsTo(Semester::class);
     }
+
+    public function sourceMaterial()
+    {
+        return $this->belongsTo(self::class, 'source_material_id');
+    }
+
+    public function revisions()
+    {
+        return $this->hasMany(self::class, 'source_material_id');
+    }
 }
