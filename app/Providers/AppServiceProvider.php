@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Services\ClassPilot\Contracts\AiProvider;
+use App\Services\ClassPilot\GeminiProvider;
 use App\Support\SiteSettings;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         Schema::defaultStringLength(100);
+        $this->app->bind(AiProvider::class, GeminiProvider::class);
     }
 
     /**
@@ -31,13 +34,11 @@ class AppServiceProvider extends ServiceProvider
         Validator::extend('complex_password', function ($attribute, $value, $parameters, $validator) {
             return preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/', $value);
         });
-        
-        
+
         Validator::replacer('complex_password', function ($message, $attribute, $rule, $parameters) {
             return str_replace(':attribute', $attribute, 'The :attribute must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.');
         });
-        
-        
+
         Validator::extend('password_confirmation', function ($attribute, $value, $parameters, $validator) {
             return $value === $validator->getData()[$parameters[0]];
         });

@@ -24,6 +24,7 @@ trait RestrictsTeacherPortalAccess
         return [
             'dashboard',
             'dashboard.responsibilities',
+            'class-pilot.workspace',
             'assignments.*',
             'calendar.index',
             'resources.index',

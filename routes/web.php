@@ -1,64 +1,56 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\AuthController;
 // Livewire Components
-use App\Livewire\{
-    Subjects\ManageSubjects,
-    Subjects\SubjectDetail,
-    Subjects\AssignTeacher,
-    Teachers\ManageTeachers,
-    Teachers\TeacherDetail
-};
-use App\Livewire\AcademicYears\{
-    ManageAcademicYears,
-    ShowAcademicYear,
-    ManageSemesters
-};
-use App\Livewire\Cbt\{
-    CbtExamSelection,
-    CbtExamInterface,
-    CbtViewer,
-    CbtManagement
-};
-use App\Livewire\Fees\{
-    ManageFeeCategories,
-    ManageFees,
-    ManageFeeInvoices,
-    FeeInvoiceDetail
-};
-
+use App\Http\Controllers\CbtResultController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DatabaseBackupController;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamPaperController;
+use App\Http\Controllers\ExamPaperPortalController;
+use App\Http\Controllers\ExamSlotController;
+use App\Http\Controllers\FeeInvoiceController;
+use App\Http\Controllers\GradeSystemController;
+use App\Http\Controllers\LockUserAccountController;
+use App\Http\Controllers\MyClassController;
+use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PwaController;
+use App\Http\Controllers\ResultController;
+use App\Http\Controllers\SeoController;
+use App\Livewire\AcademicYears\ManageAcademicYears;
+use App\Livewire\AcademicYears\ManageSemesters;
+use App\Livewire\AcademicYears\ShowAcademicYear;
 use App\Livewire\AccountApplications\ManageAccountApplications;
-use App\Livewire\Sections\{ManageSections, SectionDetail};
-use App\Livewire\Students\{ManageStudents, StudentDetail, PromoteStudents, GraduateStudents};
-use App\Livewire\Classes\{ManageClassGroups, ManageClasses};
 use App\Livewire\Admissions\ManageAdmissionRegistrations;
+use App\Livewire\Cbt\CbtExamInterface;
+use App\Livewire\Cbt\CbtExamSelection;
+use App\Livewire\Cbt\CbtManagement;
+use App\Livewire\Cbt\CbtViewer;
+use App\Livewire\Classes\ManageClasses;
+use App\Livewire\Classes\ManageClassGroups;
 use App\Livewire\Contacts\ManageContactMessages;
 use App\Livewire\Dashboard\TeacherResponsibilities;
+// Controllers
+use App\Livewire\Fees\FeeInvoiceDetail;
+use App\Livewire\Fees\ManageFeeCategories;
+use App\Livewire\Fees\ManageFeeInvoices;
+use App\Livewire\Fees\ManageFees;
 use App\Livewire\Gallery\ManageGallery;
+use App\Livewire\Sections\ManageSections;
+use App\Livewire\Sections\SectionDetail;
+use App\Livewire\Students\GraduateStudents;
+use App\Livewire\Students\ManageStudents;
+use App\Livewire\Students\PromoteStudents;
+use App\Livewire\Students\StudentDetail;
+use App\Livewire\Subjects\AssignTeacher;
+use App\Livewire\Subjects\ManageSubjects;
+use App\Livewire\Subjects\SubjectDetail;
 use App\Livewire\Syllabi\ManageSyllabi;
-
-// Controllers 
-use App\Http\Controllers\{
-    PageController,
-    PwaController,
-    SeoController,
-    AuthController,
-    DashboardController,
-    DatabaseBackupController,
-    CbtResultController,
-    ProfileController,
-    FeeInvoiceController,
-    MyClassController,
-    NoticeController,
-    ResultController,
-    ExamController,
-    ExamSlotController,
-    GradeSystemController,
-    LockUserAccountController,
-    ExamPaperController,
-    ExamPaperPortalController
-};
+use App\Livewire\Teachers\ManageTeachers;
+use App\Livewire\Teachers\TeacherDetail;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,7 +65,7 @@ $dashboardMiddleware = [
     'App\Http\Middleware\PreventLockAccountAccess',
     'App\Http\Middleware\EnsureDefaultPasswordIsChanged',
     'App\Http\Middleware\PreventGraduatedStudent',
-    'App\Http\Middleware\EnsureSuperAdminHasSchoolId'
+    'App\Http\Middleware\EnsureSuperAdminHasSchoolId',
 ];
 
 $adminMiddleware = [
@@ -82,7 +74,7 @@ $adminMiddleware = [
     'restrict.teacher.portal',
     'App\Http\Middleware\PreventLockAccountAccess',
     'App\Http\Middleware\EnsureDefaultPasswordIsChanged',
-    'App\Http\Middleware\PreventGraduatedStudent'
+    'App\Http\Middleware\PreventGraduatedStudent',
 ];
 
 Route::pattern('exam', '[0-9]+');
@@ -94,11 +86,11 @@ Route::pattern('exam', '[0-9]+');
 */
 
 $statelessPublicFileMiddleware = [
-    \App\Http\Middleware\EncryptCookies::class,
-    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-    \Illuminate\Session\Middleware\StartSession::class,
-    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-    \App\Http\Middleware\VerifyCsrfToken::class,
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
 ];
 
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest')->withoutMiddleware($statelessPublicFileMiddleware);
@@ -141,19 +133,16 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset')->name('password.update');
 });
 
-
-
-
 // Account Applications (Full Livewire)
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId', 'permission:read applicant'])
     ->group(function () {
         Route::get('account-applications', ManageAccountApplications::class)
             ->name('account-applications.index')
-            ->can('viewAny', [App\Models\User::class, 'applicant']);
+            ->can('viewAny', [User::class, 'applicant']);
 
         Route::get('account-applications/rejected', ManageAccountApplications::class)
             ->name('account-applications.rejected-applications')
-            ->can('viewAny', [App\Models\User::class, 'applicant']);
+            ->can('viewAny', [User::class, 'applicant']);
 
         Route::get('account-applications/{applicant}', ManageAccountApplications::class)
             ->name('account-applications.show')
@@ -187,54 +176,58 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->middleware('permission:view dashboard')
         ->name('dashboard.responsibilities');
 
-    Route::get('/dashboard/assignments', \App\Livewire\Assignments\AssignmentHub::class)
+    Route::get('/dashboard/class-pilot', \App\Livewire\ClassPilot\Workspace::class)
+        ->middleware('permission:access classpilot')
+        ->name('class-pilot.workspace');
+
+    Route::get('/dashboard/assignments', AssignmentHub::class)
         ->middleware([
             'permission:view assignment',
-            \App\Http\Middleware\EnsureAcademicPeriodIsSet::class,
+            EnsureAcademicPeriodIsSet::class,
         ])
         ->name('assignments.index');
 
-    Route::get('/dashboard/calendar', \App\Livewire\Calendar\SchoolCalendar::class)
+    Route::get('/dashboard/calendar', SchoolCalendar::class)
         ->middleware('permission:read school calendar')
         ->name('calendar.index');
 
-    Route::get('/dashboard/resources', \App\Livewire\Resources\ManageSchoolResources::class)
+    Route::get('/dashboard/resources', ManageSchoolResources::class)
         ->middleware('permission:read school resources')
         ->name('resources.index');
 
-    Route::get('/dashboard/staff', \App\Livewire\Staff\ManageStaffDirectory::class)
+    Route::get('/dashboard/staff', ManageStaffDirectory::class)
         ->middleware('permission:manage staff directory')
         ->name('staff.index');
 
-    Route::get('/dashboard/analytics', \App\Livewire\Dashboard\AnalyticsDashboard::class)
+    Route::get('/dashboard/analytics', AnalyticsDashboard::class)
         ->middleware('permission:read analytics dashboard')
         ->name('analytics.index');
 
-    Route::get('/dashboard/executive-report', \App\Livewire\Dashboard\ExecutiveReport::class)
+    Route::get('/dashboard/executive-report', ExecutiveReport::class)
         ->middleware('permission:read analytics dashboard')
         ->name('reports.executive');
 
-    Route::get('/dashboard/enrollment-analytics', \App\Livewire\Dashboard\EnrollmentAnalytics::class)
+    Route::get('/dashboard/enrollment-analytics', EnrollmentAnalytics::class)
         ->middleware('permission:read analytics dashboard')
         ->name('reports.enrollment-analytics');
 
-    Route::get('/dashboard/performance-trends', \App\Livewire\Dashboard\PerformanceTrends::class)
+    Route::get('/dashboard/performance-trends', PerformanceTrends::class)
         ->middleware('permission:read analytics dashboard')
         ->name('reports.performance-trends');
 
-    Route::get('/dashboard/portal-notices', \App\Livewire\Broadcasts\MyBroadcastInbox::class)
+    Route::get('/dashboard/portal-notices', MyBroadcastInbox::class)
         ->middleware('permission:view own broadcasts')
         ->name('broadcasts.inbox');
 
-    Route::get('/dashboard/parent/student-welfare', \App\Livewire\Attendance\ParentStudentWelfare::class)
+    Route::get('/dashboard/parent/student-welfare', ParentStudentWelfare::class)
         ->middleware('permission:read own child attendance|read own child discipline')
         ->name('parent.student-welfare');
 
-    Route::get('/dashboard/behaviour-reports', \App\Livewire\Behaviour\BehaviourReportHub::class)
+    Route::get('/dashboard/behaviour-reports', BehaviourReportHub::class)
         ->middleware('permission:access behavioural reports')
         ->name('behaviour-reports.index');
 
-    Route::get('/dashboard/student-support', \App\Livewire\Support\StudentSupportHub::class)
+    Route::get('/dashboard/student-support', StudentSupportHub::class)
         ->middleware('permission:access student support')
         ->name('student-support.index');
 
@@ -289,7 +282,7 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
     Route::get('/subjects/{subjectId}', SubjectDetail::class)
         ->middleware('permission:read subject')
         ->name('subjects.show');
-    Route::get('/subjects/teacher/assign', \App\Livewire\Subjects\AssignTeacher::class)
+    Route::get('/subjects/teacher/assign', AssignTeacher::class)
         ->middleware('permission:update subject')
         ->name('subjects.assign-teacher');
     // Route::get('/subjects/assign-teacher', AssignTeacher::class)->name('subjects.assign-teacher');
@@ -300,21 +293,63 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
 |--------------------------------------------------------------------------
 */
 
-use App\Livewire\Parents\{ManageParents, ParentDetail, AssignStudentsToParent};
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\EnsureAcademicPeriodIsSet;
+use App\Http\Middleware\VerifyCsrfToken;
+use App\Livewire\Admins\AdminDetail;
+use App\Livewire\Admins\ManageAdmins;
+use App\Livewire\Assignments\AssignmentHub;
+use App\Livewire\Attendance\ManageAttendance;
+use App\Livewire\Attendance\ParentStudentWelfare;
+use App\Livewire\Behaviour\BehaviourReportHub;
+use App\Livewire\Broadcasts\ManageBroadcastMessages;
+use App\Livewire\Broadcasts\MyBroadcastInbox;
+use App\Livewire\Calendar\SchoolCalendar;
+use App\Livewire\Clubs\ClubHub;
+use App\Livewire\Dashboard\AnalyticsDashboard;
+use App\Livewire\Dashboard\EnrollmentAnalytics;
+use App\Livewire\Dashboard\ExecutiveReport;
+use App\Livewire\Dashboard\PerformanceTrends;
+use App\Livewire\Discipline\ManageDisciplineIncidents;
+use App\Livewire\Media\ManageMediaLibrary;
+use App\Livewire\Parents\AssignStudentsToParent;
+use App\Livewire\Parents\ManageParents;
+use App\Livewire\Parents\ParentDetail;
+use App\Livewire\Resources\ManageSchoolResources;
+use App\Livewire\Result\Index;
+use App\Livewire\Result\StudentHistory;
+use App\Livewire\Result\Upload\BulkUpload;
+use App\Livewire\Result\Upload\IndividualUpload;
+use App\Livewire\Result\View\ClassResults;
+use App\Livewire\Result\View\StudentResults;
+use App\Livewire\Result\View\SubjectResults;
+use App\Livewire\Schemes\SchemeOfWorkHub;
+use App\Livewire\Schools\ManageSchools;
+use App\Livewire\Schools\ManageSiteSettings;
+use App\Livewire\Schools\SchoolDetail;
+use App\Livewire\Staff\ManageStaffDirectory;
+use App\Livewire\Students\StudentCredentialReadiness;
+use App\Livewire\Support\StudentSupportHub;
+use App\Livewire\Timetable\ManageTimetables;
+use App\Livewire\Users\ManageUserRoles;
+use App\Models\User;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
-    
+
     Route::prefix('parents')->group(function () {
         // Main parents page (list/create/edit all in one component)
         Route::get('/', ManageParents::class)
             ->middleware('permission:read parent')
             ->name('parents.index');
-        
+
         // Assign students - IMPORTANT: This must come BEFORE {parentId}
         Route::get('/{parent}/assign-students', AssignStudentsToParent::class)
             ->middleware('permission:update parent')
             ->name('parents.assign-student');
-        
+
         // View parent profile - This catches any ID that doesn't match above routes
         Route::get('/{parentId}', ParentDetail::class)
             ->middleware('permission:read parent')
@@ -421,7 +456,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 */
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
-    Route::get('/clubs', \App\Livewire\Clubs\ClubHub::class)
+    Route::get('/clubs', ClubHub::class)
         ->middleware('permission:view clubs')
         ->name('clubs.index');
 
@@ -431,7 +466,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
     Route::get('/students/create', ManageStudents::class)
         ->middleware('permission:create student')
         ->name('students.create');
-    Route::get('/students/login-readiness', \App\Livewire\Students\StudentCredentialReadiness::class)
+    Route::get('/students/login-readiness', StudentCredentialReadiness::class)
         ->middleware('permission:update student')
         ->name('students.credentials');
     Route::get('/students/{studentId}/edit', ManageStudents::class)
@@ -490,21 +525,21 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 */
 
 Route::prefix('results')->middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
-    Route::get('/', \App\Livewire\Result\Index::class)->name('result')->can('upload result');
+    Route::get('/', Index::class)->name('result')->can('upload result');
 
-    Route::get('/upload/individual', \App\Livewire\Result\Upload\IndividualUpload::class)
+    Route::get('/upload/individual', IndividualUpload::class)
         ->name('result.upload.individual')->can('upload result');
-    Route::get('/upload/bulk', \App\Livewire\Result\Upload\BulkUpload::class)
+    Route::get('/upload/bulk', BulkUpload::class)
         ->name('result.upload.bulk')->can('upload result');
 
-    Route::get('/view/class', \App\Livewire\Result\View\ClassResults::class)
+    Route::get('/view/class', ClassResults::class)
         ->name('result.view.class')->can('view result');
-    Route::get('/view/subject', \App\Livewire\Result\View\SubjectResults::class)
+    Route::get('/view/subject', SubjectResults::class)
         ->name('result.view.subject')->can('view result');
-    Route::get('/view/student', \App\Livewire\Result\View\StudentResults::class)
+    Route::get('/view/student', StudentResults::class)
         ->name('result.view.student')->can('view result');
 
-    Route::get('/history', \App\Livewire\Result\StudentHistory::class)
+    Route::get('/history', StudentHistory::class)
         ->name('result.history')->can('view result');
     Route::get('/annual', [ResultController::class, 'annualClassResult'])
         ->name('result.annual')->can('view result');
@@ -528,19 +563,19 @@ Route::prefix('results')->middleware(['auth', 'verified', 'restrict.teacher.port
 */
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal'])->group(function () {
-    
+
     // Schools list
-    Route::get('/schools', \App\Livewire\Schools\ManageSchools::class)
+    Route::get('/schools', ManageSchools::class)
         ->middleware('permission:read school|create school|update school|delete school|manage school settings')
         ->name('schools.index');
-    
+
     // Website and school-specific public content settings.
-    Route::get('/schools/settings', \App\Livewire\Schools\ManageSiteSettings::class)
+    Route::get('/schools/settings', ManageSiteSettings::class)
         ->middleware('permission:manage school settings')
         ->name('schools.settings');
-    
+
     // School detail - comes LAST
-    Route::get('/schools/{schoolId}', \App\Livewire\Schools\SchoolDetail::class)
+    Route::get('/schools/{schoolId}', SchoolDetail::class)
         ->middleware('permission:read school')
         ->name('schools.show');
 });
@@ -553,20 +588,20 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal'])->group(functi
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
 
-    Route::get('/users/roles', \App\Livewire\Users\ManageUserRoles::class)
+    Route::get('/users/roles', ManageUserRoles::class)
         ->middleware('permission:manage user roles')
         ->name('users.roles');
 
-    Route::get('/admins', \App\Livewire\Admins\ManageAdmins::class)
+    Route::get('/admins', ManageAdmins::class)
         ->middleware('permission:read admin|create admin|update admin|delete admin')
         ->name('admins.index');
-    Route::get('/admins/{adminId}', \App\Livewire\Admins\AdminDetail::class)
+    Route::get('/admins/{adminId}', AdminDetail::class)
         ->whereNumber('adminId')
         ->middleware('permission:read admin')
         ->name('admins.show');
-        
+
     // Convenience routes for create/edit (they'll be handled by ManageAdmins component)
-    Route::get('/admins/create', function() {
+    Route::get('/admins/create', function () {
         return redirect()->route('admins.index', ['mode' => 'create']);
     })->middleware('permission:create admin')->name('admins.create');
 });
@@ -615,19 +650,19 @@ Route::middleware($dashboardMiddleware)->prefix('dashboard')->group(function () 
 */
 
 Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
-    Route::get('/timetables', \App\Livewire\Timetable\ManageTimetables::class)
+    Route::get('/timetables', ManageTimetables::class)
         ->middleware('permission:read timetable')
         ->name('timetables.index');
 
-    Route::get('/timetables/create', \App\Livewire\Timetable\ManageTimetables::class)
+    Route::get('/timetables/create', ManageTimetables::class)
         ->middleware('permission:create timetable')
         ->name('timetables.create');
 
-    Route::get('/custom-timetable-items', \App\Livewire\Timetable\ManageTimetables::class)
+    Route::get('/custom-timetable-items', ManageTimetables::class)
         ->middleware('permission:read custom timetable item')
         ->name('custom-timetable-items.index');
 
-    Route::get('/custom-timetable-items/create', \App\Livewire\Timetable\ManageTimetables::class)
+    Route::get('/custom-timetable-items/create', ManageTimetables::class)
         ->middleware('permission:create custom timetable item')
         ->name('custom-timetable-items.create');
 
@@ -638,7 +673,6 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
 | SCHOOL ADMINISTRATION ROUTES
 |--------------------------------------------------------------------------
 */
-
 
 Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
 
@@ -654,34 +688,32 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
             ->whereNumber('notice');
 
         // Attendance & Discipline
-        Route::get('attendance', \App\Livewire\Attendance\ManageAttendance::class)
+        Route::get('attendance', ManageAttendance::class)
             ->middleware('permission:read attendance')
             ->name('attendance.index');
 
-        Route::get('discipline', \App\Livewire\Discipline\ManageDisciplineIncidents::class)
+        Route::get('discipline', ManageDisciplineIncidents::class)
             ->middleware('permission:read discipline incident')
             ->name('discipline.index');
 
         // Broadcast Messaging
-        Route::get('broadcasts', \App\Livewire\Broadcasts\ManageBroadcastMessages::class)
+        Route::get('broadcasts', ManageBroadcastMessages::class)
             ->middleware('permission:read broadcast message')
             ->name('broadcasts.manage');
 
         // Media Library
-        Route::get('media-library', \App\Livewire\Media\ManageMediaLibrary::class)
+        Route::get('media-library', ManageMediaLibrary::class)
             ->middleware('permission:manage media library')
             ->name('media-library.index');
 
         // Academic Year Dependent Routes
         Route::middleware([
             'App\Http\Middleware\EnsureAcademicYearIsSet',
-            'App\Http\Middleware\CreateCurrentAcademicYearRecord'
+            'App\Http\Middleware\CreateCurrentAcademicYearRecord',
         ])->group(function () {
 
-     
             // Semester Dependent Routes
             Route::middleware('App\Http\Middleware\EnsureSemesterIsSet')->group(function () {
-
 
                 // Syllabi (Full Livewire)
                 Route::get('syllabi', ManageSyllabi::class)
@@ -694,12 +726,10 @@ Route::middleware($adminMiddleware)->prefix('dashboard')->group(function () {
                     ->middleware('permission:read syllabus')
                     ->name('syllabi.show');
 
-                Route::get('schemes-of-work', \App\Livewire\Schemes\SchemeOfWorkHub::class)
+                Route::get('schemes-of-work', SchemeOfWorkHub::class)
                     ->middleware('permission:view schemes of work')
                     ->name('schemes.index');
 
-   
-                
                 // Exams
                 Route::resource('exams', ExamController::class)
                     ->only(['index', 'show'])

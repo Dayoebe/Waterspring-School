@@ -2,9 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\ClassPilot\LearningSession as ClassPilotSession;
+use App\Models\ClassPilot\Material as ClassPilotMaterial;
 use App\Models\Exam;
 use App\Models\ExamPaper;
 use App\Models\MyClass;
+use App\Policies\ClassPilotMaterialPolicy;
+use App\Policies\ClassPilotSessionPolicy;
 use App\Policies\ExamPaperPolicy;
 use App\Policies\ExamPolicy;
 use App\Policies\MyClassPolicy;
@@ -21,6 +25,8 @@ class AuthServiceProvider extends ServiceProvider
         MyClass::class => MyClassPolicy::class,
         Exam::class => ExamPolicy::class,
         ExamPaper::class => ExamPaperPolicy::class,
+        ClassPilotMaterial::class => ClassPilotMaterialPolicy::class,
+        ClassPilotSession::class => ClassPilotSessionPolicy::class,
     ];
 
     /**
