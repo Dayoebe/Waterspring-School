@@ -19,6 +19,48 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\SeoController;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\EnsureAcademicPeriodIsSet;
+use App\Http\Middleware\VerifyCsrfToken;
+use App\Livewire\Admins\AdminDetail;
+use App\Livewire\Admins\ManageAdmins;
+use App\Livewire\Assignments\AssignmentHub;
+use App\Livewire\Attendance\ManageAttendance;
+use App\Livewire\Attendance\ParentStudentWelfare;
+use App\Livewire\Behaviour\BehaviourReportHub;
+use App\Livewire\Broadcasts\ManageBroadcastMessages;
+use App\Livewire\Broadcasts\MyBroadcastInbox;
+use App\Livewire\Calendar\SchoolCalendar;
+use App\Livewire\Clubs\ClubHub;
+use App\Livewire\Dashboard\AnalyticsDashboard;
+use App\Livewire\Dashboard\EnrollmentAnalytics;
+use App\Livewire\Dashboard\ExecutiveReport;
+use App\Livewire\Dashboard\PerformanceTrends;
+use App\Livewire\Discipline\ManageDisciplineIncidents;
+use App\Livewire\Media\ManageMediaLibrary;
+use App\Livewire\Parents\AssignStudentsToParent;
+use App\Livewire\Parents\ManageParents;
+use App\Livewire\Parents\ParentDetail;
+use App\Livewire\Resources\ManageSchoolResources;
+use App\Livewire\Result\Index;
+use App\Livewire\Result\StudentHistory;
+use App\Livewire\Result\Upload\BulkUpload;
+use App\Livewire\Result\Upload\IndividualUpload;
+use App\Livewire\Result\View\ClassResults;
+use App\Livewire\Result\View\StudentResults;
+use App\Livewire\Result\View\SubjectResults;
+use App\Livewire\Schemes\SchemeOfWorkHub;
+use App\Livewire\Schools\ManageSchools;
+use App\Livewire\Schools\ManageSiteSettings;
+use App\Livewire\Schools\SchoolDetail;
+use App\Livewire\Staff\ManageStaffDirectory;
+use App\Livewire\Students\StudentCredentialReadiness;
+use App\Livewire\Support\StudentSupportHub;
+use App\Livewire\Timetable\ManageTimetables;
+use App\Livewire\Users\ManageUserRoles;
+use App\Models\User;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Session\Middleware\StartSession;
 use App\Livewire\AcademicYears\ManageAcademicYears;
 use App\Livewire\AcademicYears\ManageSemesters;
 use App\Livewire\AcademicYears\ShowAcademicYear;
@@ -51,6 +93,7 @@ use App\Livewire\Syllabi\ManageSyllabi;
 use App\Livewire\Teachers\ManageTeachers;
 use App\Livewire\Teachers\TeacherDetail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -292,50 +335,6 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
 | PARENT MANAGEMENT (Full Livewire)
 |--------------------------------------------------------------------------
 */
-
-use App\Http\Middleware\EncryptCookies;
-use App\Http\Middleware\EnsureAcademicPeriodIsSet;
-use App\Http\Middleware\VerifyCsrfToken;
-use App\Livewire\Admins\AdminDetail;
-use App\Livewire\Admins\ManageAdmins;
-use App\Livewire\Assignments\AssignmentHub;
-use App\Livewire\Attendance\ManageAttendance;
-use App\Livewire\Attendance\ParentStudentWelfare;
-use App\Livewire\Behaviour\BehaviourReportHub;
-use App\Livewire\Broadcasts\ManageBroadcastMessages;
-use App\Livewire\Broadcasts\MyBroadcastInbox;
-use App\Livewire\Calendar\SchoolCalendar;
-use App\Livewire\Clubs\ClubHub;
-use App\Livewire\Dashboard\AnalyticsDashboard;
-use App\Livewire\Dashboard\EnrollmentAnalytics;
-use App\Livewire\Dashboard\ExecutiveReport;
-use App\Livewire\Dashboard\PerformanceTrends;
-use App\Livewire\Discipline\ManageDisciplineIncidents;
-use App\Livewire\Media\ManageMediaLibrary;
-use App\Livewire\Parents\AssignStudentsToParent;
-use App\Livewire\Parents\ManageParents;
-use App\Livewire\Parents\ParentDetail;
-use App\Livewire\Resources\ManageSchoolResources;
-use App\Livewire\Result\Index;
-use App\Livewire\Result\StudentHistory;
-use App\Livewire\Result\Upload\BulkUpload;
-use App\Livewire\Result\Upload\IndividualUpload;
-use App\Livewire\Result\View\ClassResults;
-use App\Livewire\Result\View\StudentResults;
-use App\Livewire\Result\View\SubjectResults;
-use App\Livewire\Schemes\SchemeOfWorkHub;
-use App\Livewire\Schools\ManageSchools;
-use App\Livewire\Schools\ManageSiteSettings;
-use App\Livewire\Schools\SchoolDetail;
-use App\Livewire\Staff\ManageStaffDirectory;
-use App\Livewire\Students\StudentCredentialReadiness;
-use App\Livewire\Support\StudentSupportHub;
-use App\Livewire\Timetable\ManageTimetables;
-use App\Livewire\Users\ManageUserRoles;
-use App\Models\User;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
 

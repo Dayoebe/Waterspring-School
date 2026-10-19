@@ -45,6 +45,13 @@ class Menu extends Component
                 'permissions' => ['view dashboard'],
             ],
             [
+                'type' => 'menu-item',
+                'icon' => 'fas fa-wand-magic-sparkles',
+                'text' => 'ClassPilot AI',
+                'route' => 'class-pilot.workspace',
+                'permissions' => ['access classpilot'],
+            ],
+            [
                 'text' => 'My Learning',
                 'icon' => 'fas fa-graduation-cap',
                 'submenu' => array_values(array_filter([
