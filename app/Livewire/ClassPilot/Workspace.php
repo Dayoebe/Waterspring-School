@@ -261,8 +261,9 @@ class Workspace extends Component
         $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
         $context = $curriculum->forSelection($user->school_id, $class?->id, $subject->id, $user->school?->academic_year_id, $user->school?->semester_id, $this->topic ?: null);
         $session = $this->activeSession($user->id, $student->id, 'student', 'tutor', $subject->id, $class?->id);
+        $history = $this->conversationHistory($session);
         Message::query()->create(['class_pilot_session_id' => $session->id, 'user_id' => $user->id, 'role' => 'user', 'content' => $data['question']]);
-        $this->run(fn () => $manager->generate($user, 'tutor', ['subject' => $subject->name, 'question' => $data['question'], 'instruction' => 'Teach with hints and reasoning before a complete solution.'], $context));
+        $this->run(fn () => $manager->generate($user, 'tutor', ['subject' => $subject->name, 'question' => $data['question'], 'conversation_history' => $history, 'instruction' => 'Continue the conversation naturally. Teach with hints and reasoning before a complete solution.'], $context));
         if ($this->generated !== []) {
             Message::query()->create(['class_pilot_session_id' => $session->id, 'role' => 'assistant', 'content' => $this->generated['answer'], 'metadata' => ['response' => $this->generated, 'curriculum_sources' => $context['sources']]]);
         }
@@ -301,25 +302,62 @@ class Workspace extends Component
         }
         $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
         $context = $curriculum->forSelection($user->school_id, $class?->id, $subject?->id, $user->school?->academic_year_id, $user->school?->semester_id, $this->topic ?: null);
-        $this->run(fn () => $manager->generate($user, 'family', ['question' => $data['question'], 'subject' => $subject?->name, 'published_result' => $resultData, 'instruction' => 'Separate recorded facts from suggestions. If evidence is insufficient, say so.'], $context));
+        $session = $this->activeSession($user->id, $student->id, 'family', 'family_support', $subject?->id, $class?->id);
+        $history = $this->conversationHistory($session);
+        Message::query()->create(['class_pilot_session_id' => $session->id, 'user_id' => $user->id, 'role' => 'user', 'content' => $data['question']]);
+        $this->run(fn () => $manager->generate($user, 'family', ['question' => $data['question'], 'subject' => $subject?->name, 'published_result' => $resultData, 'conversation_history' => $history, 'instruction' => 'Continue the conversation naturally. Separate recorded facts from suggestions. If evidence is insufficient, say so.'], $context));
         if ($this->generated !== []) {
-            $session = $this->activeSession($user->id, $student->id, 'family', 'family_support', $subject?->id, $class?->id);
-            Message::query()->create(['class_pilot_session_id' => $session->id, 'user_id' => $user->id, 'role' => 'user', 'content' => $data['question']]);
             Message::query()->create(['class_pilot_session_id' => $session->id, 'role' => 'assistant', 'content' => $this->generated['answer'], 'metadata' => ['response' => $this->generated, 'result_id' => $data['resultId'] ?: null, 'curriculum_sources' => $context['sources']]]);
-            $session->update(['last_activity_at' => now()]);
         }
+        $session->update(['last_activity_at' => now()]);
         $this->question = '';
+    }
+
+    public function openLearningSession(int $id): void
+    {
+        $session = LearningSession::query()->where('school_id', auth()->user()->school_id)->where('user_id', auth()->id())->with('messages')->findOrFail($id);
+        abort_unless(($this->isStudent() && $session->feature === 'tutor') || ($this->isParent() && $session->feature === 'family_support'), 403);
+        $this->activeSessionId = $session->id;
+        $this->studentRecordId = (string) ($session->student_record_id ?? '');
+        $this->classId = (string) ($session->my_class_id ?? '');
+        $this->subjectId = (string) ($session->subject_id ?? '');
+        $this->tab = $session->feature === 'family_support' ? 'family' : 'tutor';
+        $this->question = '';
+        $latestAnswer = $session->messages->last(fn ($message) => $message->role === 'assistant');
+        $this->generated = $latestAnswer?->metadata['response'] ?? [];
+        $this->error = null;
+        $this->notice = 'Conversation reopened. Ask another question to continue where you stopped.';
+    }
+
+    public function startNewConversation(): void
+    {
+        $this->activeSessionId = null;
+        $this->question = '';
+        $this->generated = [];
+        $this->error = null;
+        $this->notice = 'A new conversation is ready.';
     }
 
     private function activeSession(int $userId, int $studentRecordId, string $audience, string $feature, ?int $subjectId, ?int $classId): LearningSession
     {
         if ($this->activeSessionId) {
-            return LearningSession::query()->where('user_id', $userId)->where('school_id', auth()->user()->school_id)->findOrFail($this->activeSessionId);
+            $session = LearningSession::query()->where('user_id', $userId)->where('school_id', auth()->user()->school_id)->findOrFail($this->activeSessionId);
+            if ($session->student_record_id === $studentRecordId && $session->feature === $feature && $session->subject_id === $subjectId) {
+                return $session;
+            }
+            $this->activeSessionId = null;
         }
-        $session = LearningSession::query()->create(['school_id' => auth()->user()->school_id, 'user_id' => $userId, 'student_record_id' => $studentRecordId, 'my_class_id' => $classId, 'subject_id' => $subjectId, 'audience' => $audience, 'feature' => $feature, 'title' => $this->topic ?: ucfirst(str_replace('_', ' ', $feature)), 'last_activity_at' => now()]);
+        $title = $this->topic ?: mb_substr(trim($this->question), 0, 80) ?: ucfirst(str_replace('_', ' ', $feature));
+        $session = LearningSession::query()->create(['school_id' => auth()->user()->school_id, 'user_id' => $userId, 'student_record_id' => $studentRecordId, 'my_class_id' => $classId, 'subject_id' => $subjectId, 'audience' => $audience, 'feature' => $feature, 'title' => $title, 'last_activity_at' => now()]);
         $this->activeSessionId = $session->id;
 
         return $session;
+    }
+
+    private function conversationHistory(LearningSession $session): array
+    {
+        return $session->messages()->latest()->limit(10)->get()->reverse()->values()
+            ->map(fn (Message $message) => ['role' => $message->role, 'content' => $message->content])->all();
     }
 
     private function run(callable $callback): void
@@ -423,9 +461,10 @@ class Workspace extends Component
             $materials = $materialsQuery->limit(100)->get();
         }
         $sessions = LearningSession::query()->where('school_id', $user->school_id)->where('user_id', $user->id)->with('messages')->latest('last_activity_at')->limit(8)->get();
+        $activeConversation = $this->activeSessionId ? LearningSession::query()->where('school_id', $user->school_id)->where('user_id', $user->id)->with('messages')->find($this->activeSessionId) : null;
         $attempts = $student ? PracticeAttempt::query()->where('student_record_id', $student->id)->with('subject')->latest()->limit(8)->get() : collect();
 
-        return view('livewire.class-pilot.workspace', compact('classes', 'subjects', 'children', 'results', 'materials', 'sessions', 'attempts', 'familyOverview'))
+        return view('livewire.class-pilot.workspace', compact('classes', 'subjects', 'children', 'results', 'materials', 'sessions', 'activeConversation', 'attempts', 'familyOverview'))
             ->layout('layouts.dashboard', ['description' => 'Curriculum-aware teaching, tutoring, and family learning support.', 'icon' => 'fas fa-wand-magic-sparkles'])
             ->title('ClassPilot AI');
     }
