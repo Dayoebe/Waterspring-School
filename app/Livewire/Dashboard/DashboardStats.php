@@ -1251,7 +1251,8 @@ class DashboardStats extends Component
             ->map(fn ($records) => $records->pluck('timetable_time_slot_weekdayable_id')->unique()->values());
         $subjectNames = Subject::query()->whereIn('id', $recordIdsByType[Subject::class] ?? [])->pluck('name', 'id');
         $customItemNames = CustomTimetableItem::query()->whereIn('id', $recordIdsByType[CustomTimetableItem::class] ?? [])->pluck('name', 'id');
-        $weekdays = Weekday::query()->orderBy('id')->get(['id', 'name']);
+        $todayName = Carbon::now('Africa/Lagos')->format('l');
+        $todayWeekday = Weekday::query()->where('name', $todayName)->first(['id', 'name']);
 
         $syllabiByClass = Syllabus::query()
             ->where('semester_id', $semesterId)
@@ -1272,33 +1273,30 @@ class DashboardStats extends Component
             ->groupBy('my_class_id')
             ->pluck('aggregate', 'my_class_id');
 
-        $this->learningPanel = $students->map(function (User $student) use ($studentClasses, $timetables, $syllabiByClass, $schemesByClass, $subjectNames, $customItemNames, $weekdays) {
+        $this->learningPanel = $students->map(function (User $student) use ($studentClasses, $timetables, $syllabiByClass, $schemesByClass, $subjectNames, $customItemNames, $todayName, $todayWeekday) {
             $class = $studentClasses->get($student->id);
             $classId = $class?->id;
             $timetable = $classId ? $timetables->get($classId) : null;
 
-            $days = $timetable ? $weekdays
-                ->map(function ($weekday) use ($timetable, $subjectNames, $customItemNames): array {
-                    $periods = $timetable->timeSlots->map(function ($slot) use ($weekday, $subjectNames, $customItemNames): array {
-                        $record = $slot->weekdays->firstWhere('id', $weekday->id)?->timetableRecord;
-                        $item = null;
+            $todayPeriods = ($timetable && $todayWeekday)
+                ? $timetable->timeSlots->map(function ($slot) use ($todayWeekday, $subjectNames, $customItemNames): array {
+                    $record = $slot->weekdays->firstWhere('id', $todayWeekday->id)?->timetableRecord;
+                    $item = null;
 
-                        if ($record?->timetable_time_slot_weekdayable_type === Subject::class) {
-                            $item = $subjectNames[$record->timetable_time_slot_weekdayable_id] ?? null;
-                        } elseif ($record?->timetable_time_slot_weekdayable_type === CustomTimetableItem::class) {
-                            $item = $customItemNames[$record->timetable_time_slot_weekdayable_id] ?? null;
-                        }
+                    if ($record?->timetable_time_slot_weekdayable_type === Subject::class) {
+                        $item = $subjectNames[$record->timetable_time_slot_weekdayable_id] ?? null;
+                    } elseif ($record?->timetable_time_slot_weekdayable_type === CustomTimetableItem::class) {
+                        $item = $customItemNames[$record->timetable_time_slot_weekdayable_id] ?? null;
+                    }
 
-                        return [
-                            'time' => Carbon::parse($slot->start_time)->format('g:i A'),
-                            'label' => $slot->label ?: 'Lesson',
-                            'item' => $slot->is_break ? ($slot->label ?: 'Break') : ($item ?: 'Free period'),
-                            'is_break' => (bool) $slot->is_break,
-                        ];
-                    })->values()->all();
-
-                    return ['name' => $weekday->name, 'periods' => $periods];
-                })->values()->all() : [];
+                    return [
+                        'time' => Carbon::parse($slot->start_time)->format('g:i A'),
+                        'label' => $slot->label ?: 'Lesson',
+                        'item' => $slot->is_break ? ($slot->label ?: 'Break') : ($item ?: 'Free period'),
+                        'is_break' => (bool) $slot->is_break,
+                    ];
+                })->values()->all()
+                : [];
 
             return [
                 'student' => $student->name,
@@ -1306,7 +1304,8 @@ class DashboardStats extends Component
                 'class_name' => $class?->name ?: 'Class not assigned',
                 'timetable_name' => $timetable?->name,
                 'period_count' => $timetable?->timeSlots->count() ?? 0,
-                'days' => $days,
+                'today_name' => $todayName,
+                'today_periods' => $todayPeriods,
                 'syllabi_count' => (int) ($syllabiByClass[$classId] ?? 0),
                 'schemes_count' => (int) ($schemesByClass[$classId] ?? 0),
             ];
