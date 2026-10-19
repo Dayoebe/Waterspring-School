@@ -251,6 +251,7 @@ class Menu extends Component
     {
         $canAccessClassOnlyResultTools = $this->currentUserCanAccessClassOnlyResultTools();
         $canAccessSubjectResultTools = $this->currentUserCanAccessSubjectResultTools();
+        $isFamily = Auth::user()?->hasAnyRole(['student', 'parent']) ?? false;
 
         return [
             ['header' => 'Teaching & Learning'],
@@ -262,9 +263,17 @@ class Menu extends Component
                 'permissions' => ['view assignment'],
             ],
             [
-                'text' => 'Classes & Subjects',
+                'text' => $isFamily ? 'Subjects' : 'Classes & Subjects',
                 'icon' => 'fas fa-book-open',
                 'submenu' => array_values(array_filter([
+                    $isFamily ? [
+                        'type' => 'menu-item',
+                        'text' => 'Subjects',
+                        'route' => 'subjects.family',
+                        'roles' => ['student', 'parent'],
+                        'permissions' => ['view dashboard'],
+                        'section' => 'Subjects',
+                    ] : null,
                     [
                         'type' => 'menu-item',
                         'text' => 'All Classes',

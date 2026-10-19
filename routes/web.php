@@ -22,8 +22,13 @@ use App\Http\Controllers\SeoController;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnsureAcademicPeriodIsSet;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Livewire\AcademicYears\ManageAcademicYears;
+use App\Livewire\AcademicYears\ManageSemesters;
+use App\Livewire\AcademicYears\ShowAcademicYear;
+use App\Livewire\AccountApplications\ManageAccountApplications;
 use App\Livewire\Admins\AdminDetail;
 use App\Livewire\Admins\ManageAdmins;
+use App\Livewire\Admissions\ManageAdmissionRegistrations;
 use App\Livewire\Assignments\AssignmentHub;
 use App\Livewire\Attendance\ManageAttendance;
 use App\Livewire\Attendance\ParentStudentWelfare;
@@ -31,12 +36,26 @@ use App\Livewire\Behaviour\BehaviourReportHub;
 use App\Livewire\Broadcasts\ManageBroadcastMessages;
 use App\Livewire\Broadcasts\MyBroadcastInbox;
 use App\Livewire\Calendar\SchoolCalendar;
+use App\Livewire\Cbt\CbtExamInterface;
+use App\Livewire\Cbt\CbtExamSelection;
+use App\Livewire\Cbt\CbtManagement;
+use App\Livewire\Cbt\CbtViewer;
+use App\Livewire\Classes\ManageClasses;
+use App\Livewire\Classes\ManageClassGroups;
+use App\Livewire\ClassPilot\Workspace;
 use App\Livewire\Clubs\ClubHub;
+use App\Livewire\Contacts\ManageContactMessages;
 use App\Livewire\Dashboard\AnalyticsDashboard;
 use App\Livewire\Dashboard\EnrollmentAnalytics;
 use App\Livewire\Dashboard\ExecutiveReport;
 use App\Livewire\Dashboard\PerformanceTrends;
+use App\Livewire\Dashboard\TeacherResponsibilities;
 use App\Livewire\Discipline\ManageDisciplineIncidents;
+use App\Livewire\Fees\FeeInvoiceDetail;
+use App\Livewire\Fees\ManageFeeCategories;
+use App\Livewire\Fees\ManageFeeInvoices;
+use App\Livewire\Fees\ManageFees;
+use App\Livewire\Gallery\ManageGallery;
 use App\Livewire\Media\ManageMediaLibrary;
 use App\Livewire\Parents\AssignStudentsToParent;
 use App\Livewire\Parents\ManageParents;
@@ -53,45 +72,28 @@ use App\Livewire\Schemes\SchemeOfWorkHub;
 use App\Livewire\Schools\ManageSchools;
 use App\Livewire\Schools\ManageSiteSettings;
 use App\Livewire\Schools\SchoolDetail;
+use App\Livewire\Sections\ManageSections;
+use App\Livewire\Sections\SectionDetail;
+// Controllers
 use App\Livewire\Staff\ManageStaffDirectory;
+use App\Livewire\Students\GraduateStudents;
+use App\Livewire\Students\ManageStudents;
+use App\Livewire\Students\PromoteStudents;
 use App\Livewire\Students\StudentCredentialReadiness;
+use App\Livewire\Students\StudentDetail;
+use App\Livewire\Subjects\AssignTeacher;
+use App\Livewire\Subjects\FamilySubjects;
+use App\Livewire\Subjects\ManageSubjects;
+use App\Livewire\Subjects\SubjectDetail;
 use App\Livewire\Support\StudentSupportHub;
+use App\Livewire\Syllabi\ManageSyllabi;
+use App\Livewire\Teachers\ManageTeachers;
+use App\Livewire\Teachers\TeacherDetail;
 use App\Livewire\Timetable\ManageTimetables;
 use App\Livewire\Users\ManageUserRoles;
 use App\Models\User;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Session\Middleware\StartSession;
-use App\Livewire\AcademicYears\ManageAcademicYears;
-use App\Livewire\AcademicYears\ManageSemesters;
-use App\Livewire\AcademicYears\ShowAcademicYear;
-use App\Livewire\AccountApplications\ManageAccountApplications;
-use App\Livewire\Admissions\ManageAdmissionRegistrations;
-use App\Livewire\Cbt\CbtExamInterface;
-use App\Livewire\Cbt\CbtExamSelection;
-use App\Livewire\Cbt\CbtManagement;
-use App\Livewire\Cbt\CbtViewer;
-use App\Livewire\Classes\ManageClasses;
-use App\Livewire\Classes\ManageClassGroups;
-use App\Livewire\Contacts\ManageContactMessages;
-use App\Livewire\Dashboard\TeacherResponsibilities;
-// Controllers
-use App\Livewire\Fees\FeeInvoiceDetail;
-use App\Livewire\Fees\ManageFeeCategories;
-use App\Livewire\Fees\ManageFeeInvoices;
-use App\Livewire\Fees\ManageFees;
-use App\Livewire\Gallery\ManageGallery;
-use App\Livewire\Sections\ManageSections;
-use App\Livewire\Sections\SectionDetail;
-use App\Livewire\Students\GraduateStudents;
-use App\Livewire\Students\ManageStudents;
-use App\Livewire\Students\PromoteStudents;
-use App\Livewire\Students\StudentDetail;
-use App\Livewire\Subjects\AssignTeacher;
-use App\Livewire\Subjects\ManageSubjects;
-use App\Livewire\Subjects\SubjectDetail;
-use App\Livewire\Syllabi\ManageSyllabi;
-use App\Livewire\Teachers\ManageTeachers;
-use App\Livewire\Teachers\TeacherDetail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -219,7 +221,7 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
         ->middleware('permission:view dashboard')
         ->name('dashboard.responsibilities');
 
-    Route::get('/dashboard/class-pilot', \App\Livewire\ClassPilot\Workspace::class)
+    Route::get('/dashboard/class-pilot', Workspace::class)
         ->middleware('permission:access classpilot')
         ->name('class-pilot.workspace');
 
@@ -233,6 +235,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
     Route::get('/dashboard/calendar', SchoolCalendar::class)
         ->middleware('permission:read school calendar')
         ->name('calendar.index');
+
+    Route::get('/dashboard/subjects', FamilySubjects::class)
+        ->middleware('permission:view dashboard')
+        ->name('subjects.family');
 
     Route::get('/dashboard/resources', ManageSchoolResources::class)
         ->middleware('permission:read school resources')
