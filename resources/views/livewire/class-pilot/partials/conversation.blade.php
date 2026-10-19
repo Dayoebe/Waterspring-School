@@ -1,16 +1,24 @@
-<section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-    <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wider text-cyan-700">Saved automatically</p><h2 class="mt-1 text-xl font-black text-slate-900">{{ $activeConversation?->title ?? 'Your conversation' }}</h2></div>@if($activeConversation)<span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800"><i class="fas fa-check mr-1"></i> Saved</span>@endif</div>
-    @if($activeConversation && $activeConversation->messages->isNotEmpty())
-        <div class="mt-5 max-h-[38rem] space-y-4 overflow-y-auto pr-1" aria-live="polite">
+<section class="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm" x-data x-init="$nextTick(() => { const box = $refs.messages; if (box) box.scrollTop = box.scrollHeight })">
+    <header class="flex items-center justify-between gap-3 bg-emerald-800 px-4 py-3 text-white sm:px-5">
+        <div class="flex min-w-0 items-center gap-3"><div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-lg text-emerald-800 shadow-sm"><i class="fas fa-wand-magic-sparkles"></i></div><div class="min-w-0"><h2 class="truncate font-bold">{{ $activeConversation?->title ?? 'ClassPilot' }}</h2><p class="text-xs text-emerald-100">{{ $activeConversation ? 'Saved conversation · available anytime' : 'Your school learning assistant' }}</p></div></div>
+        @if($activeConversation)<span class="shrink-0 rounded-full bg-emerald-700 px-2.5 py-1 text-xs font-semibold"><i class="fas fa-cloud mr-1"></i> Saved</span>@endif
+    </header>
+    <div x-ref="messages" class="max-h-[42rem] min-h-[28rem] space-y-2 overflow-y-auto px-3 py-5 sm:px-5" aria-live="polite" style="background-color:#efeae2;background-image:radial-gradient(rgba(16,94,75,.06) 1px,transparent 1px);background-size:18px 18px;">
+        @if($activeConversation && $activeConversation->messages->isNotEmpty())
+            <div class="mx-auto mb-4 w-fit rounded-lg bg-white/90 px-3 py-1.5 text-center text-xs font-semibold text-slate-500 shadow-sm">Messages are saved automatically</div>
             @foreach($activeConversation->messages as $message)
-                <article class="{{ $message->role === 'user' ? 'ml-auto bg-sky-700 text-white' : 'mr-auto border border-slate-200 bg-slate-50 text-slate-700' }} max-w-[92%] rounded-2xl p-4 text-sm leading-6 shadow-sm">
-                    <p class="mb-1 text-xs font-black uppercase tracking-wider {{ $message->role === 'user' ? 'text-sky-100' : 'text-cyan-700' }}">{{ $message->role === 'user' ? 'You' : 'ClassPilot' }}</p>
-                    <div class="whitespace-pre-line">{{ $message->content }}</div>
-                </article>
+                <div class="flex {{ $message->role === 'user' ? 'justify-end' : 'justify-start' }}">
+                    <article class="relative max-w-[88%] rounded-xl px-3.5 pb-2 pt-2.5 text-[0.92rem] leading-6 shadow-sm sm:max-w-[78%] {{ $message->role === 'user' ? 'rounded-tr-sm bg-[#d9fdd3] text-slate-900' : 'rounded-tl-sm bg-white text-slate-800' }}">
+                        @if($message->role !== 'user')<p class="mb-1 text-xs font-bold text-emerald-700">ClassPilot</p>@endif
+                        <div class="break-words [&_a]:font-semibold [&_a]:text-emerald-800 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-emerald-400 [&_blockquote]:pl-3 [&_em]:italic [&_li]:ml-5 [&_li]:list-disc [&_ol_li]:list-decimal [&_p+p]:mt-2 [&_strong]:font-bold">{!! Str::markdown($message->content, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}</div>
+                        <div class="mt-1 flex items-center justify-end gap-1 text-[0.65rem] text-slate-500"><time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('g:i A') }}</time>@if($message->role === 'user')<i class="fas fa-check-double text-sky-500" title="Saved"></i>@endif</div>
+                    </article>
+                </div>
             @endforeach
-        </div>
-        <p class="mt-4 text-xs text-slate-500">Continue by entering another question. ClassPilot receives the recent conversation context.</p>
-    @else
-        <div class="flex min-h-80 flex-col items-center justify-center text-center"><div class="flex size-14 items-center justify-center rounded-2xl bg-cyan-100 text-xl text-cyan-800"><i class="fas fa-comments"></i></div><h3 class="mt-4 font-black text-slate-900">Start a saved conversation</h3><p class="mt-2 max-w-sm text-sm leading-6 text-slate-600">Your question and the response will appear here and remain available under Saved sessions.</p></div>
-    @endif
+            <div wire:loading.flex wire:target="askTutor,askFamily" class="justify-start"><div class="rounded-xl rounded-tl-sm bg-white px-4 py-3 text-emerald-700 shadow-sm"><span class="inline-flex gap-1"><span class="size-1.5 animate-bounce rounded-full bg-emerald-500"></span><span class="size-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:120ms]"></span><span class="size-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:240ms]"></span></span></div></div>
+        @else
+            <div class="flex min-h-[25rem] flex-col items-center justify-center text-center"><div class="flex size-16 items-center justify-center rounded-full bg-white text-2xl text-emerald-700 shadow-sm"><i class="fas fa-comments"></i></div><h3 class="mt-4 font-bold text-slate-900">Start a saved conversation</h3><p class="mt-2 max-w-sm text-sm leading-6 text-slate-600">Send a question from the form. Your chat will stay here and can be reopened from Saved sessions.</p></div>
+        @endif
+    </div>
+    <footer class="flex items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500"><i class="fas fa-lock text-emerald-700"></i><span>Only you can open this ClassPilot conversation.</span></footer>
 </section>
