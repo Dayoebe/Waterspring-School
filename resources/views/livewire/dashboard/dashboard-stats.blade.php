@@ -827,6 +827,25 @@
                                         <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900">{{ $learning['syllabi_count'] }}</strong><span class="text-[11px] font-semibold text-slate-500">Syllabi</span></div>
                                         <div class="rounded-xl bg-slate-50 p-3"><strong class="block text-lg text-slate-900">{{ $learning['schemes_count'] }}</strong><span class="text-[11px] font-semibold text-slate-500">Schemes</span></div>
                                     </div>
+                                    @if(!empty($learning['days']))
+                                        <div class="mt-5 space-y-3">
+                                            @foreach($learning['days'] as $day)
+                                                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                                    <p class="text-xs font-black uppercase tracking-widest text-emerald-700">{{ $day['name'] }}</p>
+                                                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                                                        @foreach($day['periods'] as $period)
+                                                            <div class="rounded-lg {{ $period['is_break'] ? 'bg-amber-100 text-amber-950' : 'bg-white text-slate-800' }} px-3 py-2 shadow-sm">
+                                                                <p class="text-[10px] font-bold uppercase tracking-wide opacity-70">{{ $period['time'] }} · {{ $period['label'] }}</p>
+                                                                <p class="mt-1 text-sm font-bold">{{ $period['item'] }}</p>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="mt-5 rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-900">No timetable has been published for this class and term yet.</p>
+                                    @endif
                                     @if($learning['class_id'])
                                         <div class="mt-5 flex flex-wrap gap-2">
                                             <a href="{{ route('timetables.index', ['selectedClass' => $learning['class_id']]) }}" wire:navigate class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800"><i class="fas fa-calendar-week mr-1"></i>Timetable</a>
@@ -836,6 +855,34 @@
                                     @endif
                                 </article>
                             @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                @if (($isStudent || $isParent) && $user->can('read school calendar'))
+                    <section class="overflow-hidden rounded-xl border border-sky-200 bg-white shadow-sm">
+                        <div class="flex flex-col gap-4 border-b border-sky-100 bg-sky-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">School calendar</p>
+                                <h3 class="mt-2 text-2xl font-bold text-slate-900">Upcoming school dates</h3>
+                                <p class="mt-1 text-sm text-slate-600">Events and activities published for your account.</p>
+                            </div>
+                            <a href="{{ route('calendar.index') }}" wire:navigate class="shrink-0 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-sky-800">Open full calendar <i class="fas fa-arrow-right ml-2"></i></a>
+                        </div>
+                        <div class="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+                            @forelse($calendarPanel as $event)
+                                <article class="rounded-2xl border border-slate-200 p-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <span class="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-sky-800">{{ $event['category'] }}</span>
+                                        <i class="fas fa-calendar-day text-sky-600"></i>
+                                    </div>
+                                    <h4 class="mt-3 font-black text-slate-900">{{ $event['title'] }}</h4>
+                                    <p class="mt-2 text-sm font-semibold text-slate-600">{{ $event['date'] }} · {{ $event['time'] }}</p>
+                                    @if($event['location'])<p class="mt-1 text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>{{ $event['location'] }}</p>@endif
+                                </article>
+                            @empty
+                                <p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 md:col-span-2 xl:col-span-3">No upcoming school-calendar event has been published yet.</p>
+                            @endforelse
                         </div>
                     </section>
                 @endif

@@ -3,12 +3,13 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\AdmissionRegistration;
+use App\Models\Assessment\Assessment;
 use App\Models\AttendanceRecord;
 use App\Models\ClassGroup;
 use App\Models\ClubActivity;
 use App\Models\ClubWeeklyAgenda;
 use App\Models\ContactMessage;
-use App\Models\Assessment\Assessment;
+use App\Models\CustomTimetableItem;
 use App\Models\Exam;
 use App\Models\FeeInvoice;
 use App\Models\MyClass;
@@ -16,12 +17,14 @@ use App\Models\Notice;
 use App\Models\Result;
 use App\Models\SchemeOfWork;
 use App\Models\School;
+use App\Models\SchoolEvent;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\Subject;
 use App\Models\Syllabus;
 use App\Models\Timetable;
 use App\Models\User;
+use App\Models\Weekday;
 use App\Support\ResultPublicationStatus;
 use App\Support\TeacherResponsibilityBuilder;
 use App\Traits\RestrictsTeacherPortalAccess;
@@ -67,6 +70,8 @@ class DashboardStats extends Component
     public $schemePanel = [];
 
     public $learningPanel = [];
+
+    public $calendarPanel = [];
 
     public $academicContext = [];
 
@@ -141,6 +146,10 @@ class DashboardStats extends Component
 
         if ($this->isStudent || $this->isParent) {
             $this->loadLearningPanel($user);
+
+            if ($user->can('read school calendar')) {
+                $this->loadCalendarPanel($user);
+            }
         }
 
         $this->loading = false;
@@ -1034,7 +1043,7 @@ class DashboardStats extends Component
             'admission_number' => $studentRecord->admission_number ?: 'N/A',
             'class_name' => $className,
             'section_name' => $sectionName,
-            'subject_count' => $studentRecord->studentSubjects()->count(),
+            'subject_count' => $studentRecord->currentClassSubjectsQuery()->count(),
             'result_count' => (clone $resultQuery)->count(),
             'approved_result_count' => (clone $resultQuery)->where('approved', true)->count(),
             'average_score' => number_format((float) ((clone $resultQuery)->avg('total_score') ?? 0), 1),
@@ -1217,17 +1226,32 @@ class DashboardStats extends Component
                 ->orderBy('users.name')
                 ->get(['users.id', 'users.name']);
 
-        $classIds = $students->pluck('studentRecord.my_class_id')->filter()->unique();
         $semesterId = $user->school?->semester_id;
         $academicYearId = $user->school?->academic_year_id;
+        $studentClasses = $students->mapWithKeys(function (User $student) use ($academicYearId): array {
+            $record = $student->studentRecord;
+            $class = $record?->getClassForYear($academicYearId) ?? $record?->baseClass;
+
+            return [$student->id => $class];
+        });
+        $classIds = $studentClasses->filter()->pluck('id')->unique();
 
         $timetables = Timetable::query()
             ->where('semester_id', $semesterId)
             ->whereIn('my_class_id', $classIds)
-            ->withCount('timeSlots')
+            ->with(['timeSlots' => fn ($query) => $query->with('weekdays')->orderBy('sort_order')->orderBy('start_time')])
             ->latest()
             ->get()
             ->keyBy('my_class_id');
+
+        $recordIdsByType = $timetables->flatMap(fn (Timetable $timetable) => $timetable->timeSlots
+            ->flatMap(fn ($slot) => $slot->weekdays->map(fn ($weekday) => $weekday->timetableRecord))
+            ->filter())
+            ->groupBy('timetable_time_slot_weekdayable_type')
+            ->map(fn ($records) => $records->pluck('timetable_time_slot_weekdayable_id')->unique()->values());
+        $subjectNames = Subject::query()->whereIn('id', $recordIdsByType[Subject::class] ?? [])->pluck('name', 'id');
+        $customItemNames = CustomTimetableItem::query()->whereIn('id', $recordIdsByType[CustomTimetableItem::class] ?? [])->pluck('name', 'id');
+        $weekdays = Weekday::query()->orderBy('id')->get(['id', 'name']);
 
         $syllabiByClass = Syllabus::query()
             ->where('semester_id', $semesterId)
@@ -1248,20 +1272,72 @@ class DashboardStats extends Component
             ->groupBy('my_class_id')
             ->pluck('aggregate', 'my_class_id');
 
-        $this->learningPanel = $students->map(function (User $student) use ($timetables, $syllabiByClass, $schemesByClass) {
-            $classId = $student->studentRecord?->my_class_id;
+        $this->learningPanel = $students->map(function (User $student) use ($studentClasses, $timetables, $syllabiByClass, $schemesByClass, $subjectNames, $customItemNames, $weekdays) {
+            $class = $studentClasses->get($student->id);
+            $classId = $class?->id;
             $timetable = $classId ? $timetables->get($classId) : null;
+
+            $days = $timetable ? $weekdays
+                ->map(function ($weekday) use ($timetable, $subjectNames, $customItemNames): array {
+                    $periods = $timetable->timeSlots->map(function ($slot) use ($weekday, $subjectNames, $customItemNames): array {
+                        $record = $slot->weekdays->firstWhere('id', $weekday->id)?->timetableRecord;
+                        $item = null;
+
+                        if ($record?->timetable_time_slot_weekdayable_type === Subject::class) {
+                            $item = $subjectNames[$record->timetable_time_slot_weekdayable_id] ?? null;
+                        } elseif ($record?->timetable_time_slot_weekdayable_type === CustomTimetableItem::class) {
+                            $item = $customItemNames[$record->timetable_time_slot_weekdayable_id] ?? null;
+                        }
+
+                        return [
+                            'time' => Carbon::parse($slot->start_time)->format('g:i A'),
+                            'label' => $slot->label ?: 'Lesson',
+                            'item' => $slot->is_break ? ($slot->label ?: 'Break') : ($item ?: 'Free period'),
+                            'is_break' => (bool) $slot->is_break,
+                        ];
+                    })->values()->all();
+
+                    return ['name' => $weekday->name, 'periods' => $periods];
+                })->values()->all() : [];
 
             return [
                 'student' => $student->name,
                 'class_id' => $classId,
-                'class_name' => $student->studentRecord?->myClass?->name ?: 'Class not assigned',
+                'class_name' => $class?->name ?: 'Class not assigned',
                 'timetable_name' => $timetable?->name,
-                'period_count' => $timetable?->time_slots_count ?? 0,
+                'period_count' => $timetable?->timeSlots->count() ?? 0,
+                'days' => $days,
                 'syllabi_count' => (int) ($syllabiByClass[$classId] ?? 0),
                 'schemes_count' => (int) ($schemesByClass[$classId] ?? 0),
             ];
         })->values()->all();
+    }
+
+    private function loadCalendarPanel(User $user): void
+    {
+        $roles = $user->getRoleNames()->all();
+
+        $this->calendarPanel = SchoolEvent::query()
+            ->where('school_id', $user->school_id)
+            ->where('starts_at', '>=', now()->startOfDay())
+            ->where('starts_at', '<=', now()->addYear()->endOfDay())
+            ->orderBy('starts_at')
+            ->get()
+            ->filter(function (SchoolEvent $event) use ($roles): bool {
+                $audiences = $event->audiences ?: ['all'];
+
+                return in_array('all', $audiences, true) || (bool) array_intersect($roles, $audiences);
+            })
+            ->take(6)
+            ->map(fn (SchoolEvent $event): array => [
+                'title' => $event->title,
+                'category' => ucfirst($event->category),
+                'date' => $event->starts_at->format('D, j M Y'),
+                'time' => $event->all_day ? 'All day' : $event->starts_at->format('g:i A'),
+                'location' => $event->location,
+            ])
+            ->values()
+            ->all();
     }
 
     private function loadTeacherPanel(User $user): void
