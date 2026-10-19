@@ -29,10 +29,10 @@
                     @foreach(['😀','😊','😂','🥰','😍','🤔','👍','👏','🙏','💡','📚','✏️','✅','⭐','🎉','💪','🧠','❤️'] as $emoji)<button type="button" @click="appendEmoji('{{ $emoji }}')" class="flex size-9 items-center justify-center rounded-lg hover:bg-slate-100" aria-label="Add {{ $emoji }} emoji">{{ $emoji }}</button>@endforeach
                 </div>
             </div>
-            <label class="min-w-0 flex-1"><span class="sr-only">Type a message</span><textarea x-ref="composer" wire:model="question" rows="1" class="max-h-32 min-h-12 w-full resize-none rounded-2xl border-0 bg-white px-4 py-3 text-sm leading-6 shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-600" placeholder="Type a message…"></textarea></label>
+            <label class="min-w-0 flex-1"><span class="sr-only">Type a message</span><textarea x-ref="composer" wire:model="question" x-on:keydown.shift.enter.prevent="$wire.{{ $chatAction }}()" rows="1" class="max-h-32 min-h-12 w-full resize-none rounded-2xl border-0 bg-white px-4 py-3 text-sm leading-6 shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-600" placeholder="Type a message…"></textarea></label>
             <button type="submit" wire:loading.attr="disabled" wire:target="{{ $chatAction }}" class="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm hover:bg-emerald-800 disabled:opacity-60" aria-label="Send message"><i wire:loading.remove wire:target="{{ $chatAction }}" class="fas fa-paper-plane"></i><i wire:loading wire:target="{{ $chatAction }}" class="fas fa-spinner fa-spin"></i></button>
         </form>
         @error('question')<p class="mt-2 px-2 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
-        <p class="mt-2 flex items-center justify-center gap-1.5 text-[0.68rem] text-slate-500"><i class="fas fa-lock text-emerald-700"></i> Only you can open this conversation. Enter starts a new line; tap the send icon to send.</p>
+        <p class="mt-2 flex items-center justify-center gap-1.5 text-[0.68rem] text-slate-500"><i class="fas fa-lock text-emerald-700"></i> Only you can open this conversation. Enter starts a new line; Shift + Enter sends.</p>
     </footer>
 </section>
