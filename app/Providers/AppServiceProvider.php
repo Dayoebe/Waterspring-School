@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\ClassPilot\Contracts\AiProvider;
 use App\Services\ClassPilot\GeminiProvider;
+use App\Services\ClassPilot\GroqProvider;
 use App\Support\SiteSettings;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -21,7 +22,12 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         Schema::defaultStringLength(100);
-        $this->app->bind(AiProvider::class, GeminiProvider::class);
+        $this->app->bind(AiProvider::class, function ($app) {
+            return match (config('class-pilot.provider')) {
+                'groq' => $app->make(GroqProvider::class),
+                default => $app->make(GeminiProvider::class),
+            };
+        });
     }
 
     /**

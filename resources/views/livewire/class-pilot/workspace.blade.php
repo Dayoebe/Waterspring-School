@@ -37,7 +37,7 @@
 
     @if(!config('class-pilot.api_key'))
         <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-            <strong>AI generation is not configured.</strong> An administrator needs to add <code>GEMINI_API_KEY</code> on the server. Your existing records remain available and ClassPilot will not create pretend responses.
+            <strong>AI generation is not configured.</strong> An administrator needs to add <code>{{ config('class-pilot.provider') === 'groq' ? 'GROQ_API_KEY' : 'GEMINI_API_KEY' }}</code> on the server. Your existing records remain available and ClassPilot will not create pretend responses.
         </div>
     @endif
     @if($error)<div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800" role="alert">{{ $error }}</div>@endif

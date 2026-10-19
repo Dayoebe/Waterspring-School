@@ -14,6 +14,10 @@ Without an API key, the workspace deliberately shows a setup-required state and 
 
 The default model is `gemini-3.8-flash`. Override it only with a model currently available to the configured Gemini account.
 
+### Groq
+
+Set `CLASS_PILOT_PROVIDER=groq`, add `GROQ_API_KEY`, and optionally override `GROQ_MODEL`. The default Groq model is `openai/gpt-oss-20b`. ClassPilot uses Groq's OpenAI-compatible chat-completions endpoint with JSON output. Only one provider key is selected and sent for each request.
+
 ## Data and safety boundaries
 
 - Generated teacher material is stored as a draft. Approval is explicit and does not publish an assignment, exam, or answer key.
