@@ -67,9 +67,9 @@
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 @if($selectedMaterialId)
                     <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wider text-amber-600">AI-generated draft</p><h2 class="mt-1 text-xl font-black text-slate-900">Teacher review required</h2></div><span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Not published</span></div>
-                    <p class="mt-3 text-sm text-slate-600">Edit the structured content below. Approval does not publish an exam, answer key, or assignment.</p>
-                    <textarea wire:model="editableContent" rows="24" class="mt-5 w-full rounded-2xl border-slate-300 font-mono text-xs leading-5"></textarea>
-                    @error('editableContent')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
+                    <p class="mt-3 text-sm text-slate-600">Review and edit the draft using the plain-language fields below. Approval does not publish an exam, answer key, or assignment.</p>
+                    @include('livewire.class-pilot.partials.material-editor')
+                    @error('editableMaterial.title')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
                     <div class="mt-4 flex flex-wrap gap-3"><button wire:click="saveMaterial" class="rounded-xl border border-sky-700 px-4 py-2 text-sm font-bold text-sky-800">Save edits</button><button wire:click="approveMaterial" wire:confirm="Approve this reviewed draft? It will still not be published as an official assignment or exam." class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white">Approve reviewed draft</button></div>
                     <div class="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600"><strong class="text-slate-900">Curriculum grounding:</strong> {{ count($sourceSummary) ? collect($sourceSummary)->pluck('title')->join(', ') : 'No approved school curriculum source was available; general AI knowledge must be reviewed carefully.' }}</div>
                 @else

@@ -54,7 +54,7 @@ class Workspace extends Component
 
     public ?int $selectedMaterialId = null;
 
-    public string $editableContent = '';
+    public array $editableMaterial = [];
 
     public array $generated = [];
 
@@ -130,7 +130,7 @@ class Workspace extends Component
             'content' => $this->generated, 'curriculum_sources' => $context['sources'],
         ]);
         $this->selectedMaterialId = $material->id;
-        $this->editableContent = json_encode($this->generated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->editableMaterial = $this->generated;
         $this->sourceSummary = $context['sources'];
         $this->notice = 'Draft saved. Review and edit it before approval.';
     }
@@ -139,14 +139,13 @@ class Workspace extends Component
     {
         $material = $this->ownedMaterial();
         abort_if($material->status === 'approved', 422, 'Approved materials must be returned to draft before editing.');
-        $decoded = json_decode($this->editableContent, true);
-        if (! is_array($decoded)) {
-            $this->addError('editableContent', 'The edited content must remain valid JSON.');
-
-            return;
-        }
-        $material->update(['content' => $decoded, 'title' => mb_substr((string) ($decoded['title'] ?? $material->title), 0, 100)]);
-        $this->generated = $decoded;
+        $data = $this->validate([
+            'editableMaterial.title' => ['required', 'string', 'max:200'],
+            'editableMaterial' => ['required', 'array'],
+        ]);
+        $content = $data['editableMaterial'];
+        $material->update(['content' => $content, 'title' => mb_substr($content['title'], 0, 100)]);
+        $this->generated = $content;
         $this->notice = 'Draft changes saved.';
     }
 
