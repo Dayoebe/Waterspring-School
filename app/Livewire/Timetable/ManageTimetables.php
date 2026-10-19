@@ -2,72 +2,107 @@
 
 namespace App\Livewire\Timetable;
 
-use App\Models\Timetable;
-use App\Models\TimetableTimeSlot;
 use App\Models\CustomTimetableItem;
 use App\Models\MyClass;
+use App\Models\Subject;
+use App\Models\Timetable;
+use App\Models\TimetableTimeSlot;
 use App\Models\Weekday;
 use App\Traits\ResolvesRestrictedTeacherAssignments;
-use Livewire\Component;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Carbon\Carbon;
+use Livewire\Component;
 
 class ManageTimetables extends Component
 {
     use ResolvesRestrictedTeacherAssignments;
 
     public $mode = 'list';
-    
+
     // Filters
     public $selectedClass = '';
+
     public $search = '';
-    
+
     // Timetable form
     public $timetableId;
+
     public $name = '';
+
     public $description = '';
+
     public $my_class_id = '';
+
     public $schoolDayStartsAt = '08:00';
+
     public $lessonDuration = 40;
+
     public $lessonCount = 8;
+
     public $shortBreakAfter = 3;
+
     public $shortBreakDuration = 20;
+
     public $lunchAfter = 6;
+
     public $lunchDuration = 40;
-    
+
     // Building timetable
     public $selectedTimeSlot;
+
     public $selectedWeekday;
+
     public $recordType = 'subject';
+
     public $recordId;
+
     public $startTime = '';
+
     public $stopTime = '';
+
     public $editingTimeSlotId;
+
     public $timeSlotLabel = '';
+
     public bool $timeSlotIsBreak = false;
 
     // Custom item form
     public $customItemId;
+
     public $customItemName = '';
-    
+
     // Collections
     public $classes;
+
     public $timetables;
+
     public $timeSlots;
+
     public $weekdays;
+
     public $subjects;
+
     public $customItems;
+
     public $currentTimetable;
+
     public $activeSemesterId = null;
 
     public bool $canReadTimetable = false;
+
     public bool $canCreateTimetable = false;
+
     public bool $canUpdateTimetable = false;
+
     public bool $canDeleteTimetable = false;
+
     public bool $canReadCustomItems = false;
+
     public bool $canCreateCustomItems = false;
+
     public bool $canUpdateCustomItems = false;
+
     public bool $canDeleteCustomItems = false;
 
     protected $queryString = [
@@ -89,11 +124,12 @@ class ManageTimetables extends Component
             $this->selectedClass = (int) $classFromQuery;
         }
 
-        if (auth()->user()->hasRole('student') && auth()->user()->studentRecord?->myClass) {
-            $this->selectedClass = auth()->user()->studentRecord->myClass->id;
-        } elseif (!$this->selectedClass && $this->classes->isNotEmpty()) {
+        if (auth()->user()->hasRole('student') && auth()->user()->studentRecord) {
+            $record = auth()->user()->studentRecord;
+            $this->selectedClass = $record->getClassForYear(auth()->user()->school?->academic_year_id)?->id ?? $record->my_class_id;
+        } elseif (! $this->selectedClass && $this->classes->isNotEmpty()) {
             $this->selectedClass = $this->classes->first()->id;
-        } elseif ($this->selectedClass && !$this->classExistsInScope((int) $this->selectedClass)) {
+        } elseif ($this->selectedClass && ! $this->classExistsInScope((int) $this->selectedClass)) {
             $this->selectedClass = '';
         }
 
@@ -103,7 +139,7 @@ class ManageTimetables extends Component
             $this->timetables = collect();
         }
 
-        if (!$this->modeIsAllowed($this->mode)) {
+        if (! $this->modeIsAllowed($this->mode)) {
             $this->mode = 'list';
         }
 
@@ -116,7 +152,8 @@ class ManageTimetables extends Component
     public function loadClasses()
     {
         if (auth()->user()->hasRole('student')) {
-            $studentClass = auth()->user()->studentRecord?->myClass;
+            $record = auth()->user()->studentRecord;
+            $studentClass = $record?->getClassForYear(auth()->user()->school?->academic_year_id) ?? $record?->baseClass;
             if ($studentClass && MyClass::whereHas('classGroup', function ($q) {
                 $q->where('school_id', auth()->user()->school_id);
             })->where('id', $studentClass->id)->exists()) {
@@ -125,13 +162,14 @@ class ManageTimetables extends Component
                 $this->classes = collect();
             }
         } elseif (auth()->user()->hasRole('parent')) {
-            $classIds = auth()->user()->children()
+            $records = auth()->user()->children()
                 ->where('users.school_id', auth()->user()->school_id)
-                ->with('studentRecord:id,user_id,my_class_id')
+                ->with('studentRecord')
                 ->get()
-                ->pluck('studentRecord.my_class_id')
-                ->filter()
-                ->unique();
+                ->pluck('studentRecord')
+                ->filter();
+            $academicYearId = auth()->user()->school?->academic_year_id;
+            $classIds = $records->map(fn ($record) => $record->getClassForYear($academicYearId)?->id ?? $record->my_class_id)->filter()->unique();
 
             $this->classes = MyClass::query()
                 ->whereIn('id', $classIds)
@@ -139,7 +177,7 @@ class ManageTimetables extends Component
                 ->orderBy('name')
                 ->get();
         } else {
-            $query = MyClass::whereHas('classGroup', function($q) {
+            $query = MyClass::whereHas('classGroup', function ($q) {
                 $q->where('school_id', auth()->user()->school_id);
             });
 
@@ -148,6 +186,7 @@ class ManageTimetables extends Component
 
                 if ($classIds->isEmpty()) {
                     $this->classes = collect();
+
                     return;
                 }
 
@@ -160,8 +199,9 @@ class ManageTimetables extends Component
 
     public function loadTimetables()
     {
-        if (!$this->selectedClass || !$this->activeSemesterId) {
+        if (! $this->selectedClass || ! $this->activeSemesterId) {
             $this->timetables = collect();
+
             return;
         }
 
@@ -194,11 +234,11 @@ class ManageTimetables extends Component
         $this->currentTimetable = $this->timetableQueryForSchool()
             ->with(['timeSlots.weekdays', 'myClass.subjects'])
             ->findOrFail($timetableId);
-        
+
         $this->timeSlots = $this->currentTimetable->timeSlots
             ->sortBy(fn ($slot) => sprintf('%05d-%s', $slot->sort_order, $slot->start_time));
         $this->subjects = $this->currentTimetable->myClass->subjects;
-        
+
         if ($this->timeSlots->isNotEmpty()) {
             $this->selectedTimeSlot = $this->timeSlots->firstWhere('is_break', false)?->id;
         }
@@ -207,8 +247,9 @@ class ManageTimetables extends Component
     public function updatedSelectedClass()
     {
         if (auth()->user()->hasRole('student')) {
-            $this->selectedClass = auth()->user()->studentRecord?->myClass?->id ?? '';
-        } elseif ($this->selectedClass && !$this->classExistsInScope((int) $this->selectedClass)) {
+            $record = auth()->user()->studentRecord;
+            $this->selectedClass = $record?->getClassForYear(auth()->user()->school?->academic_year_id)?->id ?? $record?->my_class_id ?? '';
+        } elseif ($this->selectedClass && ! $this->classExistsInScope((int) $this->selectedClass)) {
             $this->selectedClass = '';
         }
 
@@ -223,21 +264,22 @@ class ManageTimetables extends Component
     // Mode switching
     public function switchMode($mode, $timetableId = null)
     {
-        if (!$this->modeIsAllowed($mode)) {
+        if (! $this->modeIsAllowed($mode)) {
             return;
         }
 
-        if (in_array($mode, ['edit', 'build'], true) && !$timetableId) {
+        if (in_array($mode, ['edit', 'build'], true) && ! $timetableId) {
             $this->mode = 'list';
             $this->timetableId = null;
             $this->loadTimetables();
+
             return;
         }
 
         $this->mode = $mode;
         $this->timetableId = $timetableId;
         $this->resetValidation();
-        
+
         if ($mode === 'edit' && $timetableId) {
             $this->loadTimetableForEdit($timetableId);
         } elseif ($mode === 'build' && $timetableId) {
@@ -257,7 +299,7 @@ class ManageTimetables extends Component
     {
         $timetable = $this->timetableQueryForSchool()->findOrFail($timetableId);
         $this->ensureCan(['update timetable']);
-        
+
         $this->timetableId = $timetable->id;
         $this->name = $timetable->name;
         $this->description = $timetable->description;
@@ -269,11 +311,12 @@ class ManageTimetables extends Component
     {
         $this->ensureCan(['create timetable']);
 
-        if (!$this->activeSemesterId) {
+        if (! $this->activeSemesterId) {
             session()->flash('error', 'Set an active term before creating a timetable.');
+
             return;
         }
-        
+
         $this->validate([
             'name' => [
                 'required',
@@ -295,8 +338,9 @@ class ManageTimetables extends Component
             'lunchDuration' => 'nullable|required_with:lunchAfter|integer|min:10|max:120',
         ]);
 
-        if (!$this->classExistsInScope((int) $this->my_class_id)) {
+        if (! $this->classExistsInScope((int) $this->my_class_id)) {
             session()->flash('error', 'Selected class is not valid for your school');
+
             return;
         }
 
@@ -330,7 +374,7 @@ class ManageTimetables extends Component
         $this->ensureCan(['update timetable']);
 
         $timetable = $this->timetableQueryForSchool()->findOrFail($this->timetableId);
-        
+
         $this->validate([
             'name' => [
                 'required',
@@ -360,9 +404,9 @@ class ManageTimetables extends Component
         $this->ensureCan(['delete timetable']);
 
         $timetable = $this->timetableQueryForSchool()->findOrFail($timetableId);
-        
+
         $timetable->delete();
-        
+
         session()->flash('success', 'Timetable deleted successfully');
         $this->loadTimetables();
     }
@@ -387,6 +431,7 @@ class ManageTimetables extends Component
 
         if ($hasOverlap) {
             session()->flash('error', 'Time slot overlaps with an existing slot.');
+
             return;
         }
 
@@ -399,7 +444,7 @@ class ManageTimetables extends Component
         ]);
 
         $this->reset(['startTime', 'stopTime']);
-        
+
         session()->flash('success', 'Time slot created successfully');
         $this->loadTimetableForBuilding($this->timetableId);
     }
@@ -414,7 +459,7 @@ class ManageTimetables extends Component
             ->findOrFail($timeSlotId);
 
         $timeSlot->delete();
-        
+
         session()->flash('success', 'Time slot deleted successfully');
         $this->loadTimetableForBuilding($this->timetableId);
     }
@@ -459,6 +504,7 @@ class ManageTimetables extends Component
 
         if ($hasOverlap) {
             $this->addError('startTime', 'This time overlaps another period.');
+
             return;
         }
 
@@ -502,14 +548,15 @@ class ManageTimetables extends Component
 
         if ((int) $timeSlot->timetable_id !== (int) $this->timetableId) {
             session()->flash('error', 'Selected time slot does not belong to the current timetable.');
+
             return;
         }
 
         // Attach new record if ID provided
         if ($this->recordId) {
             $isValidRecord = false;
-            $type = $this->recordType == 'subject' 
-                ? 'App\Models\Subject' 
+            $type = $this->recordType == 'subject'
+                ? 'App\Models\Subject'
                 : 'App\Models\CustomTimetableItem';
 
             if ($this->recordType === 'subject') {
@@ -533,8 +580,9 @@ class ManageTimetables extends Component
                     ->exists();
             }
 
-            if (!$isValidRecord) {
+            if (! $isValidRecord) {
                 session()->flash('error', 'Selected record is not valid for your current school/class.');
+
                 return;
             }
 
@@ -556,7 +604,7 @@ class ManageTimetables extends Component
 
     public function selectCell($timeSlotId, $weekdayId)
     {
-        if (!$this->canUpdateTimetable) {
+        if (! $this->canUpdateTimetable) {
             return;
         }
 
@@ -566,7 +614,7 @@ class ManageTimetables extends Component
             ->where('is_break', false)
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             return;
         }
 
@@ -577,7 +625,7 @@ class ManageTimetables extends Component
         $record = $slot?->weekdays->firstWhere('id', (int) $weekdayId)?->timetableRecord;
 
         if ($record) {
-            $this->recordType = $record->timetable_time_slot_weekdayable_type === \App\Models\Subject::class
+            $this->recordType = $record->timetable_time_slot_weekdayable_type === Subject::class
                 ? 'subject'
                 : 'customTimetableItem';
             $this->recordId = $record->timetable_time_slot_weekdayable_id;
@@ -585,14 +633,14 @@ class ManageTimetables extends Component
             $this->recordType = 'subject';
             $this->recordId = null;
         }
-        
+
         $this->dispatch('scroll-to-form');
     }
 
     // Custom timetable items
     public function saveCustomItem()
     {
-        $isEditing = !empty($this->customItemId);
+        $isEditing = ! empty($this->customItemId);
 
         $this->ensureCan($isEditing
             ? ['update custom timetable items', 'update custom timetable item']
@@ -605,7 +653,7 @@ class ManageTimetables extends Component
                 'string',
                 'max:255',
                 Rule::unique('custom_timetable_items', 'name')
-                    ->where(fn($query) => $query->where('school_id', auth()->user()->school_id))
+                    ->where(fn ($query) => $query->where('school_id', auth()->user()->school_id))
                     ->ignore($this->customItemId),
             ],
         ]);
@@ -721,7 +769,7 @@ class ManageTimetables extends Component
 
     protected function timetableQueryForSchool()
     {
-        if (!$this->activeSemesterId) {
+        if (! $this->activeSemesterId) {
             return Timetable::query()->whereRaw('1 = 0');
         }
 
@@ -752,15 +800,17 @@ class ManageTimetables extends Component
 
         if ($routeName === 'timetables.create') {
             $this->mode = 'create';
+
             return;
         }
 
         if (in_array($routeName, ['custom-timetable-items.index', 'custom-timetable-items.create'], true)) {
             $this->mode = 'custom-items';
+
             return;
         }
 
-        if (!in_array($this->mode, ['list', 'create', 'edit', 'build', 'custom-items'], true)) {
+        if (! in_array($this->mode, ['list', 'create', 'edit', 'build', 'custom-items'], true)) {
             $this->mode = 'list';
         }
     }
@@ -829,7 +879,7 @@ class ManageTimetables extends Component
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
                     ['href' => route('timetables.index'), 'text' => 'Timetables', 'active' => true],
-                ]
+                ],
             ])
             ->title('Manage Timetables');
     }

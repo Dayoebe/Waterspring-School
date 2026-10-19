@@ -408,6 +408,16 @@
                                 <span class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">{{ $child['class_name'] }}</span>
                                 <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">{{ $child['section_name'] }}</span>
                             </div>
+                            <div class="mt-4 border-t border-rose-100 pt-4">
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Class subjects</p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    @forelse($child['subjects'] ?? [] as $subject)
+                                        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">{{ $subject['name'] }}</span>
+                                    @empty
+                                        <span class="text-sm text-slate-500">No subjects are assigned to this class yet.</span>
+                                    @endforelse
+                                </div>
+                            </div>
                         </div>
                     @endforeach
                 </div>

@@ -270,7 +270,7 @@ class Workspace extends Component
         $data = $this->validate(['question' => ['required', 'string', 'min:3', 'max:2000'], 'subjectId' => ['required', 'integer']]);
         $user = auth()->user();
         $student = $access->studentRecord($user);
-        $subject = $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
+        $subject = $student->currentClassSubjectsQuery()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
         $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
         $context = $curriculum->forSelection($user->school_id, $class?->id, $subject->id, $user->school?->academic_year_id, $user->school?->semester_id, $this->topic ?: null);
         $session = $this->activeSession($user->id, $student->id, 'student', 'tutor', $subject->id, $class?->id);
@@ -290,7 +290,7 @@ class Workspace extends Component
         $data = $this->validate(['subjectId' => ['required', 'integer'], 'topic' => ['required', 'string', 'max:180'], 'questionCount' => ['required', 'integer', 'min:1', 'max:15']]);
         $user = auth()->user();
         $student = $access->studentRecord($user);
-        $subject = $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
+        $subject = $student->currentClassSubjectsQuery()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
         $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
         $context = $curriculum->forSelection($user->school_id, $class?->id, $subject->id, $user->school?->academic_year_id, $user->school?->semester_id, $data['topic']);
         $this->run(fn () => $manager->generate($user, 'practice', ['subject' => $subject->name, 'topic' => $data['topic'], 'question_count' => (int) $data['questionCount']], $context));
@@ -325,7 +325,7 @@ class Workspace extends Component
         abort_if(empty($this->generated['questions']), 422, 'Generate or reopen a practice set before asking a follow-up question.');
         $user = auth()->user();
         $student = $access->studentRecord($user);
-        $subject = $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
+        $subject = $student->currentClassSubjectsQuery()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
         $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
         $context = $curriculum->forSelection($user->school_id, $class?->id, $subject->id, $user->school?->academic_year_id, $user->school?->semester_id, $this->topic ?: null);
         $session = $this->activeSession($user->id, $student->id, 'student', 'practice_follow_up', $subject->id, $class?->id);
@@ -348,7 +348,7 @@ class Workspace extends Component
         $data = $this->validate(['studentRecordId' => ['nullable', 'required_with:subjectId,resultId', 'integer'], 'question' => ['required', 'string', 'min:3', 'max:2000'], 'subjectId' => ['nullable', 'integer'], 'resultId' => ['nullable', 'integer']]);
         $user = auth()->user();
         $student = $data['studentRecordId'] ? $access->childRecord($user, (int) $data['studentRecordId']) : null;
-        $subject = $data['subjectId'] && $student ? $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail() : null;
+        $subject = $data['subjectId'] && $student ? $student->currentClassSubjectsQuery()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail() : null;
         $resultData = null;
         if ($data['resultId']) {
             $result = Result::query()->whereKey($data['resultId'])->where('student_record_id', $student->id)->where('approved', true)->with(['subject', 'academicYear', 'semester'])->firstOrFail();

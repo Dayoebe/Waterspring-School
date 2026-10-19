@@ -105,7 +105,7 @@
             <div class="rounded-lg bg-gray-50 py-12 text-center">
                 <i class="fas fa-calendar-times mb-4 text-5xl text-gray-300"></i>
                 <h3 class="text-xl font-semibold text-gray-700">No Timetables Found</h3>
-                <p class="mt-1 text-gray-500">Create a timetable to get started.</p>
+                <p class="mt-1 text-gray-500">{{ $canCreateTimetable ? 'Create a timetable to get started.' : 'No timetable has been published for this class and term yet.' }}</p>
             </div>
         @endif
 

@@ -148,7 +148,7 @@ class TeacherResponsibilities extends Component
             $resultQuery->whereRaw('1 = 0');
         }
 
-        $subjects = $studentRecord->studentSubjects()
+        $subjects = $studentRecord->currentClassSubjectsQuery()
             ->orderBy('subjects.name')
             ->get(['subjects.id', 'subjects.name', 'subjects.short_name'])
             ->map(fn ($subject): array => [
@@ -182,14 +182,17 @@ class TeacherResponsibilities extends Component
 
         $this->parentPanel = [
             'total_children' => $children->count(),
-            'children' => $children->map(function (User $child): array {
+            'children' => $children->map(function (User $child) use ($user): array {
                 $record = $child->studentRecord;
+                $currentClass = $record?->getClassForYear($user->school?->academic_year_id) ?? $record?->baseClass;
+                $subjects = $record?->currentClassSubjectsQuery()->orderBy('subjects.name')->get(['subjects.id', 'subjects.name', 'subjects.short_name']) ?? collect();
 
                 return [
                     'name' => $child->name,
                     'admission_number' => $record?->admission_number ?: 'N/A',
-                    'class_name' => $record?->myClass?->name ?? 'Not assigned',
+                    'class_name' => $currentClass?->name ?? 'Not assigned',
                     'section_name' => $record?->section?->name ?? 'Not assigned',
+                    'subjects' => $subjects->map(fn ($subject) => ['id' => (int) $subject->id, 'name' => $subject->name, 'short_name' => $subject->short_name])->values()->all(),
                 ];
             })->values()->all(),
         ];
@@ -270,10 +273,10 @@ class TeacherResponsibilities extends Component
             ],
             [
                 'title' => 'Timetable',
-                'description' => 'View the timetable for your classes and teaching schedule.',
+                'description' => 'View the timetable available for your classes or linked children.',
                 'icon' => 'fas fa-clock',
                 'route' => 'timetables.index',
-                'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin', 'student'],
+                'roles' => ['teacher', 'principal', 'admin', 'super-admin', 'super_admin', 'student', 'parent'],
                 'permissions' => ['read timetable', 'create timetable'],
                 'tone' => 'bg-violet-600 text-white',
             ],

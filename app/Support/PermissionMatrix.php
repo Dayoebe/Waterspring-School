@@ -250,6 +250,7 @@ class PermissionMatrix
             'view clubs',
             'join clubs',
             'view schemes of work',
+            'read timetable',
             'submit assignment',
             'view own broadcasts',
         ];
@@ -269,6 +270,7 @@ class PermissionMatrix
             'read school calendar',
             'view clubs',
             'view schemes of work',
+            'read timetable',
             'read own child attendance',
             'read own child discipline',
             'view own broadcasts',

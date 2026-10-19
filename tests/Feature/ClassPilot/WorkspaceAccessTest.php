@@ -8,6 +8,7 @@ use App\Models\ClassPilot\Material;
 use App\Models\MyClass;
 use App\Models\School;
 use App\Models\StudentRecord;
+use App\Models\Subject;
 use App\Models\User;
 use App\Services\ClassPilot\Access;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -66,6 +67,11 @@ class WorkspaceAccessTest extends TestCase
         $student = $this->user($school, 'student@example.test');
         $this->grant($student, 'student');
         $record = $this->student($student, $school);
+        $subject = Subject::query()->create(['name' => 'New Class Subject', 'short_name' => 'NCS', 'school_id' => $school->id, 'is_general' => false, 'is_legacy' => false]);
+        DB::table('class_subject')->insert(['school_id' => $school->id, 'my_class_id' => $record->my_class_id, 'subject_id' => $subject->id, 'created_at' => now(), 'updated_at' => now()]);
+        $this->assertFalse($record->studentSubjects()->whereKey($subject->id)->exists());
+        Livewire::actingAs($student)->test(Workspace::class)->assertSee('New Class Subject');
+
         $author = $this->user($school, 'teacher@example.test');
         $this->grant($author, 'teacher');
         $otherClass = MyClass::query()->create(['name' => 'JSS 2', 'class_group_id' => $record->myClass->class_group_id]);

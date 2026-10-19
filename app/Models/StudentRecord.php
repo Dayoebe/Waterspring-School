@@ -528,10 +528,20 @@ class StudentRecord extends Model
 
     public function getFilteredSubjects()
     {
-        return $this->studentSubjects()
-            ->where('subjects.is_legacy', false)
+        return $this->currentClassSubjectsQuery()
             ->orderBy('subjects.name')
             ->get();
+    }
+
+    public function currentClassSubjectsQuery()
+    {
+        $academicYearId = auth()->user()?->school?->academic_year_id;
+        $class = $academicYearId ? $this->getClassForYear($academicYearId) : null;
+        $class ??= $this->baseClass;
+
+        return $class
+            ? $class->subjects()
+            : Subject::query()->whereRaw('1 = 0');
     }
 
     protected static function booted()
