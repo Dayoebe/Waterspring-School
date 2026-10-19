@@ -50,8 +50,14 @@ class GeminiProvider implements AiProvider
         }
 
         if (! $response->successful()) {
-            $code = $response->status() === 429 ? 'The AI service is busy. Please wait and try again.' : 'The AI service could not complete this request.';
-            throw new ClassPilotException($code);
+            $message = match ($response->status()) {
+                403 => 'The configured Gemini project is not authorised to generate content. An administrator must review the API project access or contact Gemini support.',
+                404 => 'The configured Gemini model is unavailable. An administrator must select a supported model.',
+                429 => 'The AI service is busy. Please wait and try again.',
+                default => 'The AI service could not complete this request.',
+            };
+
+            throw new ClassPilotException($message);
         }
 
         $text = $response->json('candidates.0.content.parts.0.text');

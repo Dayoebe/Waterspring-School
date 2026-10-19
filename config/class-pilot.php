@@ -3,7 +3,7 @@
 return [
     'enabled' => env('CLASS_PILOT_ENABLED', true),
     'provider' => env('CLASS_PILOT_PROVIDER', 'gemini'),
-    'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
     'api_key' => env('GEMINI_API_KEY'),
     'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
     'timeout' => (int) env('CLASS_PILOT_TIMEOUT', 30),

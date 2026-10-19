@@ -12,6 +12,8 @@ ClassPilot is an optional, server-side Gemini integration inside the existing Wa
 
 Without an API key, the workspace deliberately shows a setup-required state and does not fabricate content. Automated tests should mock `App\Services\ClassPilot\Contracts\AiProvider`; they never require live Gemini access.
 
+The default model is `gemini-3.8-flash`. Override it only with a model currently available to the configured Gemini account.
+
 ## Data and safety boundaries
 
 - Generated teacher material is stored as a draft. Approval is explicit and does not publish an assignment, exam, or answer key.
