@@ -103,8 +103,18 @@ class Menu extends Component
 
     protected function peopleMenu(): array
     {
+        $isFamily = Auth::user()?->hasAnyRole(['student', 'parent']) ?? false;
+
         return [
             ['header' => 'School Community'],
+            ...($isFamily ? [[
+                'type' => 'menu-item',
+                'text' => 'Teachers',
+                'icon' => 'fas fa-chalkboard-user',
+                'route' => 'teachers.family',
+                'roles' => ['student', 'parent'],
+                'permissions' => ['view dashboard'],
+            ]] : []),
             [
                 'text' => 'Students & Parents',
                 'icon' => 'fas fa-user-graduate',

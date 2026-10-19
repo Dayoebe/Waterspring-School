@@ -87,6 +87,7 @@ use App\Livewire\Subjects\ManageSubjects;
 use App\Livewire\Subjects\SubjectDetail;
 use App\Livewire\Support\StudentSupportHub;
 use App\Livewire\Syllabi\ManageSyllabi;
+use App\Livewire\Teachers\FamilyTeachers;
 use App\Livewire\Teachers\ManageTeachers;
 use App\Livewire\Teachers\TeacherDetail;
 use App\Livewire\Timetable\ManageTimetables;
@@ -239,6 +240,10 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
     Route::get('/dashboard/subjects', FamilySubjects::class)
         ->middleware('permission:view dashboard')
         ->name('subjects.family');
+
+    Route::get('/dashboard/teachers', FamilyTeachers::class)
+        ->middleware('permission:view dashboard')
+        ->name('teachers.family');
 
     Route::get('/dashboard/resources', ManageSchoolResources::class)
         ->middleware('permission:read school resources')
