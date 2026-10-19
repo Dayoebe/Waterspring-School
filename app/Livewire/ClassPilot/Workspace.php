@@ -88,8 +88,7 @@ class Workspace extends Component
             $this->classId = (string) ($record->getClassForYear($user->school?->academic_year_id)?->id ?? $record->my_class_id ?? '');
             $this->tab = 'tutor';
         } elseif ($this->isParent()) {
-            $first = $user->children()->where('users.school_id', $user->school_id)->with('studentRecord')->first()?->studentRecord;
-            $this->studentRecordId = (string) ($first?->id ?? '');
+            $this->studentRecordId = '';
             $this->tab = 'family';
         } else {
             $this->classId = (string) ($this->teacherClasses($access)->first()?->id ?? '');
@@ -334,10 +333,10 @@ class Workspace extends Component
     public function askFamily(Access $access, CurriculumContext $curriculum, Manager $manager): void
     {
         abort_unless($this->isParent(), 403);
-        $data = $this->validate(['studentRecordId' => ['required', 'integer'], 'question' => ['required', 'string', 'min:3', 'max:2000'], 'subjectId' => ['nullable', 'integer'], 'resultId' => ['nullable', 'integer']]);
+        $data = $this->validate(['studentRecordId' => ['nullable', 'required_with:subjectId,resultId', 'integer'], 'question' => ['required', 'string', 'min:3', 'max:2000'], 'subjectId' => ['nullable', 'integer'], 'resultId' => ['nullable', 'integer']]);
         $user = auth()->user();
-        $student = $access->childRecord($user, (int) $data['studentRecordId']);
-        $subject = $data['subjectId'] ? $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail() : null;
+        $student = $data['studentRecordId'] ? $access->childRecord($user, (int) $data['studentRecordId']) : null;
+        $subject = $data['subjectId'] && $student ? $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail() : null;
         $resultData = null;
         if ($data['resultId']) {
             $result = Result::query()->whereKey($data['resultId'])->where('student_record_id', $student->id)->where('approved', true)->with(['subject', 'academicYear', 'semester'])->firstOrFail();
@@ -345,12 +344,12 @@ class Workspace extends Component
             $resultData = ['subject' => $result->subject?->name, 'ca_scores' => array_values(array_filter([$result->ca1_score, $result->ca2_score, $result->ca3_score, $result->ca4_score], fn ($v) => $v !== null)), 'exam_score' => $result->exam_score, 'total_score' => $result->total_score];
             $subject ??= $result->subject;
         }
-        $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
+        $class = $student ? ($student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass) : null;
         $context = $curriculum->forSelection($user->school_id, $class?->id, $subject?->id, $user->school?->academic_year_id, $user->school?->semester_id, $this->topic ?: null);
-        $session = $this->activeSession($user->id, $student->id, 'family', 'family_support', $subject?->id, $class?->id);
+        $session = $this->activeSession($user->id, $student?->id, 'family', 'family_support', $subject?->id, $class?->id);
         $history = $this->conversationHistory($session);
         Message::query()->create(['class_pilot_session_id' => $session->id, 'user_id' => $user->id, 'role' => 'user', 'content' => $data['question']]);
-        $this->run(fn () => $manager->generate($user, 'family', ['question' => $data['question'], 'subject' => $subject?->name, 'published_result' => $resultData, 'conversation_history' => $history, 'instruction' => 'Continue the conversation naturally. Separate recorded facts from suggestions. If evidence is insufficient, say so.'], $context));
+        $this->run(fn () => $manager->generate($user, 'family', ['question' => $data['question'], 'child_context' => $student ? 'A linked child was selected.' : 'This is a general family question with no child selected.', 'subject' => $subject?->name, 'published_result' => $resultData, 'conversation_history' => $history, 'instruction' => 'Continue naturally. Help with home life, parenting, family communication, practical how-to questions, values, and respectful faith or relationship-with-God questions as appropriate. Do not claim divine authority or present personal spiritual guidance as certain fact. For school records, separate recorded facts from suggestions. If evidence is insufficient, say so.'], $context));
         if ($this->generated !== []) {
             Message::query()->create(['class_pilot_session_id' => $session->id, 'role' => 'assistant', 'content' => $this->generated['answer'], 'metadata' => ['response' => $this->generated, 'result_id' => $data['resultId'] ?: null, 'curriculum_sources' => $context['sources']]]);
         }
@@ -393,7 +392,7 @@ class Workspace extends Component
         $this->notice = 'A new conversation is ready.';
     }
 
-    private function activeSession(int $userId, int $studentRecordId, string $audience, string $feature, ?int $subjectId, ?int $classId): LearningSession
+    private function activeSession(int $userId, ?int $studentRecordId, string $audience, string $feature, ?int $subjectId, ?int $classId): LearningSession
     {
         if ($this->activeSessionId) {
             $session = LearningSession::query()->where('user_id', $userId)->where('school_id', auth()->user()->school_id)->findOrFail($this->activeSessionId);
