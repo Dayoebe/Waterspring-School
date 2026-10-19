@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\ClassPilot;
 
+use App\Livewire\ClassPilot\Workspace;
 use App\Models\ClassGroup;
+use App\Models\ClassPilot\Material;
 use App\Models\MyClass;
 use App\Models\School;
 use App\Models\StudentRecord;
@@ -11,6 +13,7 @@ use App\Services\ClassPilot\Access;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -55,6 +58,46 @@ class WorkspaceAccessTest extends TestCase
         $this->assertSame($ownRecord->id, app(Access::class)->childRecord($parent, $ownRecord->id)->id);
         $this->expectException(ModelNotFoundException::class);
         app(Access::class)->childRecord($parent, $otherRecord->id);
+    }
+
+    public function test_student_only_sees_approved_materials_for_their_class(): void
+    {
+        $school = $this->school('A');
+        $student = $this->user($school, 'student@example.test');
+        $this->grant($student, 'student');
+        $record = $this->student($student, $school);
+        $author = $this->user($school, 'teacher@example.test');
+        $this->grant($author, 'teacher');
+        $otherClass = MyClass::query()->create(['name' => 'JSS 2', 'class_group_id' => $record->myClass->class_group_id]);
+
+        foreach ([
+            ['title' => 'Approved for my class', 'class_id' => $record->my_class_id, 'status' => 'approved'],
+            ['title' => 'Draft for my class', 'class_id' => $record->my_class_id, 'status' => 'draft'],
+            ['title' => 'Approved for another class', 'class_id' => $otherClass->id, 'status' => 'approved'],
+        ] as $item) {
+            Material::query()->create([
+                'school_id' => $school->id, 'author_id' => $author->id, 'my_class_id' => $item['class_id'],
+                'type' => 'lesson', 'title' => $item['title'], 'topic' => 'Safety', 'status' => $item['status'],
+                'content' => ['title' => $item['title'], 'summary' => 'Safe lesson', 'objectives' => ['Learn safely'], 'sections' => [['heading' => 'Start', 'content' => 'Read this.']]],
+                'approved_at' => $item['status'] === 'approved' ? now() : null,
+            ]);
+        }
+
+        Livewire::actingAs($student)->test(Workspace::class)
+            ->set('tab', 'materials')
+            ->assertSee('Approved for my class')
+            ->assertDontSee('Draft for my class')
+            ->assertDontSee('Approved for another class');
+
+        $parent = $this->user($school, 'parent@example.test');
+        $this->grant($parent, 'parent');
+        DB::table('parent_records')->insert(['user_id' => $parent->id, 'student_id' => $student->id, 'created_at' => now(), 'updated_at' => now()]);
+
+        Livewire::actingAs($parent)->test(Workspace::class)
+            ->set('tab', 'materials')
+            ->assertSee('Approved for my class')
+            ->assertDontSee('Draft for my class')
+            ->assertDontSee('Approved for another class');
     }
 
     private function school(string $suffix): School

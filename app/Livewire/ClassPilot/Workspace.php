@@ -10,6 +10,7 @@ use App\Models\MyClass;
 use App\Models\Notice;
 use App\Models\Result;
 use App\Models\SchoolEvent;
+use App\Models\StudentRecord;
 use App\Services\ClassPilot\Access;
 use App\Services\ClassPilot\CurriculumContext;
 use App\Services\ClassPilot\Exceptions\ClassPilotException;
@@ -165,26 +166,26 @@ class Workspace extends Component
         abort_unless(auth()->user()->can('approve classpilot material'), 403);
         $material = $this->ownedMaterial();
         $material->update(['status' => 'approved', 'approved_by' => auth()->id(), 'approved_at' => now()]);
-        $this->notice = 'Material approved. It remains separate from official exams and assignments until you publish it through those workflows.';
+        $this->notice = 'Material approved. Students in the selected class and their linked parents can now view it. It remains separate from official exams and assignments.';
     }
 
     public function archiveMaterial(int $id): void
     {
-        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $material = $this->manageableMaterialsQuery()->findOrFail($id);
         $material->update(['status' => 'archived']);
         $this->notice = 'Material archived.';
     }
 
     public function restoreMaterial(int $id): void
     {
-        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $material = $this->manageableMaterialsQuery()->findOrFail($id);
         $material->update(['status' => 'draft', 'approved_by' => null, 'approved_at' => null]);
         $this->notice = 'Material restored as a draft.';
     }
 
     public function deleteMaterial(int $id): void
     {
-        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $material = $this->manageableMaterialsQuery()->findOrFail($id);
         $material->delete();
         if ($this->selectedMaterialId === $id) {
             $this->selectedMaterialId = null;
@@ -207,7 +208,7 @@ class Workspace extends Component
 
     public function openMaterial(int $id): void
     {
-        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $material = $this->manageableMaterialsQuery()->findOrFail($id);
         $this->selectedMaterialId = $material->id;
         $this->editableMaterial = $material->content;
         $this->generated = $material->content;
@@ -219,6 +220,17 @@ class Workspace extends Component
         $this->revisionPrompt = '';
         $this->resetValidation();
         $this->notice = 'Material opened. You can edit this draft or ask ClassPilot to create a revised copy.';
+    }
+
+    public function viewPublishedMaterial(int $id, Access $access): void
+    {
+        abort_unless($this->isStudent() || $this->isParent(), 403);
+        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('status', 'approved')
+            ->whereIn('my_class_id', $this->audienceClassIds($access))->findOrFail($id);
+        $this->selectedMaterialId = $material->id;
+        $this->generated = $material->content;
+        $this->sourceSummary = $material->curriculum_sources ?? [];
+        $this->notice = null;
     }
 
     public function reviseMaterial(CurriculumContext $curriculum, Manager $manager): void
@@ -434,7 +446,36 @@ class Workspace extends Component
 
     private function ownedMaterial(): Material
     {
-        return Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($this->selectedMaterialId);
+        return $this->manageableMaterialsQuery()->findOrFail($this->selectedMaterialId);
+    }
+
+    private function manageableMaterialsQuery()
+    {
+        $query = Material::query()->where('school_id', auth()->user()->school_id);
+
+        return $this->canManageAllMaterials() ? $query : $query->where('author_id', auth()->id());
+    }
+
+    private function canManageAllMaterials(): bool
+    {
+        return auth()->user()->hasAnyRole(['principal', 'admin', 'super-admin', 'super_admin']);
+    }
+
+    private function audienceClassIds(Access $access): array
+    {
+        $user = auth()->user();
+        if ($this->isStudent()) {
+            $student = $access->studentRecord($user);
+
+            return array_values(array_filter([$student->getClassForYear($user->school?->academic_year_id)?->id ?? $student->my_class_id]));
+        }
+        if ($this->isParent()) {
+            $childUserIds = $user->children()->where('users.school_id', $user->school_id)->whereNull('users.deleted_at')->pluck('users.id');
+
+            return StudentRecord::query()->whereIn('user_id', $childUserIds)->pluck('my_class_id')->filter()->unique()->values()->all();
+        }
+
+        return [];
     }
 
     private function isTeacher(): bool
@@ -492,9 +533,10 @@ class Workspace extends Component
                 ];
             }
         }
+        $canManageMaterials = $this->isTeacher();
         $materials = collect();
         if ($this->isTeacher()) {
-            $materialsQuery = Material::query()->where('school_id', $user->school_id)->where('author_id', $user->id)->with(['schoolClass', 'subject']);
+            $materialsQuery = $this->manageableMaterialsQuery()->with(['schoolClass', 'subject', 'author']);
             if ($this->materialsSearch !== '') {
                 $search = trim($this->materialsSearch);
                 $materialsQuery->where(fn ($query) => $query->where('title', 'like', "%{$search}%")->orWhere('topic', 'like', "%{$search}%"));
@@ -513,12 +555,29 @@ class Workspace extends Component
                 default => $materialsQuery->latest(),
             };
             $materials = $materialsQuery->limit(100)->get();
+        } elseif ($this->isStudent() || $this->isParent()) {
+            $materialsQuery = Material::query()->where('school_id', $user->school_id)->where('status', 'approved')
+                ->whereIn('my_class_id', $this->audienceClassIds($access))->with(['schoolClass', 'subject', 'author']);
+            if ($this->materialsSearch !== '') {
+                $search = trim($this->materialsSearch);
+                $materialsQuery->where(fn ($query) => $query->where('title', 'like', "%{$search}%")->orWhere('topic', 'like', "%{$search}%"));
+            }
+            if (in_array($this->materialsType, ['lesson', 'assessment'], true)) {
+                $materialsQuery->where('type', $this->materialsType);
+            }
+            match ($this->materialsSort) {
+                'oldest' => $materialsQuery->oldest('approved_at'),
+                'title_asc' => $materialsQuery->orderBy('title'),
+                'title_desc' => $materialsQuery->orderByDesc('title'),
+                default => $materialsQuery->latest('approved_at'),
+            };
+            $materials = $materialsQuery->limit(100)->get();
         }
         $sessions = LearningSession::query()->where('school_id', $user->school_id)->where('user_id', $user->id)->with('messages')->latest('last_activity_at')->limit(8)->get();
         $activeConversation = $this->activeSessionId ? LearningSession::query()->where('school_id', $user->school_id)->where('user_id', $user->id)->with('messages')->find($this->activeSessionId) : null;
         $attempts = $student ? PracticeAttempt::query()->where('student_record_id', $student->id)->with('subject')->latest()->limit(8)->get() : collect();
 
-        return view('livewire.class-pilot.workspace', compact('classes', 'subjects', 'children', 'results', 'materials', 'sessions', 'activeConversation', 'attempts', 'familyOverview'))
+        return view('livewire.class-pilot.workspace', compact('classes', 'subjects', 'children', 'results', 'materials', 'canManageMaterials', 'sessions', 'activeConversation', 'attempts', 'familyOverview'))
             ->layout('layouts.dashboard', ['description' => 'Curriculum-aware teaching, tutoring, and family learning support.', 'icon' => 'fas fa-wand-magic-sparkles'])
             ->title('ClassPilot AI');
     }

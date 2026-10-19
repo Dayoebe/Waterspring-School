@@ -24,11 +24,11 @@
                     <button wire:click="switchTab('{{ $key }}')" class="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold {{ $tab === $key ? 'bg-sky-700 text-white' : 'text-slate-600 hover:bg-slate-100' }}">{{ $label }}</button>
                 @endforeach
             @elseif(auth()->user()->hasRole('student'))
-                @foreach(['tutor' => 'AI tutor', 'practice' => 'Practice', 'progress' => 'Learning progress', 'sessions' => 'Saved sessions'] as $key => $label)
+                @foreach(['tutor' => 'AI tutor', 'materials' => 'Class materials', 'practice' => 'Practice', 'progress' => 'Learning progress', 'sessions' => 'Saved sessions'] as $key => $label)
                     <button wire:click="switchTab('{{ $key }}')" class="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold {{ $tab === $key ? 'bg-sky-700 text-white' : 'text-slate-600 hover:bg-slate-100' }}">{{ $label }}</button>
                 @endforeach
             @else
-                @foreach(['family' => 'Family assistant', 'progress' => 'Child progress', 'weekly' => 'Weekly summary', 'sessions' => 'Saved sessions'] as $key => $label)
+                @foreach(['family' => 'Family assistant', 'materials' => 'Class materials', 'progress' => 'Child progress', 'weekly' => 'Weekly summary', 'sessions' => 'Saved sessions'] as $key => $label)
                     <button wire:click="switchTab('{{ $key }}')" class="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold {{ $tab === $key ? 'bg-sky-700 text-white' : 'text-slate-600 hover:bg-slate-100' }}">{{ $label }}</button>
                 @endforeach
             @endif
@@ -78,6 +78,17 @@
             </section>
         </div>
     @elseif($tab === 'materials')
+        @if(!$canManageMaterials)
+            @php($openMaterial = $materials->firstWhere('id', $selectedMaterialId))
+            <div class="grid gap-6 xl:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)]">
+                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div><p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Approved for your class</p><h2 class="mt-1 text-xl font-black text-slate-900">Class materials</h2><p class="mt-2 text-sm leading-6 text-slate-600">Read lessons and assessments approved for your class. These materials are view-only.</p></div>
+                    <div class="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4"><label class="relative block"><span class="sr-only">Search class materials</span><i class="fas fa-search absolute left-3 top-3.5 text-sm text-slate-400"></i><input wire:model.live.debounce.300ms="materialsSearch" class="w-full rounded-xl border-slate-300 bg-white pl-9 text-sm" placeholder="Search title or topic…" /></label><div class="grid grid-cols-2 gap-2"><label class="text-xs font-bold text-slate-600">Type<select wire:model.live="materialsType" class="mt-1 w-full rounded-xl border-slate-300 bg-white text-sm font-normal"><option value="all">All types</option><option value="lesson">Lessons</option><option value="assessment">Assessments</option></select></label><label class="text-xs font-bold text-slate-600">Sort<select wire:model.live="materialsSort" class="mt-1 w-full rounded-xl border-slate-300 bg-white text-sm font-normal"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="title_asc">Title A–Z</option><option value="title_desc">Title Z–A</option></select></label></div></div>
+                    <div class="mt-5 space-y-3">@forelse($materials as $material)<button type="button" wire:click="viewPublishedMaterial({{ $material->id }})" class="w-full rounded-2xl border p-4 text-left transition {{ $selectedMaterialId === $material->id ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100' : 'border-slate-200 hover:border-emerald-300' }}"><div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase text-emerald-700">{{ $material->type }}</p><h3 class="mt-1 font-black text-slate-900">{{ $material->title }}</h3></div><i class="fas fa-chevron-right mt-1 text-slate-400"></i></div><p class="mt-2 text-sm text-slate-600">{{ $material->schoolClass?->name }} · {{ $material->subject?->name }}</p><p class="mt-1 text-xs text-slate-500">Approved {{ $material->approved_at?->diffForHumans() }}</p></button>@empty<div class="rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-600">No approved ClassPilot materials are available for your class yet.</div>@endforelse</div>
+                </section>
+                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">@if($openMaterial)<div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Approved class material</p><h2 class="mt-1 text-2xl font-black text-slate-900">{{ $openMaterial->title }}</h2><p class="mt-2 text-sm text-slate-600">{{ $openMaterial->schoolClass?->name }} · {{ $openMaterial->subject?->name }}</p></div><span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800"><i class="fas fa-eye mr-1"></i> View only</span></div>@include('livewire.class-pilot.partials.material-view', ['content' => $openMaterial->content])@else<div class="flex min-h-[32rem] flex-col items-center justify-center text-center"><div class="flex size-16 items-center justify-center rounded-2xl bg-emerald-100 text-2xl text-emerald-800"><i class="fas fa-book-open"></i></div><h2 class="mt-5 text-xl font-black text-slate-900">Choose a class material</h2><p class="mt-2 max-w-md text-sm leading-6 text-slate-600">Select an approved lesson or assessment to read it here.</p></div>@endif</section>
+            </div>
+        @else
         @php($openMaterial = $materials->firstWhere('id', $selectedMaterialId))
         <div class="grid gap-6 xl:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)]">
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -131,6 +142,7 @@
                 @endif
             </section>
         </div>
+        @endif
     @elseif($tab === 'tutor')
         <div class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <section class="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wider text-sky-700">Guided learning</p><h2 class="mt-1 text-xl font-black">Ask ClassPilot</h2><p class="mt-2 text-sm text-slate-600">Choose a subject, then chat in the message box. Every question is saved automatically.</p></div>@if($activeSessionId)<button type="button" wire:click="startNewConversation" class="shrink-0 rounded-xl border border-sky-200 px-3 py-2 text-xs font-bold text-sky-800">New chat</button>@endif</div><label class="block text-sm font-semibold">Subject<select wire:model="subjectId" class="mt-2 w-full rounded-xl border-slate-300"><option value="">Choose subject</option>@foreach($subjects as $subject)<option value="{{ $subject->id }}">{{ $subject->name }}</option>@endforeach</select></label><div class="rounded-2xl bg-sky-50 p-4 text-sm leading-6 text-sky-900"><i class="fas fa-lightbulb mr-2 text-amber-500"></i>Ask for an explanation, hint, worked example, revision help, or follow-up question.</div></section>
