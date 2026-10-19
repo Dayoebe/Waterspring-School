@@ -2,34 +2,44 @@
 
 namespace App\Livewire\Result;
 
+use App\Models\AcademicYear;
+use App\Models\MyClass;
+use App\Models\Result;
+use App\Models\ResultPublication;
+use App\Models\Section;
+use App\Traits\ResolvesAccessibleStudentResults;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\{MyClass, Section, AcademicYear, Result};
-use App\Models\ResultPublication;
-use App\Traits\ResolvesAccessibleStudentResults;
 
 class StudentHistory extends Component
 {
-    use WithPagination;
     use ResolvesAccessibleStudentResults;
+    use WithPagination;
 
     public $selectedClass;
+
     public $selectedSection;
+
     public $searchTerm = '';
+
     public $selectedStudent;
+
     public $viewingHistory = false;
-    
+
     // Student history data
     public $studentRecord;
+
     public $academicYears = [];
+
     public $historyData = [];
+
     public $overallStats = [];
 
     protected $paginationTheme = 'tailwind';
 
     public function mount()
     {
-        if ($this->isRestrictedTeacherResultViewer() && !$this->currentUserCanAccessClassOnlyResultTools()) {
+        if ($this->isRestrictedTeacherResultViewer() && ! $this->currentUserCanAccessClassOnlyResultTools()) {
             abort(403);
         }
 
@@ -54,19 +64,19 @@ class StudentHistory extends Component
                 ->map(fn ($id) => (int) $id)
             : null;
 
-        $this->academicYears = AcademicYear::whereHas('semesters.results', function($q) use ($studentId, $publishedSemesterIds) {
+        $this->academicYears = AcademicYear::whereHas('semesters.results', function ($q) use ($studentId, $publishedSemesterIds) {
             $q->where('student_record_id', $studentId)
                 ->when($publishedSemesterIds !== null, fn ($query) => $query->whereIn('semester_id', $publishedSemesterIds));
         })
-        ->where('school_id', auth()->user()->school_id)
-        ->with(['semesters' => function($q) use ($studentId, $publishedSemesterIds) {
-            $q->when($publishedSemesterIds !== null, fn ($query) => $query->whereIn('semesters.id', $publishedSemesterIds))
-                ->whereHas('results', function($query) use ($studentId) {
-                    $query->where('student_record_id', $studentId);
-                });
-        }])
-        ->orderBy('start_year', 'desc')
-        ->get();
+            ->where('school_id', auth()->user()->school_id)
+            ->with(['semesters' => function ($q) use ($studentId, $publishedSemesterIds) {
+                $q->when($publishedSemesterIds !== null, fn ($query) => $query->whereIn('semesters.id', $publishedSemesterIds))
+                    ->whereHas('results', function ($query) use ($studentId) {
+                        $query->where('student_record_id', $studentId);
+                    });
+            }])
+            ->orderBy('start_year', 'desc')
+            ->get();
 
         // Build history data
         $this->historyData = [];
@@ -75,7 +85,7 @@ class StudentHistory extends Component
         foreach ($this->academicYears as $year) {
             $yearData = [
                 'year' => $year,
-                'semesters' => []
+                'semesters' => [],
             ];
 
             foreach ($year->semesters as $semester) {
@@ -102,13 +112,13 @@ class StudentHistory extends Component
                 }
             }
 
-            if (!empty($yearData['semesters'])) {
+            if (! empty($yearData['semesters'])) {
                 $this->historyData[] = $yearData;
             }
         }
 
         // Calculate overall statistics
-        if (!empty($allScores)) {
+        if (! empty($allScores)) {
             $this->overallStats = [
                 'total_terms' => count($allScores),
                 'average_score' => round(array_sum($allScores) / count($allScores), 2),
@@ -121,7 +131,7 @@ class StudentHistory extends Component
             foreach ($this->historyData as $yearData) {
                 foreach ($yearData['semesters'] as $semesterData) {
                     foreach ($semesterData['results'] as $result) {
-                        if (!isset($subjectScores[$result->subject->name])) {
+                        if (! isset($subjectScores[$result->subject->name])) {
                             $subjectScores[$result->subject->name] = [];
                         }
                         $subjectScores[$result->subject->name][] = $result->total_score;
@@ -137,7 +147,7 @@ class StudentHistory extends Component
             arsort($subjectAverages);
             $this->overallStats['best_subject'] = array_key_first($subjectAverages) ?? 'N/A';
             $this->overallStats['best_subject_avg'] = reset($subjectAverages) ?: 0;
-            
+
             asort($subjectAverages);
             $this->overallStats['worst_subject'] = array_key_first($subjectAverages) ?? 'N/A';
             $this->overallStats['worst_subject_avg'] = reset($subjectAverages) ?: 0;
@@ -146,9 +156,17 @@ class StudentHistory extends Component
         $this->viewingHistory = true;
     }
 
+    public function updatedSelectedStudent($studentId)
+    {
+        if ($studentId) {
+            $this->viewHistory($studentId);
+        }
+    }
+
     public function backToList()
     {
         $this->viewingHistory = false;
+        $this->selectedStudent = null;
         $this->reset(['studentRecord', 'academicYears', 'historyData', 'overallStats']);
     }
 
@@ -173,10 +191,17 @@ class StudentHistory extends Component
                     });
             })->get()
             : collect();
-    
-        $students = collect();
 
-        if (!$this->viewingHistory) {
+        $students = collect();
+        $linkedChildren = $isParentResultViewer
+            ? $this->accessibleStudentRecordsQuery()
+                ->with(['user', 'myClass'])
+                ->whereHas('user', fn ($query) => $query->where('school_id', auth()->user()->school_id)->whereNull('deleted_at'))
+                ->orderByName()
+                ->get()
+            : collect();
+
+        if (! $this->viewingHistory) {
             if ($canBrowseAllStudents && $this->selectedClass) {
                 $students = $this->accessibleStudentRecordsQuery()
                     ->with(['user' => function ($query) {
@@ -184,18 +209,18 @@ class StudentHistory extends Component
                             ->whereNull('deleted_at');
                     }, 'myClass'])
                     ->where('my_class_id', $this->selectedClass)
-                    ->when($this->selectedSection, fn($q) => $q->where('section_id', $this->selectedSection))
+                    ->when($this->selectedSection, fn ($q) => $q->where('section_id', $this->selectedSection))
                     ->whereHas('user', function ($query) {
                         $query->where('school_id', auth()->user()->school_id)
                             ->whereNull('deleted_at')
                             ->when($this->searchTerm, function ($q) {
-                                $q->where('name', 'like', '%' . $this->searchTerm . '%');
+                                $q->where('name', 'like', '%'.$this->searchTerm.'%');
                             });
                     })
                     ->whereHas('results')
                     ->orderByName()
                     ->paginate(10);
-            } elseif (!$canBrowseAllStudents) {
+            } elseif (! $canBrowseAllStudents) {
                 $students = $this->accessibleStudentRecordsQuery()
                     ->with(['user' => function ($query) {
                         $query->where('school_id', auth()->user()->school_id)
@@ -205,7 +230,7 @@ class StudentHistory extends Component
                         $query->where('school_id', auth()->user()->school_id)
                             ->whereNull('deleted_at')
                             ->when($this->searchTerm, function ($q) {
-                                $q->where('name', 'like', '%' . $this->searchTerm . '%');
+                                $q->where('name', 'like', '%'.$this->searchTerm.'%');
                             });
                     })
                     ->whereHas('results')
@@ -213,11 +238,12 @@ class StudentHistory extends Component
                     ->paginate(10);
             }
         }
-    
+
         return view('livewire.result.student-history', compact(
             'classes',
             'sections',
             'students',
+            'linkedChildren',
             'canBrowseAllStudents',
             'isStudentResultViewer',
             'isParentResultViewer',
@@ -225,7 +251,7 @@ class StudentHistory extends Component
         ))
             ->layout('layouts.result', [
                 'title' => 'Student Academic History',
-                'page_heading' => 'Student Academic History'
+                'page_heading' => 'Student Academic History',
             ]);
     }
 }

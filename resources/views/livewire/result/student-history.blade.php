@@ -67,16 +67,21 @@
 
                 @if($isParentResultViewer)
                     <div class="mt-4 max-w-xl">
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Search Child</label>
-                        <input type="text" wire:model.live.debounce.300ms="searchTerm"
-                            class="w-full rounded-xl border border-rose-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-rose-400 focus:ring-2 focus:ring-rose-200"
-                            placeholder="Search by name...">
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Choose Child</label>
+                        <select wire:model.live="selectedStudent"
+                            class="w-full rounded-xl border border-rose-200 bg-white px-4 py-3 text-slate-900 shadow-sm focus:border-rose-400 focus:ring-2 focus:ring-rose-200">
+                            <option value="">Select a linked child</option>
+                            @foreach($linkedChildren as $child)
+                                <option value="{{ $child->id }}">{{ $child->user?->name }}{{ $child->myClass ? ' — '.$child->myClass->name : '' }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500">Selecting a child opens their available academic history.</p>
                     </div>
                 @endif
             </div>
         @endif
 
-        @if($students->isNotEmpty())
+        @if(!$isParentResultViewer && $students->isNotEmpty())
             <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200">
@@ -127,13 +132,19 @@
                     {{ $students->links() }}
                 </div>
             </div>
-        @elseif($canBrowseAllStudents ? $selectedClass : true)
+        @elseif(!$isParentResultViewer && ($canBrowseAllStudents ? $selectedClass : true))
             <div class="rounded-[1.75rem] border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
                 <i class="fas fa-user-slash mb-4 text-5xl text-slate-300"></i>
                 <h3 class="mb-2 text-xl font-semibold text-slate-700">No Students Found</h3>
                 <p class="text-slate-500">
                     {{ $canBrowseAllStudents ? 'No students with results in this class' : ($isRestrictedTeacherResultViewer ? 'No student in your assigned class matched your search.' : ($isStudentResultViewer ? 'No academic history is available for your account yet.' : 'No linked child history matched your search.')) }}
                 </p>
+            </div>
+        @elseif($isParentResultViewer && $linkedChildren->isEmpty())
+            <div class="rounded-[1.75rem] border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
+                <i class="fas fa-child-reaching mb-4 text-5xl text-slate-300"></i>
+                <h3 class="mb-2 text-xl font-semibold text-slate-700">No Linked Children</h3>
+                <p class="text-slate-500">No student is currently linked to your parent account.</p>
             </div>
         @endif
 
