@@ -874,13 +874,15 @@ class ManageTimetables extends Component
 
     public function render()
     {
+        $pageTitle = auth()->user()->hasAnyRole(['student', 'parent']) ? 'View Timetable' : 'Manage Timetables';
+
         return view('livewire.timetable.manage-timetables')
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('timetables.index'), 'text' => 'Timetables', 'active' => true],
+                    ['href' => route('timetables.index'), 'text' => $pageTitle, 'active' => true],
                 ],
             ])
-            ->title('Manage Timetables');
+            ->title($pageTitle);
     }
 }

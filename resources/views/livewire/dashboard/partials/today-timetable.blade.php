@@ -22,7 +22,7 @@
                     @if (!empty($learning['today_periods']))
                         <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                             <p class="text-xs font-black uppercase tracking-widest text-emerald-700">Today · {{ $learning['today_name'] }}</p>
-                            <div class="mt-3 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                                 @foreach ($learning['today_periods'] as $period)
                                     <div class="rounded-xl {{ $period['is_break'] ? 'bg-amber-100 text-amber-950' : 'bg-white text-slate-800' }} px-4 py-3 shadow-sm">
                                         <p class="text-[10px] font-bold uppercase tracking-wide opacity-70">{{ $period['time'] }} · {{ $period['label'] }}</p>

@@ -577,12 +577,14 @@ class DashboardStats extends Component
                 'permissions' => ['read fee', 'read fee invoice', 'read fee category'],
             ],
             [
-                'title' => 'Timetables',
-                'description' => 'Maintain class timetables and custom slots.',
+                'title' => ($this->isStudent || $this->isParent) ? 'View Timetable' : 'Timetables',
+                'description' => ($this->isStudent || $this->isParent)
+                    ? 'View the timetable for your class or linked children.'
+                    : 'Maintain class timetables and custom slots.',
                 'icon' => 'fas fa-clock',
                 'route' => 'timetables.index',
                 'group' => 'Operations',
-                'roles' => $adminAndStaffRoles,
+                'roles' => [...$adminAndStaffRoles, 'student', 'parent'],
                 'permissions' => ['read timetable', 'create timetable'],
             ],
             [

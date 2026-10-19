@@ -2,7 +2,7 @@
     <div class="border-b border-gray-200 px-6 py-4">
         <div class="flex items-center justify-between">
             <h2 class="text-2xl font-bold text-gray-900">
-                <i class="fas fa-calendar-alt mr-2"></i>Timetables
+                <i class="fas fa-calendar-alt mr-2"></i>{{ auth()->user()->hasAnyRole(['student', 'parent']) ? 'View Timetable' : 'Manage Timetables' }}
             </h2>
             @if($canCreateTimetable)
                 <button wire:click="switchMode('create')"
