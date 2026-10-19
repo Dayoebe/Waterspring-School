@@ -50,6 +50,8 @@ class Workspace extends Component
 
     public string $question = '';
 
+    public string $practiceFollowUp = '';
+
     public string $resultId = '';
 
     public ?int $selectedMaterialId = null;
@@ -283,6 +285,8 @@ class Workspace extends Component
         $this->run(fn () => $manager->generate($user, 'practice', ['subject' => $subject->name, 'topic' => $data['topic'], 'question_count' => (int) $data['questionCount']], $context));
         if ($this->generated !== []) {
             PracticeAttempt::query()->create(['school_id' => $user->school_id, 'student_record_id' => $student->id, 'subject_id' => $subject->id, 'activity_type' => 'generated_practice', 'topic' => $data['topic'], 'answers' => ['generated_questions' => $this->generated['questions']]]);
+            $this->activeSessionId = null;
+            $this->practiceFollowUp = '';
         }
     }
 
@@ -296,9 +300,35 @@ class Workspace extends Component
         $this->topic = $attempt->topic ?? '';
         $this->questionCount = (string) max(1, count($questions));
         $this->generated = ['title' => $attempt->topic ?: 'Saved practice', 'questions' => $questions];
+        $this->activeSessionId = null;
+        $this->practiceFollowUp = '';
         $this->tab = 'practice';
         $this->error = null;
         $this->notice = 'Saved practice reopened. Review it below or generate a fresh set on the same topic.';
+    }
+
+    public function askPracticeFollowUp(Access $access, CurriculumContext $curriculum, Manager $manager): void
+    {
+        abort_unless($this->isStudent(), 403);
+        $data = $this->validate(['practiceFollowUp' => ['required', 'string', 'min:3', 'max:2000'], 'subjectId' => ['required', 'integer']]);
+        abort_if(empty($this->generated['questions']), 422, 'Generate or reopen a practice set before asking a follow-up question.');
+        $user = auth()->user();
+        $student = $access->studentRecord($user);
+        $subject = $student->studentSubjects()->where('subjects.school_id', $user->school_id)->whereKey($data['subjectId'])->firstOrFail();
+        $class = $student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass;
+        $context = $curriculum->forSelection($user->school_id, $class?->id, $subject->id, $user->school?->academic_year_id, $user->school?->semester_id, $this->topic ?: null);
+        $session = $this->activeSession($user->id, $student->id, 'student', 'practice_follow_up', $subject->id, $class?->id);
+        $history = $this->conversationHistory($session);
+        Message::query()->create(['class_pilot_session_id' => $session->id, 'user_id' => $user->id, 'role' => 'user', 'content' => $data['practiceFollowUp'], 'metadata' => ['practice_set' => $this->generated]]);
+        $this->error = null;
+        try {
+            $answer = $manager->generate($user, 'tutor', ['subject' => $subject->name, 'topic' => $this->topic, 'question' => $data['practiceFollowUp'], 'practice_questions' => $this->generated['questions'], 'conversation_history' => $history, 'instruction' => 'Answer as a follow-up to this practice set. Explain clearly, give a hint before the answer when appropriate, and refer to question numbers when the learner does.'], $context);
+            Message::query()->create(['class_pilot_session_id' => $session->id, 'role' => 'assistant', 'content' => $answer['answer'], 'metadata' => ['response' => $answer, 'curriculum_sources' => $context['sources']]]);
+        } catch (ClassPilotException $exception) {
+            $this->error = $exception->getMessage();
+        }
+        $session->update(['last_activity_at' => now()]);
+        $this->practiceFollowUp = '';
     }
 
     public function askFamily(Access $access, CurriculumContext $curriculum, Manager $manager): void
@@ -331,15 +361,25 @@ class Workspace extends Component
     public function openLearningSession(int $id): void
     {
         $session = LearningSession::query()->where('school_id', auth()->user()->school_id)->where('user_id', auth()->id())->with('messages')->findOrFail($id);
-        abort_unless(($this->isStudent() && $session->feature === 'tutor') || ($this->isParent() && $session->feature === 'family_support'), 403);
+        abort_unless(($this->isStudent() && in_array($session->feature, ['tutor', 'practice_follow_up'], true)) || ($this->isParent() && $session->feature === 'family_support'), 403);
         $this->activeSessionId = $session->id;
         $this->studentRecordId = (string) ($session->student_record_id ?? '');
         $this->classId = (string) ($session->my_class_id ?? '');
         $this->subjectId = (string) ($session->subject_id ?? '');
-        $this->tab = $session->feature === 'family_support' ? 'family' : 'tutor';
+        $this->tab = match ($session->feature) {
+            'family_support' => 'family',
+            'practice_follow_up' => 'practice',
+            default => 'tutor',
+        };
         $this->question = '';
         $latestAnswer = $session->messages->last(fn ($message) => $message->role === 'assistant');
-        $this->generated = $latestAnswer?->metadata['response'] ?? [];
+        if ($session->feature === 'practice_follow_up') {
+            $practiceMessage = $session->messages->first(fn ($message) => ! empty($message->metadata['practice_set']));
+            $this->generated = $practiceMessage?->metadata['practice_set'] ?? [];
+            $this->practiceFollowUp = '';
+        } else {
+            $this->generated = $latestAnswer?->metadata['response'] ?? [];
+        }
         $this->error = null;
         $this->notice = 'Conversation reopened. Ask another question to continue where you stopped.';
     }
