@@ -115,7 +115,7 @@ class Workspace extends Component
             'totalMarks' => ['required', 'integer', 'min:1', 'max:200'], 'questionFormat' => ['required', Rule::in(['mixed', 'multiple_choice', 'short_answer', 'structured', 'higher_order', 'practical'])],
         ]);
         $user = auth()->user();
-        $class = $access->teacherClasses($user)->whereKey($data['classId'])->firstOrFail();
+        $class = $this->teacherClasses($access)->whereKey($data['classId'])->firstOrFail();
         $subject = $access->teacherSubjects($user, (int) $class->id)->whereKey($data['subjectId'])->firstOrFail();
         $context = $curriculum->forSelection($user->school_id, $class->id, $subject->id, $user->school?->academic_year_id, $user->school?->semester_id, $data['topic']);
         $input = array_merge($data, ['class' => $class->name, 'subject' => $subject->name]);
