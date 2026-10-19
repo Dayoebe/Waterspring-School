@@ -25,6 +25,7 @@ class Menu extends Component
             $this->overviewMenu(),
             $this->peopleMenu(),
             $this->academicsMenu(),
+            $this->studentLifeMenu(),
             $this->studentSupportMenu(),
             $this->operationsMenu(),
             $this->communicationMenu(),
@@ -506,6 +507,20 @@ class Menu extends Component
         ];
     }
 
+    protected function studentLifeMenu(): array
+    {
+        return [
+            ['header' => 'Student Life & Enrichment'],
+            [
+                'type' => 'menu-item',
+                'text' => 'Clubs & Activities',
+                'icon' => 'fas fa-people-group',
+                'route' => 'clubs.index',
+                'permissions' => ['view clubs'],
+            ],
+        ];
+    }
+
     protected function studentSupportMenu(): array
     {
         return [
@@ -557,13 +572,6 @@ class Menu extends Component
                         'section' => 'Formal Discipline',
                     ],
                 ],
-            ],
-            [
-                'type' => 'menu-item',
-                'text' => 'Clubs & Activities',
-                'icon' => 'fas fa-people-group',
-                'route' => 'clubs.index',
-                'permissions' => ['view clubs'],
             ],
         ];
     }
