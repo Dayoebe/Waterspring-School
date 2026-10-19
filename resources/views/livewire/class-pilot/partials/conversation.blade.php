@@ -20,5 +20,13 @@
             <div class="flex min-h-[25rem] flex-col items-center justify-center text-center"><div class="flex size-16 items-center justify-center rounded-full bg-white text-2xl text-emerald-700 shadow-sm"><i class="fas fa-comments"></i></div><h3 class="mt-4 font-bold text-slate-900">Start a saved conversation</h3><p class="mt-2 max-w-sm text-sm leading-6 text-slate-600">Send a question from the form. Your chat will stay here and can be reopened from Saved sessions.</p></div>
         @endif
     </div>
-    <footer class="flex items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500"><i class="fas fa-lock text-emerald-700"></i><span>Only you can open this ClassPilot conversation.</span></footer>
+    @php($chatAction = auth()->user()->hasRole('student') && !auth()->user()->hasAnyRole(['teacher','principal','admin','super-admin','super_admin']) ? 'askTutor' : 'askFamily')
+    <footer class="border-t border-slate-200 bg-slate-100 px-3 py-3 sm:px-4">
+        <form wire:submit="{{ $chatAction }}" class="flex items-end gap-2">
+            <label class="min-w-0 flex-1"><span class="sr-only">Type a message</span><textarea wire:model="question" x-on:keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.{{ $chatAction }}(); }" rows="1" class="max-h-32 min-h-12 w-full resize-none rounded-2xl border-0 bg-white px-4 py-3 text-sm leading-6 shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-600" placeholder="Type a message…"></textarea></label>
+            <button type="submit" wire:loading.attr="disabled" wire:target="{{ $chatAction }}" class="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white shadow-sm hover:bg-emerald-800 disabled:opacity-60" aria-label="Send message"><i wire:loading.remove wire:target="{{ $chatAction }}" class="fas fa-paper-plane"></i><i wire:loading wire:target="{{ $chatAction }}" class="fas fa-spinner fa-spin"></i></button>
+        </form>
+        @error('question')<p class="mt-2 px-2 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
+        <p class="mt-2 flex items-center justify-center gap-1.5 text-[0.68rem] text-slate-500"><i class="fas fa-lock text-emerald-700"></i> Only you can open this ClassPilot conversation. Press Enter to send; Shift + Enter for a new line.</p>
+    </footer>
 </section>

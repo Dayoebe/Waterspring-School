@@ -286,6 +286,21 @@ class Workspace extends Component
         }
     }
 
+    public function continuePractice(int $id, Access $access): void
+    {
+        abort_unless($this->isStudent(), 403);
+        $student = $access->studentRecord(auth()->user());
+        $attempt = PracticeAttempt::query()->where('student_record_id', $student->id)->findOrFail($id);
+        $questions = $attempt->answers['generated_questions'] ?? [];
+        $this->subjectId = (string) ($attempt->subject_id ?? '');
+        $this->topic = $attempt->topic ?? '';
+        $this->questionCount = (string) max(1, count($questions));
+        $this->generated = ['title' => $attempt->topic ?: 'Saved practice', 'questions' => $questions];
+        $this->tab = 'practice';
+        $this->error = null;
+        $this->notice = 'Saved practice reopened. Review it below or generate a fresh set on the same topic.';
+    }
+
     public function askFamily(Access $access, CurriculumContext $curriculum, Manager $manager): void
     {
         abort_unless($this->isParent(), 403);
