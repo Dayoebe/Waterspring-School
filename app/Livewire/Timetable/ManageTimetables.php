@@ -147,6 +147,8 @@ class ManageTimetables extends Component
             $this->mode = 'list';
             $this->timetableId = null;
         }
+
+        $this->openFamilyTimetable();
     }
 
     public function loadClasses()
@@ -254,6 +256,28 @@ class ManageTimetables extends Component
         }
 
         $this->loadTimetables();
+        $this->openFamilyTimetable();
+    }
+
+    protected function openFamilyTimetable(): void
+    {
+        if (! auth()->user()->hasAnyRole(['student', 'parent']) || $this->canUpdateTimetable) {
+            return;
+        }
+
+        $timetable = $this->timetables?->first();
+
+        if (! $timetable) {
+            $this->mode = 'list';
+            $this->timetableId = null;
+            $this->currentTimetable = null;
+
+            return;
+        }
+
+        $this->mode = 'build';
+        $this->timetableId = $timetable->id;
+        $this->loadTimetableForBuilding($timetable->id);
     }
 
     public function updatedRecordType()

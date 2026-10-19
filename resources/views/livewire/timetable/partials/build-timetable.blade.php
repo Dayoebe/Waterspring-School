@@ -2,14 +2,31 @@
     <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
         <div class="border-b border-gray-200 px-6 py-4">
             <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-gray-900">
-                    <i class="fas fa-calendar-week mr-2"></i>Timetable: {{ $currentTimetable->name }}
-                </h2>
-                <button wire:click="switchMode('list')"
-                    class="rounded-lg bg-gray-100 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-200">
-                    <i class="fas fa-arrow-left mr-2"></i>Back to List
-                </button>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-calendar-week mr-2"></i>Timetable: {{ $currentTimetable->name }}
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-500">{{ $currentTimetable->myClass->name }}</p>
+                </div>
+                @if($canUpdateTimetable)
+                    <button wire:click="switchMode('list')"
+                        class="rounded-lg bg-gray-100 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-200">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to List
+                    </button>
+                @endif
             </div>
+
+            @if(auth()->user()->hasRole('parent') && $classes->count() > 1)
+                <div class="mt-4 max-w-md">
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Select child’s class</label>
+                    <select wire:model.live="selectedClass"
+                        class="w-full rounded-lg border border-gray-300 p-3 focus:border-indigo-500 focus:ring-indigo-500">
+                        @foreach($classes as $class)
+                            <option value="{{ $class->id }}">{{ $class->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
         </div>
 
         <div class="space-y-6 p-6">
