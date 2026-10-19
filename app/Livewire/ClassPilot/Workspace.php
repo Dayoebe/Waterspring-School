@@ -62,6 +62,14 @@ class Workspace extends Component
 
     public string $revisionPrompt = '';
 
+    public string $materialsSearch = '';
+
+    public string $materialsStatus = 'all';
+
+    public string $materialsType = 'all';
+
+    public string $materialsSort = 'newest';
+
     public ?int $activeSessionId = null;
 
     public ?string $notice = null;
@@ -164,6 +172,36 @@ class Workspace extends Component
         $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
         $material->update(['status' => 'archived']);
         $this->notice = 'Material archived.';
+    }
+
+    public function restoreMaterial(int $id): void
+    {
+        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $material->update(['status' => 'draft', 'approved_by' => null, 'approved_at' => null]);
+        $this->notice = 'Material restored as a draft.';
+    }
+
+    public function deleteMaterial(int $id): void
+    {
+        $material = Material::query()->where('school_id', auth()->user()->school_id)->where('author_id', auth()->id())->findOrFail($id);
+        $material->delete();
+        if ($this->selectedMaterialId === $id) {
+            $this->selectedMaterialId = null;
+            $this->editableMaterial = [];
+            $this->generated = [];
+            $this->sourceSummary = [];
+        }
+        $this->notice = 'Material permanently deleted.';
+    }
+
+    public function startNewMaterial(): void
+    {
+        $this->selectedMaterialId = null;
+        $this->editableMaterial = [];
+        $this->generated = [];
+        $this->revisionPrompt = '';
+        $this->tab = 'lesson';
+        $this->notice = null;
     }
 
     public function openMaterial(int $id): void
@@ -362,7 +400,28 @@ class Workspace extends Component
                 ];
             }
         }
-        $materials = $this->isTeacher() ? Material::query()->where('school_id', $user->school_id)->where('author_id', $user->id)->with(['schoolClass', 'subject'])->latest()->limit(12)->get() : collect();
+        $materials = collect();
+        if ($this->isTeacher()) {
+            $materialsQuery = Material::query()->where('school_id', $user->school_id)->where('author_id', $user->id)->with(['schoolClass', 'subject']);
+            if ($this->materialsSearch !== '') {
+                $search = trim($this->materialsSearch);
+                $materialsQuery->where(fn ($query) => $query->where('title', 'like', "%{$search}%")->orWhere('topic', 'like', "%{$search}%"));
+            }
+            if (in_array($this->materialsStatus, ['draft', 'approved', 'archived'], true)) {
+                $materialsQuery->where('status', $this->materialsStatus);
+            }
+            if (in_array($this->materialsType, ['lesson', 'assessment'], true)) {
+                $materialsQuery->where('type', $this->materialsType);
+            }
+            match ($this->materialsSort) {
+                'oldest' => $materialsQuery->oldest(),
+                'title_asc' => $materialsQuery->orderBy('title'),
+                'title_desc' => $materialsQuery->orderByDesc('title'),
+                'status' => $materialsQuery->orderBy('status')->latest(),
+                default => $materialsQuery->latest(),
+            };
+            $materials = $materialsQuery->limit(100)->get();
+        }
         $sessions = LearningSession::query()->where('school_id', $user->school_id)->where('user_id', $user->id)->with('messages')->latest('last_activity_at')->limit(8)->get();
         $attempts = $student ? PracticeAttempt::query()->where('student_record_id', $student->id)->with('subject')->latest()->limit(8)->get() : collect();
 

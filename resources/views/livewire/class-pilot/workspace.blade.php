@@ -81,7 +81,15 @@
         @php($openMaterial = $materials->firstWhere('id', $selectedMaterialId))
         <div class="grid gap-6 xl:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)]">
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div><p class="text-xs font-bold uppercase tracking-wider text-sky-700">Your library</p><h2 class="mt-1 text-xl font-black text-slate-900">Saved teaching materials</h2><p class="mt-2 text-sm text-slate-600">Select any material to read, edit, or create a revised copy.</p></div>
+                <div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wider text-sky-700">Your library</p><h2 class="mt-1 text-xl font-black text-slate-900">Saved teaching materials</h2><p class="mt-2 text-sm text-slate-600">{{ $materials->count() }} {{ Str::plural('material', $materials->count()) }} shown</p></div><button type="button" wire:click="startNewMaterial" class="shrink-0 rounded-xl bg-sky-700 px-3 py-2 text-sm font-bold text-white hover:bg-sky-800"><i class="fas fa-plus mr-1"></i> New</button></div>
+                <div class="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4">
+                    <label class="relative block"><span class="sr-only">Search materials</span><i class="fas fa-search absolute left-3 top-3.5 text-sm text-slate-400"></i><input wire:model.live.debounce.300ms="materialsSearch" class="w-full rounded-xl border-slate-300 bg-white pl-9 text-sm" placeholder="Search title or topic…" /></label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="text-xs font-bold text-slate-600">Status<select wire:model.live="materialsStatus" class="mt-1 w-full rounded-xl border-slate-300 bg-white text-sm font-normal"><option value="all">All statuses</option><option value="draft">Draft</option><option value="approved">Approved</option><option value="archived">Archived</option></select></label>
+                        <label class="text-xs font-bold text-slate-600">Type<select wire:model.live="materialsType" class="mt-1 w-full rounded-xl border-slate-300 bg-white text-sm font-normal"><option value="all">All types</option><option value="lesson">Lessons</option><option value="assessment">Assessments</option></select></label>
+                    </div>
+                    <label class="block text-xs font-bold text-slate-600">Sort by<select wire:model.live="materialsSort" class="mt-1 w-full rounded-xl border-slate-300 bg-white text-sm font-normal"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title_asc">Title A–Z</option><option value="title_desc">Title Z–A</option><option value="status">Status</option></select></label>
+                </div>
                 <div class="mt-5 space-y-3">
                     @forelse($materials as $material)
                         <article class="rounded-2xl border p-4 transition {{ $selectedMaterialId === $material->id ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-100' : 'border-slate-200 hover:border-sky-300' }}">
@@ -89,7 +97,11 @@
                                 <div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase text-sky-700">{{ $material->type }} @if($material->source_material_id) · revised copy @endif</p><h3 class="mt-1 font-black text-slate-900">{{ $material->title }}</h3></div><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $material->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($material->status === 'archived' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-800') }}">{{ ucfirst($material->status) }}</span></div>
                                 <p class="mt-2 text-sm text-slate-600">{{ $material->schoolClass?->name }} · {{ $material->subject?->name }}</p><p class="mt-1 text-xs text-slate-500">Saved {{ $material->updated_at->diffForHumans() }}</p>
                             </button>
-                            @if($material->status !== 'archived')<button wire:click="archiveMaterial({{ $material->id }})" wire:confirm="Archive this material?" class="mt-3 text-xs font-bold text-slate-500 hover:text-red-700">Archive</button>@endif
+                            <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-3">
+                                <button type="button" wire:click="openMaterial({{ $material->id }})" class="text-xs font-bold text-sky-700 hover:text-sky-900"><i class="fas fa-eye mr-1"></i> Open</button>
+                                @if($material->status !== 'archived')<button type="button" wire:click="archiveMaterial({{ $material->id }})" wire:confirm="Archive this material?" class="text-xs font-bold text-slate-500 hover:text-amber-700"><i class="fas fa-box-archive mr-1"></i> Archive</button>@else<button type="button" wire:click="restoreMaterial({{ $material->id }})" class="text-xs font-bold text-emerald-700 hover:text-emerald-900"><i class="fas fa-rotate-left mr-1"></i> Restore</button>@endif
+                                <button type="button" wire:click="deleteMaterial({{ $material->id }})" wire:confirm="Permanently delete this material? This cannot be undone." class="ml-auto text-xs font-bold text-red-600 hover:text-red-800"><i class="fas fa-trash mr-1"></i> Delete</button>
+                            </div>
                         </article>
                     @empty
                         <p class="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">No materials have been generated yet.</p>
