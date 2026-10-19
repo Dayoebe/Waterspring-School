@@ -39,7 +39,6 @@
 
                     @if ($learning['class_id'])
                         <div class="mt-5 flex flex-wrap gap-2">
-                            <a href="{{ route('timetables.index', ['selectedClass' => $learning['class_id']]) }}" wire:navigate class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800"><i class="fas fa-calendar-week mr-1"></i>Full timetable</a>
                             <a href="{{ route('syllabi.index', ['class' => $learning['class_id']]) }}" wire:navigate class="rounded-lg bg-sky-700 px-3 py-2 text-xs font-bold text-white hover:bg-sky-800"><i class="fas fa-book-open mr-1"></i>Syllabi</a>
                             <a href="{{ route('schemes.index') }}" wire:navigate class="rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"><i class="fas fa-list-check mr-1"></i>Schemes</a>
                         </div>
