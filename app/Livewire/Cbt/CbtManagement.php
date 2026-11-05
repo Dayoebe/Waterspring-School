@@ -458,8 +458,6 @@ class CbtManagement extends Component
         $label = match ($target) {
             'ca1_score' => 'CA 1',
             'ca2_score' => 'CA 2',
-            'ca3_score' => 'CA 3',
-            'ca4_score' => 'CA 4',
             default => 'Exam',
         };
 

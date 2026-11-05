@@ -194,23 +194,15 @@
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider">
-                                                CA1
+                                                CA 1 (20)
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider">
-                                                CA2
+                                                CA 2 (30)
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider">
-                                                CA3
-                                            </th>
-                                            <th scope="col"
-                                                class="px-6 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider">
-                                                CA4
-                                            </th>
-                                            <th scope="col"
-                                                class="px-6 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider">
-                                                Exam
+                                                Exam (50)
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider">
@@ -246,12 +238,6 @@
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
                                                     {{ $result->ca2_score ?? '-' }}
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
-                                                    {{ $result->ca3_score ?? '-' }}
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
-                                                    {{ $result->ca4_score ?? '-' }}
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
                                                     {{ $result->exam_score ?? '-' }}

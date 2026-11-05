@@ -430,15 +430,13 @@
                                 <div class="rounded-xl border border-violet-200 bg-violet-50 p-3 sm:col-span-2">
                                     <div class="mb-3">
                                         <p class="text-sm font-bold text-violet-950">Send to official report card</p>
-                                        <p class="mt-1 text-xs leading-5 text-violet-700">The student's best attempt is scaled to 10 marks for CA or 60 marks for Exam. Re-importing updates the selected column.</p>
+                                        <p class="mt-1 text-xs leading-5 text-violet-700">The student's best attempt is scaled to the selected report-card component: CA 1 (20), CA 2 (30), or Exam (50). Re-importing updates the selected column.</p>
                                     </div>
                                     <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
                                         <select wire:model="resultImportTargets.{{ $assessment->id }}" class="rounded-xl border-violet-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-violet-500 focus:ring-violet-500">
-                                            <option value="exam_score">Exam score (60 marks)</option>
-                                            <option value="ca1_score">CA 1 (10 marks)</option>
-                                            <option value="ca2_score">CA 2 (10 marks)</option>
-                                            <option value="ca3_score">CA 3 (10 marks)</option>
-                                            <option value="ca4_score">CA 4 (10 marks)</option>
+                                            <option value="exam_score">Exam score (50 marks)</option>
+                                            <option value="ca1_score">CA 1 (20 marks)</option>
+                                            <option value="ca2_score">CA 2 (30 marks)</option>
                                         </select>
                                         <button type="button"
                                             wire:click="importResultsToReportCard({{ $assessment->id }})"

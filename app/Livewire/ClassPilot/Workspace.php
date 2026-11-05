@@ -353,7 +353,7 @@ class Workspace extends Component
         if ($data['resultId']) {
             $result = Result::query()->whereKey($data['resultId'])->where('student_record_id', $student->id)->where('approved', true)->with(['subject', 'academicYear', 'semester'])->firstOrFail();
             abort_unless(ResultPublicationStatus::termIsPublished($user->school_id, $result->academic_year_id, $result->semester_id), 403, 'This result has not been published.');
-            $resultData = ['subject' => $result->subject?->name, 'ca_scores' => array_values(array_filter([$result->ca1_score, $result->ca2_score, $result->ca3_score, $result->ca4_score], fn ($v) => $v !== null)), 'exam_score' => $result->exam_score, 'total_score' => $result->total_score];
+            $resultData = ['subject' => $result->subject?->name, 'ca_scores' => array_values(array_filter([$result->ca1_score, $result->ca2_score], fn ($v) => $v !== null)), 'exam_score' => $result->exam_score, 'total_score' => $result->total_score];
             $subject ??= $result->subject;
         }
         $class = $student ? ($student->getClassForYear($user->school?->academic_year_id) ?? $student->baseClass) : null;

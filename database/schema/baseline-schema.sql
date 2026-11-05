@@ -1039,8 +1039,6 @@ CREATE TABLE `results` (
   `student_record_id` bigint(20) unsigned NOT NULL,
   `ca1_score` decimal(5,2) DEFAULT 0.00,
   `ca2_score` decimal(5,2) DEFAULT 0.00,
-  `ca3_score` decimal(5,2) DEFAULT 0.00,
-  `ca4_score` decimal(5,2) DEFAULT 0.00,
   `subject_id` bigint(20) unsigned NOT NULL,
   `academic_year_id` bigint(20) unsigned NOT NULL,
   `semester_id` bigint(20) unsigned NOT NULL,
@@ -1575,4 +1573,3 @@ CREATE TABLE `weekdays` (
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-

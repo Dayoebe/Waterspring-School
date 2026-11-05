@@ -10,25 +10,19 @@ use Illuminate\Validation\ValidationException;
 
 class CbtResultImporter
 {
-    private const TARGET_MAXIMUMS = [
-        'ca1_score' => 10,
-        'ca2_score' => 10,
-        'ca3_score' => 10,
-        'ca4_score' => 10,
-        'exam_score' => 60,
-    ];
+    private const TARGET_MAXIMUMS = Result::SCORE_MAXIMUMS;
 
     public function import(Assessment $assessment, string $target, int $importedBy): array
     {
-        if (!array_key_exists($target, self::TARGET_MAXIMUMS)) {
+        if (! array_key_exists($target, self::TARGET_MAXIMUMS)) {
             throw ValidationException::withMessages(['importTarget' => 'Choose a valid result column.']);
         }
 
-        if (!$assessment->results_published_at) {
+        if (! $assessment->results_published_at) {
             throw ValidationException::withMessages(['importTarget' => 'Publish the CBT results before transferring them.']);
         }
 
-        if (!$assessment->academic_year_id || !$assessment->semester_id || !$assessment->course_id || !$assessment->lesson_id) {
+        if (! $assessment->academic_year_id || ! $assessment->semester_id || ! $assessment->course_id || ! $assessment->lesson_id) {
             throw ValidationException::withMessages(['importTarget' => 'This assessment is missing its class, subject, session, or term.']);
         }
 
@@ -60,8 +54,9 @@ class CbtResultImporter
             foreach ($submitted as $userId => $answers) {
                 $student = $studentRecords->get((int) $userId);
 
-                if (!$student || !$student->studentSubjects()->whereKey($assessment->lesson_id)->exists()) {
+                if (! $student || ! $student->studentSubjects()->whereKey($assessment->lesson_id)->exists()) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -75,8 +70,9 @@ class CbtResultImporter
                     ->sortByDesc('percentage')
                     ->first();
 
-                if (!$best) {
+                if (! $best) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -88,8 +84,11 @@ class CbtResultImporter
                     'semester_id' => $assessment->semester_id,
                 ]);
                 $result->{$target} = $scaled;
-                $result->total_score = collect(['ca1_score', 'ca2_score', 'ca3_score', 'ca4_score', 'exam_score'])
-                    ->sum(fn ($column) => (float) ($result->{$column} ?? 0));
+                $result->total_score = Result::calculateTotal(
+                    $result->ca1_score,
+                    $result->ca2_score,
+                    $result->exam_score
+                );
                 $result->save();
 
                 DB::table('cbt_result_imports')->updateOrInsert(

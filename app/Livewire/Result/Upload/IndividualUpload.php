@@ -277,8 +277,6 @@ class IndividualUpload extends Component
                 $this->results[$subject->id] = [
                     'ca1_score' => $existing?->ca1_score ?? null,
                     'ca2_score' => $existing?->ca2_score ?? null,
-                    'ca3_score' => $existing?->ca3_score ?? null,
-                    'ca4_score' => $existing?->ca4_score ?? null,
                     'exam_score' => $existing?->exam_score ?? null,
                     'comment' => $existing?->teacher_comment ?? '',
                 ];
@@ -337,20 +335,25 @@ class IndividualUpload extends Component
         [$subjectId, $field] = $parts;
         
         // Only auto-save score fields, not comments
-        if (!in_array($field, ['ca1_score', 'ca2_score', 'ca3_score', 'ca4_score', 'exam_score'])) {
+        if (!in_array($field, ['ca1_score', 'ca2_score', 'exam_score'])) {
             return;
         }
 
         try {
             // Validate the score
-            if (in_array($field, ['ca1_score', 'ca2_score', 'ca3_score', 'ca4_score'])) {
-                if ($value !== null && $value !== '' && ($value < 0 || $value > 10)) {
-                    $this->dispatch('error', 'CA scores must be between 0 and 10');
+            if ($field === 'ca1_score') {
+                if ($value !== null && $value !== '' && ($value < 0 || $value > 20)) {
+                    $this->dispatch('error', 'CA 1 score must be between 0 and 20');
+                    return;
+                }
+            } elseif ($field === 'ca2_score') {
+                if ($value !== null && $value !== '' && ($value < 0 || $value > 30)) {
+                    $this->dispatch('error', 'CA 2 score must be between 0 and 30');
                     return;
                 }
             } elseif ($field === 'exam_score') {
-                if ($value !== null && $value !== '' && ($value < 0 || $value > 60)) {
-                    $this->dispatch('error', 'Exam score must be between 0 and 60');
+                if ($value !== null && $value !== '' && ($value < 0 || $value > 50)) {
+                    $this->dispatch('error', 'Exam score must be between 0 and 50');
                     return;
                 }
             }
@@ -414,10 +417,8 @@ class IndividualUpload extends Component
             // Calculate total
             $ca1 = (int) ($data['ca1_score'] ?? 0);
             $ca2 = (int) ($data['ca2_score'] ?? 0);
-            $ca3 = (int) ($data['ca3_score'] ?? 0);
-            $ca4 = (int) ($data['ca4_score'] ?? 0);
             $exam = (int) ($data['exam_score'] ?? 0);
-            $total = $ca1 + $ca2 + $ca3 + $ca4 + $exam;
+            $total = $ca1 + $ca2 + $exam;
     
             Result::updateOrCreate(
                 [
@@ -429,8 +430,6 @@ class IndividualUpload extends Component
                 [
                     'ca1_score' => $ca1,
                     'ca2_score' => $ca2,
-                    'ca3_score' => $ca3,
-                    'ca4_score' => $ca4,
                     'exam_score' => $exam,
                     'total_score' => $total,
                     'teacher_comment' => $data['comment'] ?? null,
@@ -510,10 +509,8 @@ class IndividualUpload extends Component
                 
                 $ca1 = (int) ($data['ca1_score'] ?? 0);
                 $ca2 = (int) ($data['ca2_score'] ?? 0);
-                $ca3 = (int) ($data['ca3_score'] ?? 0);
-                $ca4 = (int) ($data['ca4_score'] ?? 0);
                 $exam = (int) ($data['exam_score'] ?? 0);
-                $total = $ca1 + $ca2 + $ca3 + $ca4 + $exam;
+                $total = $ca1 + $ca2 + $exam;
     
                 // Only save if there's actual data
                 if ($total > 0 || !empty($data['comment'])) {
@@ -528,8 +525,6 @@ class IndividualUpload extends Component
                             [
                                 'ca1_score' => $ca1,
                                 'ca2_score' => $ca2,
-                                'ca3_score' => $ca3,
-                                'ca4_score' => $ca4,
                                 'exam_score' => $exam,
                                 'total_score' => $total,
                                 'teacher_comment' => $data['comment'] ?? null,

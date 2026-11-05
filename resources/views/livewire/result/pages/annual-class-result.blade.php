@@ -262,12 +262,10 @@
                                                                 <template x-if="report.results[{{ $subject->id }}]">
                                                                     <div class="flex flex-col">
                                                                         <span class="text-xs text-gray-500"
-                                                                            x-text="'Test: ' + (
+                                                                            x-text="'CA: ' + (
                                                                         (report.results[{{ $subject->id }}].ca1_score || 0)
 + 
-                                                                        (report.results[{{ $subject->id }}].ca2_score || 0) + 
-                                                                        (report.results[{{ $subject->id }}].ca3_score || 0) + 
-                                                                        (report.results[{{ $subject->id }}].ca4_score || 0)
+                                                                        (report.results[{{ $subject->id }}].ca2_score || 0)
                                                                     )"></span>
                                                                         <span class="text-xs text-gray-500"
                                                                             x-text="'Exam: ' + report.results[{{ $subject->id }}].exam_score"></span>
@@ -354,7 +352,7 @@
                         <!-- New: Annual Test/Exam Summary -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div class="bg-blue-100 p-4 rounded-lg border border-blue-300">
-                                <h3 class="text-sm font-semibold text-blue-800">Total Test Scores</h3>
+                                <h3 class="text-sm font-semibold text-blue-800">Total CA Scores</h3>
                                 <p class="text-xl font-bold">
                                     @php
                                         $totalTest = 0;
@@ -888,17 +886,13 @@
              class="absolute z-20 w-56 p-2 text-xs bg-gray-900 text-white rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2">
             <div class="font-bold mb-1">{{ $subject->name }} - {{ $semester->name }}</div>
             <div class="grid grid-cols-2 gap-1">
-                <div>CA1:</div>
+                <div>CA 1 (20):</div>
                 <div class="text-right">{{ $details['ca1'] ?? '-' }}</div>
-                <div>CA2:</div>
+                <div>CA 2 (30):</div>
                 <div class="text-right">{{ $details['ca2'] ?? '-' }}</div>
-                <div>CA3:</div>
-                <div class="text-right">{{ $details['ca3'] ?? '-' }}</div>
-                <div>CA4:</div>
-                <div class="text-right">{{ $details['ca4'] ?? '-' }}</div>
                 <div class="col-span-2 border-t border-gray-700 mt-1 pt-1">
                     <div class="flex justify-between">
-                        <span>Exam:</span>
+                        <span>Exam (50):</span>
                         <span>{{ $details['exam'] ?? '-' }}</span>
                     </div>
                     <div class="flex justify-between font-bold">

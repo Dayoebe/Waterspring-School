@@ -125,19 +125,13 @@
                                 Student
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                CA1 (10)
+                                CA 1 (20)
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                CA2 (10)
+                                CA 2 (30)
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                CA3 (10)
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                CA4 (10)
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                Exam (60)
+                                Exam (50)
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-indigo-50">
                                 Total (100)
@@ -174,8 +168,6 @@
                                 </td>
                                 <td class="px-4 py-4 text-center text-gray-700">{{ $result->ca1_score ?? '-' }}</td>
                                 <td class="px-4 py-4 text-center text-gray-700">{{ $result->ca2_score ?? '-' }}</td>
-                                <td class="px-4 py-4 text-center text-gray-700">{{ $result->ca3_score ?? '-' }}</td>
-                                <td class="px-4 py-4 text-center text-gray-700">{{ $result->ca4_score ?? '-' }}</td>
                                 <td class="px-4 py-4 text-center font-medium text-gray-900">{{ $result->exam_score ?? '-' }}</td>
                                 <td class="px-4 py-4 text-center font-bold text-indigo-600 bg-indigo-50">
                                     {{ $result->total_score }}

@@ -156,8 +156,6 @@ class StudentResults extends Component
             $this->results[$result->subject_id] = [
                 'ca1_score' => $result->ca1_score,
                 'ca2_score' => $result->ca2_score,
-                'ca3_score' => $result->ca3_score,
-                'ca4_score' => $result->ca4_score,
                 'exam_score' => $result->exam_score,
                 'total_score' => $result->total_score,
                 'grade' => $this->calculateGrade($result->total_score),

@@ -4,40 +4,37 @@ namespace App\Helpers;
 
 class ScoreValidator
 {
-    /**
-     * Validate and sanitize a CA score (0-10)
-     */
-    public static function validateCA(mixed $score): ?int
+    public static function validateCA(mixed $score, int $maximum = 20, string $label = 'CA 1'): ?int
     {
         // Handle null/empty
         if ($score === null || $score === '') {
             return null;
         }
 
-        if (!is_scalar($score)) {
-            throw new \Exception("Score must be a whole number between 0 and 10.");
+        if (! is_scalar($score)) {
+            throw new \Exception("{$label} score must be a whole number between 0 and {$maximum}.");
         }
 
         // Convert to integer (removes decimals)
         $score = filter_var($score, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
 
         if ($score === null) {
-            throw new \Exception("Score must be a whole number between 0 and 10.");
+            throw new \Exception("{$label} score must be a whole number between 0 and {$maximum}.");
         }
 
         if ($score < 0) {
-            throw new \Exception("Score cannot be negative.");
+            throw new \Exception('Score cannot be negative.');
         }
 
-        if ($score > 10) {
-            throw new \Exception("CA score cannot exceed 10.");
+        if ($score > $maximum) {
+            throw new \Exception("{$label} score cannot exceed {$maximum}.");
         }
 
         return $score;
     }
 
     /**
-     * Validate and sanitize exam score (0-60)
+     * Validate and sanitize exam score (0-50)
      */
     public static function validateExam(mixed $score): ?int
     {
@@ -46,23 +43,23 @@ class ScoreValidator
             return null;
         }
 
-        if (!is_scalar($score)) {
-            throw new \Exception("Score must be a whole number between 0 and 60.");
+        if (! is_scalar($score)) {
+            throw new \Exception('Score must be a whole number between 0 and 50.');
         }
 
         // Convert to integer
         $score = filter_var($score, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
 
         if ($score === null) {
-            throw new \Exception("Score must be a whole number between 0 and 60.");
+            throw new \Exception('Score must be a whole number between 0 and 50.');
         }
 
         if ($score < 0) {
-            throw new \Exception("Score cannot be negative.");
+            throw new \Exception('Score cannot be negative.');
         }
 
-        if ($score > 60) {
-            throw new \Exception("Exam score cannot exceed 60.");
+        if ($score > 50) {
+            throw new \Exception('Exam score cannot exceed 50.');
         }
 
         return $score;
@@ -74,18 +71,13 @@ class ScoreValidator
     public static function calculateTotal(
         mixed $ca1,
         mixed $ca2,
-        mixed $ca3,
-        mixed $ca4,
         mixed $exam
-    ): int
-    {
-        $ca1 = self::validateCA($ca1);
-        $ca2 = self::validateCA($ca2);
-        $ca3 = self::validateCA($ca3);
-        $ca4 = self::validateCA($ca4);
+    ): int {
+        $ca1 = self::validateCA($ca1, 20, 'CA 1');
+        $ca2 = self::validateCA($ca2, 30, 'CA 2');
         $exam = self::validateExam($exam);
 
-        $total = ($ca1 ?? 0) + ($ca2 ?? 0) + ($ca3 ?? 0) + ($ca4 ?? 0) + ($exam ?? 0);
+        $total = ($ca1 ?? 0) + ($ca2 ?? 0) + ($exam ?? 0);
 
         if ($total > 100) {
             throw new \Exception("Total score cannot exceed 100. Current total: {$total}");
@@ -100,20 +92,20 @@ class ScoreValidator
     public static function validateAttendance($present, $absent)
     {
         if ($present !== null && $present < 0) {
-            throw new \Exception("Present days cannot be negative.");
+            throw new \Exception('Present days cannot be negative.');
         }
 
         if ($absent !== null && $absent < 0) {
-            throw new \Exception("Absent days cannot be negative.");
+            throw new \Exception('Absent days cannot be negative.');
         }
 
         // Optional: Check for unrealistic values
         if ($present !== null && $present > 365) {
-            throw new \Exception("Present days seems unrealistic (max 365).");
+            throw new \Exception('Present days seems unrealistic (max 365).');
         }
 
         if ($absent !== null && $absent > 365) {
-            throw new \Exception("Absent days seems unrealistic (max 365).");
+            throw new \Exception('Absent days seems unrealistic (max 365).');
         }
 
         return true;
@@ -131,11 +123,11 @@ class ScoreValidator
         $score = filter_var($score, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
 
         if ($score === null) {
-            throw new \Exception("Trait score must be a whole number between 1 and 5.");
+            throw new \Exception('Trait score must be a whole number between 1 and 5.');
         }
 
         if ($score < 1 || $score > 5) {
-            throw new \Exception("Trait score must be between 1 and 5.");
+            throw new \Exception('Trait score must be between 1 and 5.');
         }
 
         return $score;

@@ -116,8 +116,6 @@ class ResultController extends Controller
                             $result->total_score =
                                 ($result->ca1_score ?? 0) +
                                 ($result->ca2_score ?? 0) +
-                                ($result->ca3_score ?? 0) +
-                                ($result->ca4_score ?? 0) +
                                 ($result->exam_score ?? 0);
                         }
                         $result->grade = $this->calculateGrade($result->total_score);
@@ -635,17 +633,13 @@ class ResultController extends Controller
         $results = $rawResults->keyBy('subject_id')->map(function ($result) {
             $ca1 = (int) $result->ca1_score;
             $ca2 = (int) $result->ca2_score;
-            $ca3 = (int) $result->ca3_score;
-            $ca4 = (int) $result->ca4_score;
             $exam = (int) $result->exam_score;
-            $total = $ca1 + $ca2 + $ca3 + $ca4 + $exam;
+            $total = $ca1 + $ca2 + $exam;
             $grade = $this->calculateGrade($total);
             $comment = $result->teacher_comment ?: $this->getDefaultComment($total);
             return [
                 'ca1_score' => $ca1,
                 'ca2_score' => $ca2,
-                'ca3_score' => $ca3,
-                'ca4_score' => $ca4,
                 'exam_score' => $exam,
                 'total_score' => $total,
                 'grade' => $grade,
@@ -742,7 +736,7 @@ class ResultController extends Controller
         $totalSubjects = $subjects->count();
         $maxTotalScore = $totalSubjects * 100;
         $grandTotal = $rawResults->sum('total_score');
-        $grandTotalTest = $rawResults->sum(fn($r) => $r->ca1_score + $r->ca2_score + $r->ca3_score + $r->ca4_score);
+        $grandTotalTest = $rawResults->sum(fn($r) => $r->ca1_score + $r->ca2_score);
         $grandTotalExam = $rawResults->sum('exam_score');
         $percentage = $totalSubjects > 0 ? round(($grandTotal / $maxTotalScore) * 100, 2) : 0; // Corrected percentage calculation based on maxTotalScore
         $academicYearName = optional($this->findAcademicYearForCurrentSchool($academicYearId))->name ?? 'Unknown Academic Year';
@@ -973,14 +967,10 @@ class ResultController extends Controller
                 $formattedResults = [];
                 foreach ($results as $subjectId => $result) {
                     $testScore = ($result->ca1_score ?? 0) +
-                        ($result->ca2_score ?? 0) +
-                        ($result->ca3_score ?? 0) +
-                        ($result->ca4_score ?? 0);
+                        ($result->ca2_score ?? 0);
                     $formattedResults[$subjectId] = [
                         'ca1_score' => $result->ca1_score,
                         'ca2_score' => $result->ca2_score,
-                        'ca3_score' => $result->ca3_score,
-                        'ca4_score' => $result->ca4_score,
                         'test_score' => $testScore,
                         'exam_score' => $result->exam_score,
                         'total_score' => $result->total_score,

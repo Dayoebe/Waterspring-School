@@ -157,19 +157,13 @@
                                 Subject
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider w-24">
-                                CA1 (10)
+                                CA 1 (20)
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider w-24">
-                                CA2 (10)
+                                CA 2 (30)
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider w-24">
-                                CA3 (10)
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider w-24">
-                                CA4 (10)
-                            </th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider w-24">
-                                Exam (60)
+                                Exam (50)
                             </th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-indigo-700 uppercase tracking-wider w-24">
                                 Total (100)
@@ -184,16 +178,12 @@
                             @php
                                 $ca1 = $results[$subject->id]['ca1_score'] ?? 0;
                                 $ca2 = $results[$subject->id]['ca2_score'] ?? 0;
-                                $ca3 = $results[$subject->id]['ca3_score'] ?? 0;
-                                $ca4 = $results[$subject->id]['ca4_score'] ?? 0;
                                 $exam = $results[$subject->id]['exam_score'] ?? 0;
                                 
-                                $ca1Invalid = $ca1 > 10;
-                                $ca2Invalid = $ca2 > 10;
-                                $ca3Invalid = $ca3 > 10;
-                                $ca4Invalid = $ca4 > 10;
-                                $examInvalid = $exam > 60;
-                                $subjectHasError = $ca1Invalid || $ca2Invalid || $ca3Invalid || $ca4Invalid || $examInvalid;
+                                $ca1Invalid = $ca1 > 20;
+                                $ca2Invalid = $ca2 > 30;
+                                $examInvalid = $exam > 50;
+                                $subjectHasError = $ca1Invalid || $ca2Invalid || $examInvalid;
                                 
                                 if($subjectHasError) $hasAnyError = true;
                             @endphp
@@ -209,13 +199,13 @@
                                             data-result-subject-id="{{ $subject->id }}"
                                             data-result-subject-field="ca1_score"
                                             class="w-full border-2 @if($ca1Invalid) border-red-500 bg-red-50 text-red-700 @else border-black @endif rounded-lg text-center px-2 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            min="0" max="10" step="1">
+                                            min="0" max="20" step="1">
                                         @if($ca1Invalid)
-                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 10">!</div>
+                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 20">!</div>
                                         @endif
                                     </div>
                                     @if($ca1Invalid)
-                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 10</div>
+                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 20</div>
                                     @endif
                                 </td>
                                 <td class="px-2 py-2 text-center">
@@ -225,45 +215,13 @@
                                             data-result-subject-id="{{ $subject->id }}"
                                             data-result-subject-field="ca2_score"
                                             class="w-full border-2 @if($ca2Invalid) border-red-500 bg-red-50 text-red-700 @else border-black @endif rounded-lg text-center px-2 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            min="0" max="10" step="1">
+                                            min="0" max="30" step="1">
                                         @if($ca2Invalid)
-                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 10">!</div>
+                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 30">!</div>
                                         @endif
                                     </div>
                                     @if($ca2Invalid)
-                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 10</div>
-                                    @endif
-                                </td>
-                                <td class="px-2 py-2 text-center">
-                                    <div class="relative">
-                                        <input type="number"
-                                            wire:model.live.debounce.500ms="results.{{ $subject->id }}.ca3_score"
-                                            data-result-subject-id="{{ $subject->id }}"
-                                            data-result-subject-field="ca3_score"
-                                            class="w-full border-2 @if($ca3Invalid) border-red-500 bg-red-50 text-red-700 @else border-black @endif rounded-lg text-center px-2 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            min="0" max="10" step="1">
-                                        @if($ca3Invalid)
-                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 10">!</div>
-                                        @endif
-                                    </div>
-                                    @if($ca3Invalid)
-                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 10</div>
-                                    @endif
-                                </td>
-                                <td class="px-2 py-2 text-center">
-                                    <div class="relative">
-                                        <input type="number"
-                                            wire:model.live.debounce.500ms="results.{{ $subject->id }}.ca4_score"
-                                            data-result-subject-id="{{ $subject->id }}"
-                                            data-result-subject-field="ca4_score"
-                                            class="w-full border-2 @if($ca4Invalid) border-red-500 bg-red-50 text-red-700 @else border-black @endif rounded-lg text-center px-2 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            min="0" max="10" step="1">
-                                        @if($ca4Invalid)
-                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 10">!</div>
-                                        @endif
-                                    </div>
-                                    @if($ca4Invalid)
-                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 10</div>
+                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 30</div>
                                     @endif
                                 </td>
                                 <td class="px-2 py-2 text-center">
@@ -273,21 +231,19 @@
                                             data-result-subject-id="{{ $subject->id }}"
                                             data-result-subject-field="exam_score"
                                             class="w-full border-2 @if($examInvalid) border-red-500 bg-red-50 text-red-700 @else border-black @endif rounded-lg text-center px-2 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            min="0" max="60" step="1">
+                                            min="0" max="50" step="1">
                                         @if($examInvalid)
-                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 60">!</div>
+                                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" title="Maximum is 50">!</div>
                                         @endif
                                     </div>
                                     @if($examInvalid)
-                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 60</div>
+                                        <div class="text-xs text-red-600 mt-1 font-medium">Max: 50</div>
                                     @endif
                                 </td>
                                 <td class="px-4 py-4 text-center font-bold @if($subjectHasError) text-red-600 @else text-indigo-600 @endif">
                                     {{ 
                                         (int)($ca1 ?? 0) +
                                         (int)($ca2 ?? 0) +
-                                        (int)($ca3 ?? 0) +
-                                        (int)($ca4 ?? 0) +
                                         (int)($exam ?? 0)
                                     }}
                                     @if($subjectHasError)
@@ -305,7 +261,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-8 text-center text-gray-500 text-lg">
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500 text-lg">
                                     <i class="fas fa-exclamation-circle mr-2"></i> No subjects found for this student
                                 </td>
                             </tr>

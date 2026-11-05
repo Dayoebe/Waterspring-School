@@ -252,11 +252,9 @@
                             <thead class="bg-blue-900 text-white">
                                 <tr>
                                     <th class="border p-1 text-left">Subject</th>
-                                    <th class="border p-1">CA1 (10)</th>
-                                    <th class="border p-1">CA2 (10)</th>
-                                    <th class="border p-1">CA3 (10)</th>
-                                    <th class="border p-1">CA4 (10)</th>
-                                    <th class="border p-1">Exam (60)</th>
+                                    <th class="border p-1">CA 1 (20)</th>
+                                    <th class="border p-1">CA 2 (30)</th>
+                                    <th class="border p-1">Exam (50)</th>
                                     <th class="border p-1">Total</th>
                                     <th class="border p-1">Grade</th>
                                     <th class="border p-1">Highest</th>
@@ -283,8 +281,6 @@
     <td class="border p-1">{{ $displayName }}</td>
     <td class="border p-1">{{ $result['ca1_score'] ?? '-' }}</td>
     <td class="border p-1">{{ $result['ca2_score'] ?? '-' }}</td>
-    <td class="border p-1">{{ $result['ca3_score'] ?? '-' }}</td>
-    <td class="border p-1">{{ $result['ca4_score'] ?? '-' }}</td>
     <td class="border p-1">{{ $result['exam_score'] ?? '-' }}</td>
     <td class="border p-1 {{ $isHighest ? 'font-bold text-green-600' : '' }} {{ $isLowest ? 'font-bold text-red-600' : '' }}">
         {{ $result['total_score'] ?? '-' }}

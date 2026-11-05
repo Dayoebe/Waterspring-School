@@ -246,11 +246,9 @@
                         <thead class="bg-slate-100">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-slate-700">Subject</th>
-                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">CA1</th>
-                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">CA2</th>
-                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">CA3</th>
-                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">CA4</th>
-                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">Exam</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">CA 1 (20)</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">CA 2 (30)</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">Exam (50)</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">Total</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-700">Grade</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-slate-700">Comment</th>
@@ -266,8 +264,6 @@
                                         <td class="px-6 py-4 font-medium text-slate-900">{{ $subject->name }}</td>
                                         <td class="px-4 py-4 text-center text-slate-700">{{ $result['ca1_score'] ?? '-' }}</td>
                                         <td class="px-4 py-4 text-center text-slate-700">{{ $result['ca2_score'] ?? '-' }}</td>
-                                        <td class="px-4 py-4 text-center text-slate-700">{{ $result['ca3_score'] ?? '-' }}</td>
-                                        <td class="px-4 py-4 text-center text-slate-700">{{ $result['ca4_score'] ?? '-' }}</td>
                                         <td class="px-4 py-4 text-center text-slate-700">{{ $result['exam_score'] ?? '-' }}</td>
                                         <td class="px-4 py-4 text-center font-bold text-blue-700">{{ $result['total_score'] }}</td>
                                         <td class="px-4 py-4 text-center">

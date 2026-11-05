@@ -199,8 +199,6 @@ class BulkUpload extends Component
             $this->bulkResults[$student->id] = [
                 'ca1_score' => $existing?->ca1_score ?? null,
                 'ca2_score' => $existing?->ca2_score ?? null,
-                'ca3_score' => $existing?->ca3_score ?? null,
-                'ca4_score' => $existing?->ca4_score ?? null,
                 'exam_score' => $existing?->exam_score ?? null,
                 'comment' => $existing?->teacher_comment ?? '',
             ];
@@ -220,11 +218,9 @@ class BulkUpload extends Component
         foreach ($this->bulkResults as $studentId => $data) {
             $ca1 = (int) ($data['ca1_score'] ?? 0);
             $ca2 = (int) ($data['ca2_score'] ?? 0);
-            $ca3 = (int) ($data['ca3_score'] ?? 0);
-            $ca4 = (int) ($data['ca4_score'] ?? 0);
             $exam = (int) ($data['exam_score'] ?? 0);
             
-            if ($ca1 > 10 || $ca2 > 10 || $ca3 > 10 || $ca4 > 10 || $exam > 60) {
+            if ($ca1 > 20 || $ca2 > 30 || $exam > 50) {
                 $this->hasAnyError = true;
                 return; // Found an error, no need to continue
             }
@@ -244,10 +240,14 @@ class BulkUpload extends Component
         [$studentId, $field] = $parts;
     
         // Validate individual field
-        if (in_array($field, ['ca1_score', 'ca2_score', 'ca3_score', 'ca4_score'])) {
-            $this->validate(["bulkResults.$studentId.$field" => 'nullable|numeric|min:0|max:10']);
+        if ($field === 'ca1_score') {
+            $this->validate(["bulkResults.$studentId.$field" => 'nullable|numeric|min:0|max:20']);
+        } elseif ($field === 'ca2_score') {
+            $this->validate(["bulkResults.$studentId.$field" => 'nullable|numeric|min:0|max:30']);
         } elseif ($field === 'exam_score') {
-            $this->validate(["bulkResults.$studentId.$field" => 'nullable|numeric|min:0|max:60']);
+            $this->validate(["bulkResults.$studentId.$field" => 'nullable|numeric|min:0|max:50']);
+        } else {
+            return;
         }
     
         // Auto-save individual field
@@ -303,10 +303,8 @@ class BulkUpload extends Component
             $data = $this->bulkResults[$studentId];
             $ca1 = (int) ($data['ca1_score'] ?? 0);
             $ca2 = (int) ($data['ca2_score'] ?? 0);
-            $ca3 = (int) ($data['ca3_score'] ?? 0);
-            $ca4 = (int) ($data['ca4_score'] ?? 0);
             $exam = (int) ($data['exam_score'] ?? 0);
-            $total = $ca1 + $ca2 + $ca3 + $ca4 + $exam;
+            $total = $ca1 + $ca2 + $exam;
     
             Result::updateOrCreate(
                 [
@@ -318,8 +316,6 @@ class BulkUpload extends Component
                 [
                     'ca1_score' => $ca1,
                     'ca2_score' => $ca2,
-                    'ca3_score' => $ca3,
-                    'ca4_score' => $ca4,
                     'exam_score' => $exam,
                     'total_score' => $total,
                     'teacher_comment' => $data['comment'] ?? null,
@@ -387,10 +383,8 @@ class BulkUpload extends Component
                     // Calculate total
                     $ca1 = (int) ($data['ca1_score'] ?? 0);
                     $ca2 = (int) ($data['ca2_score'] ?? 0);
-                    $ca3 = (int) ($data['ca3_score'] ?? 0);
-                    $ca4 = (int) ($data['ca4_score'] ?? 0);
                     $exam = (int) ($data['exam_score'] ?? 0);
-                    $total = $ca1 + $ca2 + $ca3 + $ca4 + $exam;
+                    $total = $ca1 + $ca2 + $exam;
     
                     // Only save if there's actual data
                     if ($total > 0 || !empty($data['comment'])) {
@@ -404,8 +398,6 @@ class BulkUpload extends Component
                             [
                                 'ca1_score' => $ca1,
                                 'ca2_score' => $ca2,
-                                'ca3_score' => $ca3,
-                                'ca4_score' => $ca4,
                                 'exam_score' => $exam,
                                 'total_score' => $total,
                                 'teacher_comment' => $data['comment'] ?? null,
@@ -473,8 +465,6 @@ class BulkUpload extends Component
             $this->bulkResults[$studentId] = [
                 'ca1_score' => null,
                 'ca2_score' => null,
-                'ca3_score' => null,
-                'ca4_score' => null,
                 'exam_score' => null,
                 'comment' => '',
             ];
