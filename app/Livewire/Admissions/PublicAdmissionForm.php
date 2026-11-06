@@ -138,13 +138,6 @@ class PublicAdmissionForm extends Component
 
         $registration = DB::transaction(function () {
             $referenceNo = $this->generateReferenceNo();
-            $documentPath = null;
-            $documentName = null;
-
-            if ($this->document) {
-                $documentPath = $this->document->store('admissions/documents', 'public');
-                $documentName = $this->document->getClientOriginalName();
-            }
 
             $registration = AdmissionRegistration::create([
                 'school_id' => (int) $this->school_id,
@@ -165,10 +158,21 @@ class PublicAdmissionForm extends Component
                 'address' => trim($this->address),
                 'previous_school' => $this->previous_school ?: null,
                 'notes' => $this->notes ?: null,
-                'document_path' => $documentPath,
-                'document_name' => $documentName,
                 'status' => 'pending',
             ]);
+
+            if ($this->document) {
+                $path = $this->document->store("admissions/{$registration->school_id}/{$registration->id}", 'local');
+                $registration->documents()->create([
+                    'school_id' => $registration->school_id,
+                    'category' => 'supporting',
+                    'original_name' => $this->document->getClientOriginalName(),
+                    'path' => $path,
+                    'disk' => 'local',
+                    'mime_type' => $this->document->getMimeType(),
+                    'size_bytes' => $this->document->getSize(),
+                ]);
+            }
 
             AdmissionStatusHistory::create([
                 'admission_registration_id' => $registration->id,

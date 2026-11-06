@@ -20,6 +20,7 @@ class AdmissionNotificationMail extends Mailable implements ShouldBeEncrypted, S
         public AdmissionRegistration $admission,
         public string $notificationType,
         public ?string $temporaryPassword = null,
+        public ?string $offerUrl = null,
     ) {
         $this->admission->loadMissing(['school', 'myClass', 'section', 'enrolledUser', 'enrolledStudentRecord']);
     }
@@ -29,6 +30,10 @@ class AdmissionNotificationMail extends Mailable implements ShouldBeEncrypted, S
         $schoolName = $this->admission->school?->name ?: config('app.name');
         $subject = match ($this->notificationType) {
             'approved' => 'Admission Approved - '.$schoolName,
+            'offered' => 'Admission Offer - '.$schoolName,
+            'accepted' => 'Admission Offer Accepted - '.$schoolName,
+            'enrolled' => 'Enrolment Completed - '.$schoolName,
+            'declined' => 'Admission Application Update - '.$schoolName,
             'rejected' => 'Admission Application Update - '.$schoolName,
             default => 'Admission Application Received - '.$schoolName,
         };

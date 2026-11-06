@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 // Livewire Components
+use App\Http\Controllers\AdmissionDocumentController;
+use App\Http\Controllers\AdmissionOfferController;
 use App\Http\Controllers\CbtResultController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DatabaseBackupController;
@@ -163,6 +165,10 @@ Route::get('/academics', [PageController::class, 'academics'])->name('academics'
 Route::get('/why-watersprings', [PageController::class, 'whyWatersprings'])->name('why-watersprings');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/admission', [PageController::class, 'admission'])->name('admission');
+Route::get('/admission/offer/{reference}/{token}', [AdmissionOfferController::class, 'show'])
+    ->middleware('throttle:30,1')->name('admission.offer.show');
+Route::post('/admission/offer/{reference}/{token}', [AdmissionOfferController::class, 'accept'])
+    ->middleware('throttle:10,1')->name('admission.offer.accept');
 Route::get('/prospectus', [PageController::class, 'prospectus'])->name('prospectus');
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
 Route::get('/team', [PageController::class, 'team'])->name('team');
@@ -511,6 +517,9 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/admissions/registrations', ManageAdmissionRegistrations::class)
         ->name('admissions.registrations.index')
         ->middleware('permission:read admission registration');
+    Route::get('/admissions/documents/{document}', AdmissionDocumentController::class)
+        ->whereNumber('document')
+        ->name('admissions.documents.download');
 
     Route::get('/contacts/messages', ManageContactMessages::class)
         ->name('contacts.messages.index')

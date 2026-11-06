@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AdmissionRegistration extends Model
 {
@@ -35,14 +36,25 @@ class AdmissionRegistration extends Model
         'status',
         'processed_by',
         'processed_at',
+        'offered_at',
+        'offered_by',
+        'offer_expires_at',
+        'acceptance_token_hash',
+        'accepted_at',
+        'accepted_by_name',
+        'accepted_ip',
         'enrolled_user_id',
         'enrolled_student_record_id',
+        'enrolled_parent_id',
         'enrolled_at',
     ];
 
     protected $casts = [
         'birthday' => 'date:Y-m-d',
         'processed_at' => 'datetime',
+        'offered_at' => 'datetime',
+        'offer_expires_at' => 'datetime',
+        'accepted_at' => 'datetime',
         'enrolled_at' => 'datetime',
     ];
 
@@ -74,6 +86,31 @@ class AdmissionRegistration extends Model
     public function enrolledStudentRecord(): BelongsTo
     {
         return $this->belongsTo(StudentRecord::class, 'enrolled_student_record_id');
+    }
+
+    public function enrolledParent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'enrolled_parent_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(AdmissionDocument::class)->latest('id');
+    }
+
+    public function interviews(): HasMany
+    {
+        return $this->hasMany(AdmissionInterview::class)->latest('scheduled_at');
+    }
+
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(AdmissionInternalNote::class)->latest('id');
+    }
+
+    public function feeConfirmation(): HasOne
+    {
+        return $this->hasOne(AdmissionFeeConfirmation::class);
     }
 
     public function statusHistories(): HasMany

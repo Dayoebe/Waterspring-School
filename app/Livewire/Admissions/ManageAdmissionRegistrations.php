@@ -3,23 +3,23 @@
 namespace App\Livewire\Admissions;
 
 use App\Mail\AdmissionNotificationMail;
+use App\Models\AdmissionDocument;
+use App\Models\AdmissionInterview;
 use App\Models\AdmissionRegistration;
 use App\Models\AdmissionStatusHistory;
 use App\Models\MyClass;
-use App\Models\School;
-use App\Models\Section;
-use App\Models\StudentRecord;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use App\Services\AdmissionPipeline;
+use DomainException;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Throwable;
 
 class ManageAdmissionRegistrations extends Component
 {
+    use WithFileUploads;
     use WithPagination;
 
     public string $search = '';
@@ -36,13 +36,45 @@ class ManageAdmissionRegistrations extends Component
 
     public string $adminNote = '';
 
+    public string $internalNote = '';
+
+    public string $interviewDate = '';
+
+    public string $interviewTime = '';
+
+    public int $interviewDuration = 30;
+
+    public string $interviewMode = 'in_person';
+
+    public string $interviewLocation = '';
+
+    public string $interviewOutcome = 'recommended';
+
+    public string $interviewNotes = '';
+
+    public string $offerNote = '';
+
+    public int $offerValidDays = 14;
+
+    public string $feeAmount = '';
+
+    public string $feeMethod = 'bank_transfer';
+
+    public string $feeReference = '';
+
+    public string $feeNotes = '';
+
+    public $pipelineDocument = null;
+
+    public string $documentCategory = 'supporting';
+
     protected $queryString = [
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
         'classFilter' => ['except' => ''],
     ];
 
-    protected array $allowedStatuses = ['pending', 'reviewed', 'rejected', 'approved'];
+    protected array $allowedStatuses = AdmissionPipeline::STATUSES;
 
     public function mount(): void
     {
@@ -53,7 +85,11 @@ class ManageAdmissionRegistrations extends Component
         if ($this->statusFilter === 'contacted') {
             $this->statusFilter = 'reviewed';
         } elseif ($this->statusFilter === 'enrolled') {
-            $this->statusFilter = 'approved';
+            $this->statusFilter = 'enrolled';
+        } elseif ($this->statusFilter === 'approved') {
+            $this->statusFilter = 'accepted';
+        } elseif ($this->statusFilter === 'rejected') {
+            $this->statusFilter = 'declined';
         }
 
         $this->classes = $this->classesForCurrentContext();
@@ -79,12 +115,14 @@ class ManageAdmissionRegistrations extends Component
         $admission = $this->admissionQuery()->findOrFail($admissionId);
         $this->selectedAdmission = $admission;
         $this->adminNote = (string) ($admission->admin_notes ?? '');
+        $this->resetWorkflowInputs();
     }
 
     public function clearSelected(): void
     {
         $this->selectedAdmission = null;
         $this->adminNote = '';
+        $this->resetWorkflowInputs();
     }
 
     public function saveAdminNote(int $admissionId): void
@@ -109,8 +147,8 @@ class ManageAdmissionRegistrations extends Component
         $this->assertCanReviewAdmission();
 
         $admission = $this->admissionQuery()->findOrFail($admissionId);
-        if ($admission->status === 'approved') {
-            session()->flash('error', 'Approved admissions cannot be moved back to review.');
+        if (! in_array($admission->status, ['pending', 'reviewed'], true)) {
+            session()->flash('error', 'This application cannot be moved back to review.');
 
             return;
         }
@@ -120,162 +158,183 @@ class ManageAdmissionRegistrations extends Component
         session()->flash('success', 'Admission marked as reviewed.');
     }
 
-    public function rejectAdmission(int $admissionId): void
+    public function rejectAdmission(int $admissionId, AdmissionPipeline $pipeline): void
     {
         $this->assertCanRejectAdmission();
 
         $admission = $this->admissionQuery()->findOrFail($admissionId);
 
-        if ($admission->status === 'approved') {
-            session()->flash('error', 'Approved admissions cannot be rejected.');
+        try {
+            $pipeline->decline($admission, auth()->user(), $this->adminNote);
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
 
             return;
         }
-
-        if ($admission->status === 'rejected') {
-            session()->flash('error', 'This admission has already been rejected.');
-
-            return;
-        }
-
-        $this->transitionStatus($admission, 'rejected', $this->normalizedNote($this->adminNote));
-        $this->sendAdmissionNotification($admission->fresh(['school', 'myClass', 'section']), 'rejected');
+        $this->sendAdmissionNotification($admission->fresh(['school', 'myClass', 'section']), 'declined');
         $this->refreshSelectedAdmission($admission->id);
-        session()->flash('success', 'Admission rejected.');
+        session()->flash('success', 'Admission declined.');
     }
 
-    public function approveAdmission(int $admissionId): void
+    public function approveAdmission(int $admissionId, AdmissionPipeline $pipeline): void
     {
-        $this->assertCanApproveAdmission();
+        $this->convertAdmission($admissionId, $pipeline);
+    }
 
-        $admission = $this->admissionQuery()->findOrFail($admissionId);
-
-        if ($admission->status === 'approved' && $admission->enrolled_user_id && $admission->enrolled_student_record_id) {
-            session()->flash('error', 'This registration has already been approved and enrolled.');
-
-            return;
+    public function addInternalNote(int $admissionId, AdmissionPipeline $pipeline): void
+    {
+        $this->assertCanManageAdmission();
+        try {
+            $pipeline->addInternalNote(
+                $this->admissionQuery()->findOrFail($admissionId),
+                auth()->user(),
+                $this->internalNote
+            );
+            $this->internalNote = '';
+            $this->refreshSelectedAdmission($admissionId);
+            session()->flash('success', 'Internal note added.');
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
         }
+    }
 
-        if (! $admission->my_class_id) {
-            session()->flash('error', 'This admission has no class assigned.');
-
-            return;
-        }
-
-        if (! $this->classBelongsToSchool($admission->my_class_id, $admission->school_id)) {
-            session()->flash('error', 'Assigned class does not belong to selected school.');
-
-            return;
-        }
-
-        if ($admission->section_id && ! $this->sectionBelongsToClass($admission->section_id, $admission->my_class_id)) {
-            session()->flash('error', 'Assigned section does not belong to selected class.');
-
-            return;
-        }
-
-        $school = School::find($admission->school_id);
-        if (! $school) {
-            session()->flash('error', 'School record not found for this registration.');
-
-            return;
-        }
+    public function scheduleInterview(int $admissionId, AdmissionPipeline $pipeline): void
+    {
+        $this->assertCanReviewAdmission();
+        $validated = $this->validate([
+            'interviewDate' => ['required', 'date', 'after_or_equal:today'],
+            'interviewTime' => ['required', 'date_format:H:i'],
+            'interviewDuration' => ['required', 'integer', 'min:15', 'max:240'],
+            'interviewMode' => ['required', 'in:in_person,video,phone'],
+            'interviewLocation' => ['nullable', 'string', 'max:255'],
+        ]);
 
         try {
-            DB::transaction(function () use ($admission, $school) {
-                $lockedAdmission = AdmissionRegistration::query()
-                    ->whereKey($admission->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if (! $lockedAdmission->enrolled_user_id || ! $lockedAdmission->enrolled_student_record_id) {
-                    $email = $this->resolveStudentEmail($lockedAdmission, $school);
-                    $defaultPassword = $this->studentLastName($lockedAdmission->student_name);
-
-                    if (User::where('email', $email)->exists()) {
-                        throw new \RuntimeException('Student email already exists. Update the admission email before approval.');
-                    }
-
-                    $user = User::create([
-                        'name' => $lockedAdmission->student_name,
-                        'email' => $email,
-                        'email_is_placeholder' => str_ends_with($email, '.admission.local'),
-                        'password' => Hash::make($defaultPassword),
-                        'requires_password_change' => true,
-                        'gender' => $lockedAdmission->gender,
-                        'birthday' => $lockedAdmission->birthday,
-                        'phone' => $lockedAdmission->guardian_phone,
-                        'address' => $lockedAdmission->address,
-                        'school_id' => $lockedAdmission->school_id,
-                    ]);
-
-                    $user->assignRole('student');
-
-                    $admissionNumber = $this->generateAdmissionNumber($school);
-
-                    $studentRecord = $user->studentRecord()->create([
-                        'my_class_id' => $lockedAdmission->my_class_id,
-                        'section_id' => $lockedAdmission->section_id,
-                        'admission_number' => $admissionNumber,
-                        'admission_date' => now(),
-                    ]);
-
-                    if ($school->academicYear) {
-                        $studentRecord->academicYears()->syncWithoutDetaching([
-                            $school->academicYear->id => [
-                                'my_class_id' => $lockedAdmission->my_class_id,
-                                'section_id' => $lockedAdmission->section_id,
-                            ],
-                        ]);
-                    }
-
-                    $studentRecord->assignSubjectsAutomatically();
-
-                    $lockedAdmission->update([
-                        'enrolled_user_id' => $user->id,
-                        'enrolled_student_record_id' => $studentRecord->id,
-                        'enrolled_at' => now(),
-                    ]);
-                }
-
-                $this->transitionStatus(
-                    $lockedAdmission,
-                    'approved',
-                    $this->normalizedNote($this->adminNote)
-                );
-            });
-        } catch (Throwable $e) {
-            report($e);
-
-            $message = $e instanceof \RuntimeException
-                ? $e->getMessage()
-                : 'Could not approve this registration right now. Please try again.';
-
-            session()->flash('error', $message);
-
-            return;
+            $pipeline->scheduleInterview($this->admissionQuery()->findOrFail($admissionId), auth()->user(), [
+                'scheduled_at' => $validated['interviewDate'].' '.$validated['interviewTime'],
+                'duration_minutes' => $validated['interviewDuration'],
+                'mode' => $validated['interviewMode'],
+                'location' => $validated['interviewLocation'],
+            ]);
+            $this->refreshSelectedAdmission($admissionId);
+            session()->flash('success', 'Interview scheduled.');
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
         }
-
-        $this->refreshSelectedAdmission($admission->id);
-        $approvedAdmission = $admission->fresh(['school', 'myClass', 'section', 'enrolledUser', 'enrolledStudentRecord']);
-        $this->sendAdmissionNotification($approvedAdmission, 'approved', $this->studentLastName($approvedAdmission->student_name));
-        $message = 'Admission approved and student record created. The default password is the student\'s last name.';
-        if ($approvedAdmission->enrolledUser?->email_is_placeholder) {
-            $message .= ' Add a real email and secure password in Student Login Readiness before issuing portal access.';
-        }
-        session()->flash('success', $message);
     }
 
-    protected function studentLastName(string $studentName): string
+    public function completeInterview(int $interviewId, AdmissionPipeline $pipeline): void
     {
-        $parts = preg_split('/\s+/', trim($studentName)) ?: [];
-        $lastName = (string) end($parts);
-
-        if ($lastName === '') {
-            throw new \RuntimeException('A valid student name is required to create the default password.');
+        $this->assertCanReviewAdmission();
+        $interview = AdmissionInterview::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->findOrFail($interviewId);
+        try {
+            $pipeline->completeInterview($interview, auth()->user(), $this->interviewOutcome, $this->interviewNotes);
+            $this->refreshSelectedAdmission($interview->admission_registration_id);
+            session()->flash('success', 'Interview outcome recorded.');
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
         }
+    }
 
-        return $lastName;
+    public function offerAdmission(int $admissionId, AdmissionPipeline $pipeline): void
+    {
+        $this->assertCanApproveAdmission();
+        $this->validate([
+            'offerNote' => ['nullable', 'string', 'max:2000'],
+            'offerValidDays' => ['required', 'integer', 'min:1', 'max:90'],
+        ]);
+        $admission = $this->admissionQuery()->findOrFail($admissionId);
+        try {
+            $token = $pipeline->makeOffer($admission, auth()->user(), $this->offerNote, $this->offerValidDays);
+            $fresh = $admission->fresh(['school', 'myClass', 'section']);
+            $url = route('admission.offer.show', [$fresh->reference_no, $token]);
+            foreach ($fresh->notificationEmails() as $email) {
+                Mail::to($email)->send(new AdmissionNotificationMail($fresh, 'offered', null, $url));
+            }
+            $this->refreshSelectedAdmission($admissionId);
+            session()->flash('success', 'Admission offer issued with a secure acceptance link.');
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
+    }
+
+    public function confirmAdmissionFee(int $admissionId, AdmissionPipeline $pipeline): void
+    {
+        $this->assertCanApproveAdmission();
+        $validated = $this->validate([
+            'feeAmount' => ['required', 'numeric', 'min:0'],
+            'feeMethod' => ['required', 'in:cash,bank_transfer,pos,cheque,online,waived'],
+            'feeReference' => ['nullable', 'string', 'max:120'],
+            'feeNotes' => ['nullable', 'string', 'max:1000'],
+        ]);
+        try {
+            $pipeline->confirmFee($this->admissionQuery()->findOrFail($admissionId), auth()->user(), [
+                'amount' => $validated['feeAmount'],
+                'payment_method' => $validated['feeMethod'],
+                'reference' => $validated['feeReference'],
+                'notes' => $validated['feeNotes'],
+            ]);
+            $this->refreshSelectedAdmission($admissionId);
+            session()->flash('success', 'Admission fee confirmation recorded.');
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
+    }
+
+    public function convertAdmission(int $admissionId, AdmissionPipeline $pipeline): void
+    {
+        $this->assertCanApproveAdmission();
+        if (! auth()->user()->can('create parent')) {
+            abort(403);
+        }
+        try {
+            $result = $pipeline->convertToStudentAndParent(
+                $this->admissionQuery()->findOrFail($admissionId),
+                auth()->user()
+            );
+            $fresh = $this->admissionQuery()->findOrFail($admissionId);
+            $this->sendAdmissionNotification($fresh, 'enrolled', $result['student_password']);
+            $this->refreshSelectedAdmission($admissionId);
+            session()->flash('success', 'Student and parent accounts were created and linked.');
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+            session()->flash('error', 'The application could not be converted safely.');
+        }
+    }
+
+    public function uploadPipelineDocument(int $admissionId): void
+    {
+        $this->assertCanManageAdmission();
+        $this->validate([
+            'pipelineDocument' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
+            'documentCategory' => ['required', 'in:supporting,birth_certificate,previous_report,medical,offer,fee_receipt'],
+        ]);
+        $admission = $this->admissionQuery()->findOrFail($admissionId);
+        $path = $this->pipelineDocument->store("admissions/{$admission->school_id}/{$admission->id}", 'local');
+        try {
+            AdmissionDocument::query()->create([
+                'admission_registration_id' => $admission->id,
+                'school_id' => $admission->school_id,
+                'category' => $this->documentCategory,
+                'original_name' => $this->pipelineDocument->getClientOriginalName(),
+                'path' => $path,
+                'disk' => 'local',
+                'mime_type' => $this->pipelineDocument->getMimeType(),
+                'size_bytes' => $this->pipelineDocument->getSize(),
+                'uploaded_by' => auth()->id(),
+            ]);
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete($path);
+
+            throw $exception;
+        }
+        $this->reset('pipelineDocument');
+        $this->refreshSelectedAdmission($admissionId);
+        session()->flash('success', 'Admission document uploaded securely.');
     }
 
     protected function sendAdmissionNotification(AdmissionRegistration $admission, string $type, ?string $temporaryPassword = null): void
@@ -298,6 +357,11 @@ class ManageAdmissionRegistrations extends Component
             'processedBy:id,name',
             'enrolledUser:id,name,email',
             'enrolledStudentRecord:id,admission_number,user_id',
+            'enrolledParent:id,name,email',
+            'documents.uploadedBy:id,name',
+            'interviews.interviewer:id,name',
+            'internalNotes.author:id,name',
+            'feeConfirmation',
             'statusHistories' => fn ($history) => $history->with('changedBy:id,name')->latest('changed_at'),
         ]);
 
@@ -325,58 +389,27 @@ class ManageAdmissionRegistrations extends Component
             ->get();
     }
 
-    protected function classBelongsToSchool(int $classId, int $schoolId): bool
-    {
-        return MyClass::query()
-            ->where('id', $classId)
-            ->whereHas('classGroup', fn ($q) => $q->where('school_id', $schoolId))
-            ->exists();
-    }
-
-    protected function sectionBelongsToClass(int $sectionId, int $classId): bool
-    {
-        return Section::query()
-            ->where('id', $sectionId)
-            ->where('my_class_id', $classId)
-            ->exists();
-    }
-
-    protected function resolveStudentEmail(AdmissionRegistration $admission, School $school): string
-    {
-        if (! empty($admission->student_email) && trim($admission->student_email) !== '') {
-            return strtolower(trim($admission->student_email));
-        }
-
-        $baseName = Str::slug($admission->student_name ?: 'student') ?: 'student';
-        $schoolPart = Str::slug($school->initials ?: $school->name ?: 'school') ?: 'school';
-        $email = $baseName.'.'.strtolower($admission->reference_no).'@'.$schoolPart.'.admission.local';
-
-        $attempt = 1;
-        while (User::where('email', $email)->exists()) {
-            $email = $baseName.'.'.strtolower($admission->reference_no).'.'.$attempt.'@'.$schoolPart.'.admission.local';
-            $attempt++;
-        }
-
-        return $email;
-    }
-
-    protected function generateAdmissionNumber(School $school): string
-    {
-        $prefix = strtoupper($school->initials ?: 'SCH');
-        $year = now()->format('y');
-
-        do {
-            $number = $prefix.'/'.$year.'/'.mt_rand(100000, 999999);
-        } while (StudentRecord::where('admission_number', $number)->exists());
-
-        return $number;
-    }
-
     protected function normalizedNote(?string $note): ?string
     {
         $trimmed = trim((string) $note);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    protected function resetWorkflowInputs(): void
+    {
+        $this->reset([
+            'internalNote', 'interviewDate', 'interviewTime', 'interviewLocation',
+            'interviewNotes', 'offerNote', 'feeAmount', 'feeReference', 'feeNotes',
+            'pipelineDocument',
+        ]);
+        $this->interviewDuration = 30;
+        $this->interviewMode = 'in_person';
+        $this->interviewOutcome = 'recommended';
+        $this->offerValidDays = 14;
+        $this->feeMethod = 'bank_transfer';
+        $this->documentCategory = 'supporting';
+        $this->resetValidation();
     }
 
     protected function refreshSelectedAdmission(?int $admissionId = null): void
@@ -465,7 +498,9 @@ class ManageAdmissionRegistrations extends Component
     {
         $query = $this->admissionQuery()
             ->when($this->statusFilter !== 'all', function ($q) {
-                $q->where('status', $this->statusFilter);
+                $this->statusFilter === 'interviews'
+                    ? $q->whereIn('status', ['interview_scheduled', 'interviewed'])
+                    : $q->where('status', $this->statusFilter);
             })
             ->when($this->classFilter !== '', function ($q) {
                 $q->where('my_class_id', $this->classFilter);
@@ -489,8 +524,11 @@ class ManageAdmissionRegistrations extends Component
             'all' => (clone $countBase)->count(),
             'pending' => (clone $countBase)->where('status', 'pending')->count(),
             'reviewed' => (clone $countBase)->where('status', 'reviewed')->count(),
-            'rejected' => (clone $countBase)->where('status', 'rejected')->count(),
-            'approved' => (clone $countBase)->where('status', 'approved')->count(),
+            'interviews' => (clone $countBase)->whereIn('status', ['interview_scheduled', 'interviewed'])->count(),
+            'offered' => (clone $countBase)->where('status', 'offered')->count(),
+            'accepted' => (clone $countBase)->where('status', 'accepted')->count(),
+            'declined' => (clone $countBase)->where('status', 'declined')->count(),
+            'enrolled' => (clone $countBase)->where('status', 'enrolled')->count(),
         ];
 
         return view('livewire.admissions.manage-admission-registrations', [
