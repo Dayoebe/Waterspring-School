@@ -1,0 +1,16 @@
+[Unit]
+Description=WaterSpring Laravel queue worker
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lampp/htdocs/WaterSpring
+ExecStart=/opt/lampp/bin/php artisan queue:work database --queue=default --sleep=3 --tries=3 --backoff=60 --timeout=120 --max-time=3600
+ExecReload=/bin/kill -USR2 $MAINPID
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=3600
+
+[Install]
+WantedBy=default.target

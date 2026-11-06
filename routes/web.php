@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CbtResultController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DatabaseBackupController;
+use App\Http\Controllers\OperationalHealthController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamPaperController;
 use App\Http\Controllers\ExamPaperPortalController;
@@ -140,6 +141,11 @@ $statelessPublicFileMiddleware = [
     ShareErrorsFromSession::class,
     VerifyCsrfToken::class,
 ];
+
+Route::get('/health', OperationalHealthController::class)
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware($statelessPublicFileMiddleware)
+    ->name('health');
 
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest')->withoutMiddleware($statelessPublicFileMiddleware);
 Route::get('/service-worker.js', [PwaController::class, 'serviceWorker'])->name('pwa.service-worker')->withoutMiddleware($statelessPublicFileMiddleware);

@@ -122,7 +122,7 @@ Open `http://localhost:8000`. For frontend development, run `npm run dev` in a s
 - `database/seeders` is not included. The legacy `watersprings:init` command calls missing seeders, so use the manual setup above instead of `watersprings:init` or `migrate --seed`.
 - When no school records exist, Admission links to Watersprings' existing online application form and Contact provides direct contact channels. Existing local Livewire forms render when school records become available. Configure the correct school, entry classes, sections and message recipients before using those forms.
 - Dashboard branding and command names use Watersprings. Academic setup, school data and operational configuration still need to be completed.
-- `.env.example` uses `MAIL_MAILER=log` and synchronous queue processing. Local mail is written to logs; it is not delivered to recipients.
+- `.env.example` uses `MAIL_MAILER=log` and the database queue. Local mail is written to logs; it is not delivered to recipients. A queue worker and scheduler must be running for queued mail and reminders.
 
 ## Optional services and deployment
 
@@ -134,8 +134,8 @@ For deployment:
 - Set `APP_ENV=production`, `APP_DEBUG=false` and the correct `APP_URL`. Canonical links and sitemaps use the application URL.
 - Configure database access and real mail delivery, and make `storage/` and `bootstrap/cache/` writable by the application.
 - Install dependencies and run `npm run build`; dependency directories, compiled frontend assets and `public/hot` are excluded from Git.
-- Configure a queue worker if you switch to an asynchronous queue connection.
-- Review the scheduled weekly `results:cleanup` command in [app/Console/Kernel.php](app/Console/Kernel.php) before enabling Laravel's scheduler.
+- Run the database queue worker and scheduler under supervision; do not serve production traffic with `QUEUE_CONNECTION=sync`.
+- Configure encrypted backups, off-site retention, restore tests, health monitoring and HTTPS using the [operations runbook](docs/operations.md).
 
 Keep `.env` local. Generate a fresh application key for a new installation: an earlier repository commit contained an `.env` file, so removing it from the current tree does not remove that historical key.
 

@@ -1,0 +1,15 @@
+[Unit]
+Description=WaterSpring Laravel scheduler
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lampp/htdocs/WaterSpring
+ExecStart=/opt/lampp/bin/php artisan schedule:work
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=300
+
+[Install]
+WantedBy=default.target

@@ -2,16 +2,19 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\RetriesQueuedMail;
 use App\Models\ContactMessage;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ContactMessageReply extends Mailable
+class ContactMessageReply extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, RetriesQueuedMail, SerializesModels;
 
     public ContactMessage $contactMessage;
 
@@ -23,7 +26,7 @@ class ContactMessageReply extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Response: ' . $this->contactMessage->subject,
+            subject: 'Response: '.$this->contactMessage->subject,
         );
     }
 

@@ -2,19 +2,28 @@
 
 namespace App\Console;
 
+use App\Console\Commands\AssignSubjectsCommand;
+use App\Console\Commands\BaselineMigrations;
+use App\Console\Commands\CleanupDeletedStudents;
+use App\Console\Commands\CleanupInvalidResults;
+use App\Console\Commands\SafeMigrateCommand;
+use App\Console\Commands\SetDefaultPassword;
+use App\Services\OperationalHealthService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Cache;
 
 class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
-     *
-     *
-     * @return void
      */
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->call(function (): void {
+            Cache::put(OperationalHealthService::SCHEDULER_HEARTBEAT_KEY, now()->timestamp, 300);
+        })->name('operations:scheduler-heartbeat')->everyMinute()->onOneServer();
+
         $schedule->command('assignments:send-reminders --hours=24')
             ->hourly()
             ->withoutOverlapping()
@@ -28,12 +37,26 @@ class Kernel extends ConsoleKernel
             ->dailyAt('07:00')
             ->withoutOverlapping()
             ->onOneServer();
+
+        $schedule->command('queue:prune-failed --hours=168')
+            ->dailyAt('01:30')
+            ->onOneServer();
+
+        $schedule->command('ops:backup --prune')
+            ->dailyAt('02:00')
+            ->when(fn (): bool => (bool) config('operations.backups.enabled'))
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('ops:backup-verify')
+            ->weeklyOn(0, '04:00')
+            ->when(fn (): bool => (bool) config('operations.backups.enabled'))
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**
      * Register the commands for the application.
-     *
-     * @return void
      */
     protected function commands(): void
     {
@@ -43,12 +66,11 @@ class Kernel extends ConsoleKernel
     }
 
     protected $commands = [
-        \App\Console\Commands\BaselineMigrations::class,
-        \App\Console\Commands\SafeMigrateCommand::class,
-        \App\Console\Commands\AssignSubjectsCommand::class,
-        \App\Console\Commands\SetDefaultPassword::class,
-        \App\Console\Commands\CleanupDeletedStudents::class,
-        \App\Console\Commands\CleanupInvalidResults::class,
+        BaselineMigrations::class,
+        SafeMigrateCommand::class,
+        AssignSubjectsCommand::class,
+        SetDefaultPassword::class,
+        CleanupDeletedStudents::class,
+        CleanupInvalidResults::class,
     ];
 }
-    

@@ -2,16 +2,19 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\RetriesQueuedMail;
 use App\Models\ContactMessage;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NewContactMessageAlert extends Mailable
+class NewContactMessageAlert extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, RetriesQueuedMail, SerializesModels;
 
     public ContactMessage $contactMessage;
 
@@ -25,7 +28,7 @@ class NewContactMessageAlert extends Mailable
         $schoolName = $this->contactMessage->school?->name ?: 'School';
 
         return new Envelope(
-            subject: 'New Contact Message - ' . $schoolName,
+            subject: 'New Contact Message - '.$schoolName,
         );
     }
 

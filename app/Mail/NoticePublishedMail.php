@@ -2,17 +2,20 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\RetriesQueuedMail;
 use App\Models\Notice;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NoticePublishedMail extends Mailable
+class NoticePublishedMail extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, RetriesQueuedMail, SerializesModels;
 
     public Notice $notice;
 

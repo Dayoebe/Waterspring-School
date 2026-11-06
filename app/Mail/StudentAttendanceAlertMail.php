@@ -2,15 +2,18 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\RetriesQueuedMail;
 use App\Models\AttendanceRecord;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class StudentAttendanceAlertMail extends Mailable
+class StudentAttendanceAlertMail extends Mailable implements ShouldBeEncrypted, ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, RetriesQueuedMail, SerializesModels;
 
     public function __construct(
         public AttendanceRecord $attendanceRecord,

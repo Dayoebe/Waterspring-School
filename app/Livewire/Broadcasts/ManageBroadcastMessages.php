@@ -2,14 +2,13 @@
 
 namespace App\Livewire\Broadcasts;
 
-use App\Mail\BroadcastMessageMail;
+use App\Jobs\SendBroadcastMessageEmail;
 use App\Models\BroadcastMessage;
 use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -149,35 +148,14 @@ class ManageBroadcastMessages extends Component
 
         DB::table('broadcast_message_recipients')->insert($recipientRows);
 
-        $emailDeliveredUserIds = [];
-
         if ($this->sendEmail) {
             foreach ($recipients as $recipient) {
-                if (!$recipient->email) {
+                if (! $recipient->email) {
                     continue;
                 }
 
-                try {
-                    Mail::to($recipient->email)->send(new BroadcastMessageMail($broadcastMessage, $recipient));
-                    $emailDeliveredUserIds[] = $recipient->id;
-                } catch (\Throwable $exception) {
-                    report($exception);
-                }
+                SendBroadcastMessageEmail::dispatch($broadcastMessage->id, $recipient->id);
             }
-        }
-
-        if ($emailDeliveredUserIds !== []) {
-            DB::table('broadcast_message_recipients')
-                ->where('broadcast_message_id', $broadcastMessage->id)
-                ->whereIn('user_id', $emailDeliveredUserIds)
-                ->update([
-                    'email_delivered_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-            $broadcastMessage->update([
-                'email_sent_at' => now(),
-            ]);
         }
 
         $this->reset([
@@ -193,7 +171,7 @@ class ManageBroadcastMessages extends Component
         $this->targetRole = 'student';
         $this->loadSections();
 
-        session()->flash('success', 'Broadcast sent to ' . count($recipientRows) . ' recipients.');
+        session()->flash('success', 'Broadcast queued for '.count($recipientRows).' recipients.');
     }
 
     protected function resolveRecipients(): Collection
