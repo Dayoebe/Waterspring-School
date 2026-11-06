@@ -158,6 +158,17 @@ docs/                     Implementation and migration notes
 
 ## Validation
 
+### Test database safety
+
+The feature suite uses MySQL/MariaDB and refuses to start unless `APP_ENV=testing` and the configured database is named `testing` or ends in `_test`/`_testing`. Create a disposable schema once for local testing; never reuse the operational database:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS waterspring_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+DB_DATABASE=waterspring_testing php artisan test
+```
+
+`RefreshDatabase` rebuilds this disposable schema as tests run. GitHub Actions provisions its own MariaDB service, validates a clean migration, runs the database-backed suite, compiles Blade views, builds production assets, and audits Composer and NPM dependencies on every pull request and push to `main`.
+
 Useful verification and build commands:
 
 ```bash
