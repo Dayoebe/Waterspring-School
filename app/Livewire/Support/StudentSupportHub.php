@@ -6,6 +6,7 @@ use App\Models\StudentRecord;
 use App\Models\StudentSupportAction;
 use App\Models\StudentSupportCase;
 use App\Models\User;
+use App\Services\AuditTrail;
 use App\Services\StudentSupportNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -42,6 +43,9 @@ class StudentSupportHub extends Component
         $this->actionDueOn = now()->addWeek()->toDateString();
         $this->selectedCaseId = $this->visibleCases()->whereNotIn('status', ['completed'])->latest('updated_at')->value('id')
             ?? $this->visibleCases()->latest('updated_at')->value('id');
+        if ($this->selectedCaseId) {
+            $this->recordCaseAccess($this->visibleCases()->findOrFail($this->selectedCaseId));
+        }
     }
 
     public function openComposer(): void
@@ -92,7 +96,12 @@ class StudentSupportHub extends Component
         $this->flashMailResult('Support plan opened.', $result);
     }
 
-    public function selectCase(int $caseId): void { $this->visibleCases()->findOrFail($caseId); $this->selectedCaseId = $caseId; }
+    public function selectCase(int $caseId): void
+    {
+        $case = $this->visibleCases()->findOrFail($caseId);
+        $this->selectedCaseId = $case->id;
+        $this->recordCaseAccess($case);
+    }
 
     public function updatedSelectedStudentId(): void
     {
@@ -172,6 +181,18 @@ class StudentSupportHub extends Component
     }
 
     protected function selectedCase(): StudentSupportCase { abort_unless($this->selectedCaseId, 404); return $this->visibleCases()->findOrFail($this->selectedCaseId); }
+    protected function recordCaseAccess(StudentSupportCase $case): void
+    {
+        app(AuditTrail::class)->record(
+            (int) $case->school_id,
+            'support',
+            'support.case_accessed',
+            'A sensitive student support case was opened.',
+            $case,
+            metadata: ['student_id' => $case->student_id, 'viewer_roles' => auth()->user()->getRoleNames()->values()->all()],
+            subjectLabel: $case->title,
+        );
+    }
     protected function canManage(): bool { return auth()->user()->can('manage student support'); }
     protected function canOpen(): bool { return $this->canManage() || auth()->user()->hasRole('parent'); }
 

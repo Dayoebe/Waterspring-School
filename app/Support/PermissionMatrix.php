@@ -31,6 +31,7 @@ class PermissionMatrix
             'manage clubs',
             'read analytics dashboard',
             'manage user roles',
+            'view audit log',
             'read staff directory',
             'manage staff directory',
 
@@ -351,6 +352,7 @@ class PermissionMatrix
             'delete admin',
             'lock user',
             'manage user roles',
+            'view audit log',
             'read applicant',
             'update applicant',
 

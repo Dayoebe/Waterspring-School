@@ -11,6 +11,7 @@ use App\Models\Notice;
 use App\Models\Result;
 use App\Models\SchoolEvent;
 use App\Models\StudentRecord;
+use App\Services\AuditTrail;
 use App\Services\ClassPilot\Access;
 use App\Services\ClassPilot\CurriculumContext;
 use App\Services\ClassPilot\Exceptions\ClassPilotException;
@@ -166,6 +167,17 @@ class Workspace extends Component
         abort_unless(auth()->user()->can('approve classpilot material'), 403);
         $material = $this->ownedMaterial();
         $material->update(['status' => 'approved', 'approved_by' => auth()->id(), 'approved_at' => now()]);
+        app(AuditTrail::class)->record(
+            (int) $material->school_id,
+            'classpilot',
+            'classpilot.material_approved',
+            'An AI-created material was approved for student and parent access.',
+            $material,
+            ['status' => 'draft'],
+            ['status' => 'approved'],
+            ['type' => $material->type, 'subject_id' => $material->subject_id, 'my_class_id' => $material->my_class_id],
+            subjectLabel: $material->title,
+        );
         $this->notice = 'Material approved. Students in the selected class and their linked parents can now view it. It remains separate from official exams and assignments.';
     }
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\Money;
+use App\Services\AuditTrail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,24 @@ class FeeInvoice extends Model
 
     protected static function booted(): void
     {
+        static::updated(function (self $invoice): void {
+            $fields = array_intersect(array_keys($invoice->getChanges()), ['name', 'note', 'issue_date', 'due_date', 'user_id']);
+            if ($fields === []) {
+                return;
+            }
+
+            $invoice->loadMissing('user');
+            app(AuditTrail::class)->record(
+                $invoice->user?->school_id,
+                'finance',
+                'invoice.updated',
+                'Invoice details were changed.',
+                $invoice,
+                collect($fields)->mapWithKeys(fn (string $field) => [$field => $invoice->getRawOriginal($field)])->all(),
+                collect($fields)->mapWithKeys(fn (string $field) => [$field => $invoice->getAttribute($field)])->all(),
+                subjectLabel: $invoice->name,
+            );
+        });
         static::deleting(function (self $invoice): void {
             if ($invoice->feeInvoiceRecords()->whereHas('paymentTransactions')->exists()) {
                 throw new LogicException('Invoices with payment history cannot be deleted.');

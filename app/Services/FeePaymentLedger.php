@@ -160,6 +160,19 @@ class FeePaymentLedger
 
             $this->syncPaidProjection($lockedPayment->fee_invoice_record_id);
 
+            app(AuditTrail::class)->record(
+                (int) $lockedPayment->school_id,
+                'finance',
+                'payment.reversed',
+                'A payment was reversed with a retained financial transaction.',
+                $reversal,
+                ['receipt_number' => $lockedPayment->receipt_number, 'amount' => (string) $lockedPayment->amount],
+                ['receipt_number' => $reversal->receipt_number, 'amount' => (string) $reversal->amount],
+                ['reason' => $reason, 'fee_invoice_id' => $lockedPayment->fee_invoice_id],
+                $cashier,
+                $lockedPayment->payer_name,
+            );
+
             return $reversal;
         }, 3);
     }

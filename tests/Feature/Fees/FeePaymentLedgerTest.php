@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fees;
 
+use App\Models\AuditEvent;
 use App\Models\Fee;
 use App\Models\FeeCategory;
 use App\Models\FeeInvoice;
@@ -62,6 +63,20 @@ class FeePaymentLedgerTest extends TestCase
         $this->assertSame(8000, (int) $record->fresh()->getRawOriginal('paid'));
     }
 
+    public function test_invoice_line_edits_are_recorded_in_the_accountability_history(): void
+    {
+        [$school, $cashier, $record] = $this->paymentContext();
+        $this->actingAs($cashier);
+
+        $record->update(['amount' => 125, 'waiver' => 5, 'fine' => 2]);
+
+        $event = AuditEvent::query()->where('event', 'invoice.item_updated')->firstOrFail();
+        $this->assertSame($school->id, $event->school_id);
+        $this->assertSame($cashier->id, $event->actor_id);
+        $this->assertSame(10000, (int) $event->old_values['amount']);
+        $this->assertSame('125.00', $event->new_values['amount']);
+    }
+
     public function test_reversal_is_linked_append_only_and_cannot_be_repeated(): void
     {
         [, $cashier, $record] = $this->paymentContext();
@@ -73,6 +88,12 @@ class FeePaymentLedgerTest extends TestCase
         $this->assertSame($payment->id, $reversal->reverses_transaction_id);
         $this->assertSame(0, (int) $record->fresh()->getRawOriginal('paid'));
         $this->assertDatabaseCount('fee_payment_transactions', 2);
+        $this->assertDatabaseHas('audit_events', [
+            'school_id' => $cashier->school_id,
+            'event' => 'payment.reversed',
+            'actor_id' => $cashier->id,
+            'subject_id' => $reversal->id,
+        ]);
 
         try {
             $ledger->reverse($payment, $cashier, 'Second reversal attempt.');

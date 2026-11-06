@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\ResultPublication;
+use App\Models\User;
+use App\Services\AuditTrail;
 
 class ResultPublicationStatus
 {
@@ -77,7 +79,14 @@ class ResultPublicationStatus
         bool $published,
         ?int $userId
     ): ResultPublication {
-        return ResultPublication::query()->updateOrCreate(
+        $existing = ResultPublication::query()->where([
+            'school_id' => $schoolId,
+            'academic_year_id' => $academicYearId,
+            'period_key' => $periodKey,
+        ])->first();
+        $wasPublished = $existing?->published_at !== null;
+
+        $publication = ResultPublication::query()->updateOrCreate(
             [
                 'school_id' => $schoolId,
                 'academic_year_id' => $academicYearId,
@@ -89,5 +98,26 @@ class ResultPublicationStatus
                 'published_by' => $published ? $userId : null,
             ]
         );
+
+        if ($wasPublished !== $published) {
+            app(AuditTrail::class)->record(
+                $schoolId,
+                'results',
+                $published ? 'results.published' : 'results.unpublished',
+                $published ? 'Results were published.' : 'Result publication was revoked.',
+                $publication,
+                ['published' => $wasPublished],
+                ['published' => $published],
+                [
+                    'academic_year_id' => $academicYearId,
+                    'semester_id' => $semesterId,
+                    'period_key' => $periodKey,
+                ],
+                $userId ? User::query()->find($userId) : null,
+                $periodKey === 'annual' ? 'Annual results' : 'Term results',
+            );
+        }
+
+        return $publication;
     }
 }

@@ -238,6 +238,14 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'text' => 'Audit & Accountability',
+                        'icon' => 'fas fa-shield-halved',
+                        'route' => 'audit-log.index',
+                        'permissions' => ['view audit log'],
+                        'section' => 'Administrators & Access',
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'text' => 'Pending Applications',
                         'route' => 'account-applications.index',
                         'permissions' => ['read applicant'],

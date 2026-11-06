@@ -4,6 +4,7 @@ namespace App\Livewire\Users;
 
 use App\Models\School;
 use App\Models\User;
+use App\Services\AuditTrail;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -103,7 +104,19 @@ class ManageUserRoles extends Component
             return;
         }
 
+        $oldRoles = $user->roles->pluck('name')->values()->all();
         $user->syncRoles([$this->persistedRoleName($newRole)]);
+        app(AuditTrail::class)->record(
+            $user->school_id,
+            'access',
+            'access.user_role_changed',
+            'A user role assignment was changed.',
+            $user,
+            ['roles' => $oldRoles],
+            ['roles' => [$this->persistedRoleName($newRole)]],
+            actor: $actor,
+            subjectLabel: $user->name,
+        );
 
         $this->selectedRoles[$userId] = $newRole;
 

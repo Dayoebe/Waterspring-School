@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\Money;
+use App\Services\AuditTrail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,25 @@ class FeeInvoiceRecord extends Model
             if ($record->isDirty('paid')) {
                 throw new LogicException('The paid total is maintained by the immutable payment ledger.');
             }
+        });
+        static::updated(function (self $record): void {
+            $fields = array_intersect(array_keys($record->getChanges()), ['amount', 'waiver', 'fine']);
+            if ($fields === []) {
+                return;
+            }
+
+            $record->loadMissing('feeInvoice.user');
+            app(AuditTrail::class)->record(
+                $record->feeInvoice?->user?->school_id,
+                'finance',
+                'invoice.item_updated',
+                'An invoice line amount, waiver, or fine was changed.',
+                $record,
+                collect($fields)->mapWithKeys(fn (string $field) => [$field => $record->getRawOriginal($field)])->all(),
+                collect($fields)->mapWithKeys(fn (string $field) => [$field => $record->getAttribute($field)?->getAmount()->__toString()])->all(),
+                ['fee_invoice_id' => $record->fee_invoice_id],
+                subjectLabel: $record->feeInvoice?->name,
+            );
         });
         static::deleting(function (self $record): void {
             if ($record->paymentTransactions()->exists()) {

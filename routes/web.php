@@ -34,6 +34,7 @@ use App\Livewire\AcademicYears\ShowAcademicYear;
 use App\Livewire\AccountApplications\ManageAccountApplications;
 use App\Livewire\Admins\AdminDetail;
 use App\Livewire\Admins\ManageAdmins;
+use App\Livewire\Administration\AuditLog;
 use App\Livewire\Admissions\ManageAdmissionRegistrations;
 use App\Livewire\Assignments\AssignmentHub;
 use App\Livewire\Attendance\ManageAttendance;
@@ -632,6 +633,10 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/users/roles', ManageUserRoles::class)
         ->middleware('permission:manage user roles')
         ->name('users.roles');
+
+    Route::get('/audit-log', AuditLog::class)
+        ->middleware('permission:view audit log')
+        ->name('audit-log.index');
 
     Route::get('/admins', ManageAdmins::class)
         ->middleware('permission:read admin|create admin|update admin|delete admin')

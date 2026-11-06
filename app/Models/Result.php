@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AuditTrail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -46,6 +47,15 @@ class Result extends Model
 
             self::validateAndCalculateScores($result);
         });
+
+        static::created(fn (self $result) => $result->recordMarkAudit('marks.created', []));
+        static::updated(function (self $result): void {
+            $fields = array_intersect(array_keys($result->getChanges()), self::auditedFields());
+            if ($fields !== []) {
+                $result->recordMarkAudit('marks.updated', $fields);
+            }
+        });
+        static::deleted(fn (self $result) => $result->recordMarkAudit('marks.deleted', self::auditedFields()));
     }
 
     public static function calculateTotal(mixed $ca1, mixed $ca2, mixed $exam): float
@@ -167,5 +177,44 @@ class Result extends Model
     {
         return $this->belongsTo(StudentRecord::class, 'student_record_id')
             ->withoutGlobalScope('notGraduated');
+    }
+
+    private static function auditedFields(): array
+    {
+        return ['ca1_score', 'ca2_score', 'exam_score', 'total_score', 'teacher_comment', 'approved'];
+    }
+
+    private function recordMarkAudit(string $event, array $fields): void
+    {
+        $this->loadMissing(['studentRecord.user', 'subject']);
+        $student = $this->studentRecord?->user;
+        $selectedFields = $fields === [] ? self::auditedFields() : $fields;
+        $oldValues = $event === 'marks.created' ? null : collect($selectedFields)
+            ->mapWithKeys(fn (string $field) => [$field => $this->getRawOriginal($field)])
+            ->all();
+        $newValues = $event === 'marks.deleted' ? null : collect($selectedFields)
+            ->mapWithKeys(fn (string $field) => [$field => $this->getAttribute($field)])
+            ->all();
+
+        app(AuditTrail::class)->record(
+            $student?->school_id,
+            'results',
+            $event,
+            match ($event) {
+                'marks.created' => 'Result marks were entered.',
+                'marks.deleted' => 'A result record was deleted.',
+                default => 'Result marks or approval details were changed.',
+            },
+            $this,
+            $oldValues,
+            $newValues,
+            [
+                'student_record_id' => $this->student_record_id,
+                'subject_id' => $this->subject_id,
+                'academic_year_id' => $this->academic_year_id,
+                'semester_id' => $this->semester_id,
+            ],
+            subjectLabel: trim(($student?->name ?: 'Student').' · '.($this->subject?->name ?: 'Subject')),
+        );
     }
 }
