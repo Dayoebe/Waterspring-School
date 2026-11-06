@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('instructions');
             $table->dateTime('due_at');
-            $table->unsignedDecimal('max_score', 8, 2)->nullable();
+            $table->decimal('max_score', 8, 2)->unsigned()->nullable();
             $table->string('attachment_path')->nullable();
             $table->string('attachment_name')->nullable();
             $table->dateTime('published_at');
@@ -49,7 +49,7 @@ return new class extends Migration
             $table->string('attachment_name')->nullable();
             $table->string('status')->default('submitted');
             $table->dateTime('submitted_at');
-            $table->unsignedDecimal('score', 8, 2)->nullable();
+            $table->decimal('score', 8, 2)->unsigned()->nullable();
             $table->text('feedback')->nullable();
             $table->foreignId('graded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->dateTime('graded_at')->nullable();

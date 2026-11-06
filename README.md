@@ -65,7 +65,7 @@ Dashboard layouts, forms, tables, and navigation share a responsive light/dark d
 | Node.js | Node 20 or 22 is compatible with the locked Vite version |
 | Frontend packages | Install with `npm ci` using `package-lock.json` |
 
-The application uses Laravel 10, Livewire 3, Tailwind CSS 3, Vite 6 and Font Awesome. Livewire provides Alpine at runtime; the application JavaScript intentionally does not start a second Alpine instance.
+The application uses Laravel 12, Livewire 3, Tailwind CSS 3, Vite 8 and Font Awesome. Livewire provides Alpine at runtime; the application JavaScript intentionally does not start a second Alpine instance.
 
 The initial migration imports [database/schema/baseline-schema.sql](database/schema/baseline-schema.sql), which uses MySQL/MariaDB syntax. SQLite is not a supported fresh-install path for this baseline. Use `composer check-platform-reqs` to check PHP and extension requirements against the installed packages.
 
@@ -171,7 +171,7 @@ npm run build
 
 The public-site migration was checked with HTTP requests and Chromium at 390px and 1440px widths, including image loading, mobile navigation, FAQ controls and structured data. Those checks do not establish end-to-end coverage for the management platform. Live form submission and PWA installation were not tested.
 
-A `phpunit.xml` configuration exists, but this repository currently has no `tests/` directory. There is no committed automated test suite to run yet. The complete fresh-install procedure has not been validated on a separate empty database.
+The committed PHPUnit suite covers ClassPilot access and provider safety, authentication compatibility, PDF/XLSX generation, and result assessment rules. Run it only against the dedicated `testing` database configured in `phpunit.xml`; never point PHPUnit at a database containing operational records. The complete fresh-install procedure should remain a release check on an empty disposable database.
 
 ## License and attribution
 

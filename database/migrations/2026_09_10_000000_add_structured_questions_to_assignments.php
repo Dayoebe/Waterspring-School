@@ -15,7 +15,7 @@ return new class extends Migration
             $table->text('prompt');
             $table->json('options')->nullable();
             $table->json('correct_answers')->nullable();
-            $table->unsignedDecimal('points', 8, 2)->default(1);
+            $table->decimal('points', 8, 2)->unsigned()->default(1);
             $table->text('explanation')->nullable();
             $table->unsignedInteger('position')->default(1);
             $table->boolean('is_required')->default(true);
@@ -29,7 +29,7 @@ return new class extends Migration
             $table->foreignId('assignment_submission_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assignment_question_id')->constrained()->cascadeOnDelete();
             $table->json('answer')->nullable();
-            $table->unsignedDecimal('score', 8, 2)->nullable();
+            $table->decimal('score', 8, 2)->unsigned()->nullable();
             $table->boolean('is_correct')->nullable();
             $table->text('feedback')->nullable();
             $table->timestamps();
