@@ -28,7 +28,7 @@
         @endif
         <x-alert colour="bg-slate-900" title="No internet" :stack-icons="['fas fa-signal', 'fas fa-ban']" :show="false">
             <div  @offline.window="showAlert = true" @online.window="showAlert = false">
-                Your device is offline. Recently opened pages can still load, but server actions will wait until the internet returns.
+                Your device is offline. Public information may remain available, but secure portal pages and server actions need an internet connection.
             </div>
         </x-alert>
     </div>

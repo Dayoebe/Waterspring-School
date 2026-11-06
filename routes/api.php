@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
+use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\PreventGraduatedStudent;
 use App\Http\Middleware\PreventLockAccountAccess;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware([
+    PreventBrowserCaching::class,
     'auth:sanctum',
     PreventLockAccountAccess::class,
     EnsureDefaultPasswordIsChanged::class,

@@ -68,7 +68,6 @@ class PwaController extends Controller
         return response(file_get_contents($path), 200, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Service-Worker-Allowed' => '/',
         ]);
     }
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\SeoController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnsureAcademicPeriodIsSet;
+use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Livewire\AcademicYears\ManageAcademicYears;
 use App\Livewire\AcademicYears\ManageSemesters;
@@ -106,6 +107,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 */
 
 $accountSecurityMiddleware = [
+    PreventBrowserCaching::class,
     'auth',
     'App\Http\Middleware\PreventLockAccountAccess',
     'App\Http\Middleware\EnsureDefaultPasswordIsChanged',
@@ -165,7 +167,7 @@ Route::get('/team/{staffProfile}', [PageController::class, 'staffProfile'])->whe
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('guest')->group(function () {
+Route::middleware([PreventBrowserCaching::class, 'guest'])->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
 
@@ -178,7 +180,7 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset')->name('password.update');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware([PreventBrowserCaching::class, 'auth'])->group(function () {
     Route::get('email/verify', [VerificationController::class, 'notice'])
         ->name('verification.notice');
     Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
@@ -216,7 +218,7 @@ Route::middleware([...$schoolContextMiddleware, 'permission:read applicant'])
 */
 
 Route::post('logout', [AuthController::class, 'logout'])
-    ->middleware('auth')
+    ->middleware([PreventBrowserCaching::class, 'auth'])
     ->name('logout');
 
 Route::middleware($schoolContextMiddleware)->group(function () {

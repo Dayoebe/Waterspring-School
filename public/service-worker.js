@@ -1,6 +1,7 @@
-const CACHE_VERSION = 'watersprings-pwa-v3';
+const CACHE_PREFIX = 'watersprings-pwa-';
+const CACHE_VERSION = `${CACHE_PREFIX}v4`;
 const CORE_CACHE = `${CACHE_VERSION}-core`;
-const PAGE_CACHE = `${CACHE_VERSION}-pages`;
+const PAGE_CACHE = `${CACHE_VERSION}-public-pages`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const OFFLINE_URL = './offline.html';
 const MANIFEST_URL = './build/manifest.json';
@@ -11,32 +12,45 @@ const CORE_ASSETS = [
   './images/watersprings/logo.png',
 ];
 
-const STATIC_ASSET_PATTERN = /\.(?:css|js|mjs|png|jpe?g|svg|webp|ico|woff2?|ttf)$/i;
-const EXCLUDED_PATH_PREFIXES = [
-  '/livewire/',
-  '/logout',
-  '/sanctum/',
-  '/broadcasting/',
-  '/telescope/',
+// Keep this list aligned with the public page routes in routes/web.php.
+// Authentication and portal URLs are intentionally absent.
+const PUBLIC_DOCUMENT_PATHS = new Set([
+  '/',
+  '/about',
+  '/academics',
+  '/why-watersprings',
+  '/contact',
+  '/admission',
+  '/prospectus',
+  '/gallery',
+  '/team',
+]);
+
+const STATIC_ASSET_PATH_PREFIXES = [
+  '/build/',
+  '/images/',
+  '/img/',
+  '/icons/',
 ];
-const EXCLUDED_DOCUMENT_PREFIXES = [
-  '/cbt/exam/',
-];
+const STATIC_ASSET_PATHS = new Set([
+  '/favicon.ico',
+]);
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
 }
 
-function pathStartsWith(pathname, prefixes) {
-  return prefixes.some((prefix) => pathname.startsWith(prefix));
-}
+function scopeRelativePath(url) {
+  const scopePath = new URL(self.registration.scope).pathname;
 
-function isExcludedRequest(url) {
-  return pathStartsWith(url.pathname, EXCLUDED_PATH_PREFIXES);
-}
+  if (!url.pathname.startsWith(scopePath)) {
+    return null;
+  }
 
-function isExcludedDocument(url) {
-  return pathStartsWith(url.pathname, EXCLUDED_DOCUMENT_PREFIXES);
+  const relativePath = `/${url.pathname.slice(scopePath.length).replace(/^\/+/, '')}`;
+  const normalizedPath = relativePath.replace(/\/+$/, '');
+
+  return normalizedPath || '/';
 }
 
 function isDocumentRequest(request) {
@@ -45,22 +59,45 @@ function isDocumentRequest(request) {
   return request.mode === 'navigate' || accept.includes('text/html');
 }
 
+function isPublicDocument(url) {
+  const relativePath = scopeRelativePath(url);
+
+  return relativePath !== null && (
+    PUBLIC_DOCUMENT_PATHS.has(relativePath) ||
+    /^\/team\/\d+$/.test(relativePath)
+  );
+}
+
 function shouldCacheStaticAsset(url) {
+  const relativePath = scopeRelativePath(url);
+
   return (
     isSameOrigin(url) &&
+    relativePath !== null &&
     (
-      url.pathname.includes('/build/') ||
-      url.pathname.includes('/images/') ||
-      url.pathname.includes('/img/') ||
-      url.pathname.includes('/icons/') ||
-      STATIC_ASSET_PATTERN.test(url.pathname)
+      STATIC_ASSET_PATHS.has(relativePath) ||
+      STATIC_ASSET_PATH_PREFIXES.some((prefix) => relativePath.startsWith(prefix))
     )
   );
 }
 
+function publicDocumentCacheKey(url) {
+  const cacheUrl = new URL(url.toString());
+  cacheUrl.search = '';
+  cacheUrl.hash = '';
+
+  return new Request(cacheUrl.toString(), {
+    credentials: 'omit',
+    headers: { Accept: 'text/html' },
+  });
+}
+
 async function loadManifestAssets() {
   try {
-    const response = await fetch(MANIFEST_URL, { cache: 'no-store' });
+    const response = await fetch(MANIFEST_URL, {
+      cache: 'no-store',
+      credentials: 'omit',
+    });
 
     if (!response.ok) {
       return [];
@@ -84,10 +121,15 @@ async function installCoreAssets() {
   await Promise.allSettled(
     assetsToCache.map(async (asset) => {
       try {
-        const request = new Request(asset, { cache: 'reload' });
+        // Precache without session cookies so the home page can never contain
+        // an authenticated user's navigation or account details.
+        const request = new Request(asset, {
+          cache: 'reload',
+          credentials: 'omit',
+        });
         const response = await fetch(request);
 
-        if (!response || !response.ok) {
+        if (!response || !response.ok || response.type !== 'basic') {
           throw new Error(`Unexpected response: ${response ? response.status : 'no response'}`);
         }
 
@@ -105,24 +147,38 @@ async function cleanupOldCaches() {
 
   await Promise.all(
     cacheKeys
-      .filter((key) => !expectedCaches.includes(key))
+      .filter((key) => key.startsWith(CACHE_PREFIX) && !expectedCaches.includes(key))
       .map((key) => caches.delete(key))
   );
 }
 
-async function handleDocumentRequest(request) {
+async function refreshPublicDocumentCache(cacheKey) {
   const pageCache = await caches.open(PAGE_CACHE);
+  const anonymousRequest = new Request(cacheKey, {
+    cache: 'reload',
+    credentials: 'omit',
+  });
+  const response = await fetch(anonymousRequest);
 
+  if (
+    response &&
+    response.ok &&
+    response.type === 'basic' &&
+    !response.redirected &&
+    isPublicDocument(new URL(response.url))
+  ) {
+    await pageCache.put(cacheKey, response.clone());
+  }
+}
+
+async function handlePublicDocumentRequest(request, cacheKey) {
   try {
-    const response = await fetch(request);
-
-    if (response && response.ok && response.type === 'basic') {
-      pageCache.put(request, response.clone()).catch(() => undefined);
-    }
-
-    return response;
+    // Return the normal session-aware response while online. A separate
+    // credential-free request is the only response allowed into PAGE_CACHE.
+    return await fetch(request);
   } catch (error) {
-    const cachedResponse = await pageCache.match(request);
+    const pageCache = await caches.open(PAGE_CACHE);
+    const cachedResponse = await pageCache.match(cacheKey);
 
     if (cachedResponse) {
       return cachedResponse;
@@ -134,12 +190,19 @@ async function handleDocumentRequest(request) {
 
 async function handleStaticAssetRequest(request) {
   const assetCache = await caches.open(ASSET_CACHE);
-  const cachedResponse = await assetCache.match(request);
+  const publicAssetRequest = new Request(request, { credentials: 'omit' });
+  const cachedResponse = await assetCache.match(publicAssetRequest);
 
-  const networkRequest = fetch(request)
+  const networkRequest = fetch(publicAssetRequest)
     .then((response) => {
-      if (response && response.ok && response.type === 'basic') {
-        assetCache.put(request, response.clone()).catch(() => undefined);
+      if (
+        response &&
+        response.ok &&
+        response.type === 'basic' &&
+        !response.redirected &&
+        shouldCacheStaticAsset(new URL(response.url))
+      ) {
+        assetCache.put(publicAssetRequest, response.clone()).catch(() => undefined);
       }
 
       return response;
@@ -170,16 +233,20 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(request.url);
 
-  if (!isSameOrigin(requestUrl) || isExcludedRequest(requestUrl)) {
+  if (!isSameOrigin(requestUrl)) {
     return;
   }
 
   if (isDocumentRequest(request)) {
-    if (isExcludedDocument(requestUrl)) {
+    // Let the browser fetch every auth and portal document directly. No cache
+    // is opened and no offline fallback is served for those requests.
+    if (!isPublicDocument(requestUrl)) {
       return;
     }
 
-    event.respondWith(handleDocumentRequest(request));
+    const cacheKey = publicDocumentCacheKey(requestUrl);
+    event.respondWith(handlePublicDocumentRequest(request, cacheKey));
+    event.waitUntil(refreshPublicDocumentCache(cacheKey).catch(() => undefined));
     return;
   }
 

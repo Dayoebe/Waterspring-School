@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
+use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\PreventGraduatedStudent;
 use App\Http\Middleware\PreventLockAccountAccess;
 use App\Models\ClassGroup;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -34,6 +36,7 @@ class AccountSecurityMiddlewareTest extends TestCase
             'verification.send',
         ];
         $requiredMiddleware = [
+            PreventBrowserCaching::class,
             PreventLockAccountAccess::class,
             EnsureDefaultPasswordIsChanged::class,
             PreventGraduatedStudent::class,
@@ -65,6 +68,19 @@ class AccountSecurityMiddlewareTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard')->assertForbidden();
         $this->assertGuest();
+    }
+
+    public function test_authentication_and_portal_responses_cannot_be_stored_by_the_browser(): void
+    {
+        $loginResponse = $this->get('/login')->assertOk();
+        $this->assertResponseCannotBeCached($loginResponse);
+
+        $user = $this->portalUser(verified: true);
+
+        $dashboardResponse = $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk();
+        $this->assertResponseCannotBeCached($dashboardResponse);
     }
 
     public function test_locked_accounts_are_denied_on_token_authenticated_api_routes(): void
@@ -161,5 +177,19 @@ class AccountSecurityMiddlewareTest extends TestCase
         }
 
         return $user;
+    }
+
+    private function assertResponseCannotBeCached(TestResponse $response): void
+    {
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+
+        foreach (['no-store', 'no-cache', 'must-revalidate', 'private', 'max-age=0'] as $directive) {
+            $this->assertStringContainsString($directive, $cacheControl);
+        }
+
+        $response->assertHeader('Pragma', 'no-cache');
+        $expiresAt = strtotime((string) $response->headers->get('Expires'));
+        $this->assertNotFalse($expiresAt);
+        $this->assertLessThanOrEqual(time(), $expiresAt);
     }
 }
