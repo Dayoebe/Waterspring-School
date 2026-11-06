@@ -19,6 +19,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\VerificationController;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnsureAcademicPeriodIsSet;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -104,24 +105,22 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 |--------------------------------------------------------------------------
 */
 
-$dashboardMiddleware = [
-    'auth:sanctum',
-    'verified',
-    'restrict.teacher.portal',
+$accountSecurityMiddleware = [
+    'auth',
     'App\Http\Middleware\PreventLockAccountAccess',
     'App\Http\Middleware\EnsureDefaultPasswordIsChanged',
     'App\Http\Middleware\PreventGraduatedStudent',
+    'verified',
+    'restrict.teacher.portal',
+];
+
+$schoolContextMiddleware = [
+    ...$accountSecurityMiddleware,
     'App\Http\Middleware\EnsureSuperAdminHasSchoolId',
 ];
 
-$adminMiddleware = [
-    'auth:sanctum',
-    'verified',
-    'restrict.teacher.portal',
-    'App\Http\Middleware\PreventLockAccountAccess',
-    'App\Http\Middleware\EnsureDefaultPasswordIsChanged',
-    'App\Http\Middleware\PreventGraduatedStudent',
-];
+$dashboardMiddleware = $schoolContextMiddleware;
+$adminMiddleware = $schoolContextMiddleware;
 
 Route::pattern('exam', '[0-9]+');
 
@@ -179,8 +178,19 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset')->name('password.update');
 });
 
+Route::middleware('auth')->group(function () {
+    Route::get('email/verify', [VerificationController::class, 'notice'])
+        ->name('verification.notice');
+    Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::post('email/verification-notification', [VerificationController::class, 'send'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+});
+
 // Account Applications (Full Livewire)
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId', 'permission:read applicant'])
+Route::middleware([...$schoolContextMiddleware, 'permission:read applicant'])
     ->group(function () {
         Route::get('account-applications', ManageAccountApplications::class)
             ->name('account-applications.index')
@@ -209,7 +219,7 @@ Route::post('logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::middleware($schoolContextMiddleware)->group(function () {
     Route::match(['GET', 'POST'], '/database/download', [DatabaseBackupController::class, 'download'])
         ->middleware('role:super-admin|super_admin')
         ->name('database.download');
@@ -347,7 +357,7 @@ Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\Ensur
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::middleware($schoolContextMiddleware)->group(function () {
 
     Route::prefix('parents')->group(function () {
         // Main parents page (list/create/edit all in one component)
@@ -373,7 +383,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->prefix('fees')->group(function () {
+Route::middleware($schoolContextMiddleware)->prefix('fees')->group(function () {
 
     // Fee Categories
     Route::get('/fee-categories', ManageFeeCategories::class)
@@ -423,7 +433,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('teacher')->middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId', 'permission:upload result'])->group(function () {
+Route::prefix('teacher')->middleware([...$schoolContextMiddleware, 'permission:upload result'])->group(function () {
     Route::get('results', fn () => redirect()->route('result.upload.individual'))->name('results.index');
 });
 
@@ -433,7 +443,7 @@ Route::prefix('teacher')->middleware(['auth', 'verified', 'restrict.teacher.port
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->prefix('cbt')->name('cbt.')->group(function () {
+Route::middleware($schoolContextMiddleware)->prefix('cbt')->name('cbt.')->group(function () {
     Route::get('/exams', CbtExamSelection::class)
         ->middleware(['role:student', 'permission:take cbt exam'])
         ->name('exams');
@@ -465,7 +475,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/clubs', ClubHub::class)
         ->middleware('permission:view clubs')
         ->name('clubs.index');
@@ -519,7 +529,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/sections', ManageSections::class)
         ->middleware('permission:read section')
         ->name('sections.index');
@@ -534,7 +544,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Midd
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('results')->middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::prefix('results')->middleware($schoolContextMiddleware)->group(function () {
     Route::get('/', Index::class)->name('result')->can('upload result');
 
     Route::get('/upload/individual', IndividualUpload::class)
@@ -572,7 +582,7 @@ Route::prefix('results')->middleware(['auth', 'verified', 'restrict.teacher.port
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal'])->group(function () {
+Route::middleware($accountSecurityMiddleware)->group(function () {
 
     // Schools list
     Route::get('/schools', ManageSchools::class)
@@ -596,7 +606,7 @@ Route::middleware(['auth', 'verified', 'restrict.teacher.portal'])->group(functi
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::middleware($schoolContextMiddleware)->group(function () {
 
     Route::get('/users/roles', ManageUserRoles::class)
         ->middleware('permission:manage user roles')
@@ -659,7 +669,7 @@ Route::middleware($dashboardMiddleware)->prefix('dashboard')->group(function () 
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'restrict.teacher.portal', 'App\Http\Middleware\EnsureSuperAdminHasSchoolId'])->group(function () {
+Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/timetables', ManageTimetables::class)
         ->middleware('permission:read timetable')
         ->name('timetables.index');

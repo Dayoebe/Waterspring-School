@@ -11,16 +11,27 @@ class PreventLockAccountAccess
     /**
      * Handle an incoming request.
      *
-     * @param \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response) $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->user()->locked && !auth()->user()->hasRole('super-admin')) {
-            //log user out
-            auth()->guard('web')->logout();
-            session()->flush();
+        $user = $request->user();
 
-            abort(403, "This Account Is Locked. If this is an error, contact your school's administrator.");
+        if ($user->locked && ! $user->hasAnyRole(['super-admin', 'super_admin'])) {
+            auth()->guard('web')->logout();
+
+            if ($request->hasSession()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => "This account is locked. If this is an error, contact your school's administrator.",
+                ], 403);
+            }
+
+            abort(403, "This account is locked. If this is an error, contact your school's administrator.");
         }
 
         return $next($request);

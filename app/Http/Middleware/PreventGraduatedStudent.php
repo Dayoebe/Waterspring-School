@@ -3,20 +3,21 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class PreventGraduatedStudent
 {
     /**
      * Handle an incoming request.
      *
-     * @param \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse) $next
-     *
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     * @param  Closure(Request): (Response|RedirectResponse)  $next
+     * @return Response|RedirectResponse
      */
     public function handle(Request $request, Closure $next)
     {
-        if (!auth()->user()->hasRole('student')) {
+        if (! auth()->user()->hasRole('student')) {
             return $next($request);
         }
 
@@ -26,22 +27,16 @@ class PreventGraduatedStudent
             ->with('baseClass')
             ->first();
 
-        if (!$studentRecord) {
-            session()->flash('danger', 'You cannot access this resource because your student record is not available.');
-
-            return redirect('dashboard');
+        if (! $studentRecord) {
+            abort(403, 'You cannot access this resource because your student record is not available.');
         }
 
         if ($studentRecord->is_graduated === true) {
-            session()->flash('danger', 'You cannot access this resource because you have been marked as graduated');
-
-            return redirect('dashboard');
+            abort(403, 'You cannot access this resource because you have been marked as graduated.');
         }
 
-        if (!$studentRecord->isActiveStudent()) {
-            session()->flash('danger', 'You cannot access this resource because your student account is not currently active.');
-
-            return redirect('dashboard');
+        if (! $studentRecord->isActiveStudent()) {
+            abort(403, 'You cannot access this resource because your student account is not currently active.');
         }
 
         return $next($request);
