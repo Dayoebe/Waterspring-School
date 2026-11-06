@@ -9,6 +9,7 @@ use App\Models\BroadcastMessage;
 use App\Models\ContactMessage;
 use App\Models\DisciplineIncident;
 use App\Models\FeeInvoiceRecord;
+use App\Models\FeePaymentTransaction;
 use App\Models\MyClass;
 use App\Models\Notice;
 use App\Models\Result;
@@ -55,7 +56,7 @@ class ExecutiveReport extends Component
 
     protected function peopleMetrics(?int $schoolId, Collection $activeStudentRecordIds, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'active_students' => 0,
                 'total_students' => 0,
@@ -88,7 +89,7 @@ class ExecutiveReport extends Component
 
     protected function studentClassDistribution(?int $schoolId, ?int $academicYearId, Collection $activeStudentRecordIds): array
     {
-        if (!$schoolId || $activeStudentRecordIds->isEmpty()) {
+        if (! $schoolId || $activeStudentRecordIds->isEmpty()) {
             return [];
         }
 
@@ -122,7 +123,7 @@ class ExecutiveReport extends Component
 
     protected function admissionMetrics(?int $schoolId, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return array_merge($this->emptyMetrics(), [
                 'pending' => 0,
                 'reviewed' => 0,
@@ -151,7 +152,7 @@ class ExecutiveReport extends Component
 
     protected function financeMetrics(?int $schoolId, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'billable' => 0,
                 'paid' => 0,
@@ -174,16 +175,18 @@ class ExecutiveReport extends Component
         $waiver = (int) $allRows->sum(fn (FeeInvoiceRecord $row): int => (int) $row->getRawOriginal('waiver'));
         $outstanding = max(0, $billable - $paid - $waiver);
 
-        $periodRows = (clone $base)
-            ->whereBetween('created_at', [$start, $end])
-            ->get(['paid']);
+        $periodCollected = (int) FeePaymentTransaction::query()
+            ->where('school_id', $schoolId)
+            ->whereBetween('occurred_at', [$start, $end])
+            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'reversal' THEN -amount ELSE amount END), 0) AS collected")
+            ->value('collected');
 
         return [
             'billable' => $billable,
             'paid' => $paid,
             'waiver' => $waiver,
             'outstanding' => $outstanding,
-            'period_collected' => (int) $periodRows->sum(fn (FeeInvoiceRecord $row): int => (int) $row->getRawOriginal('paid')),
+            'period_collected' => $periodCollected,
             'due_items' => (clone $base)->isDue()->count(),
             'collection_rate' => $billable > 0 ? round((($paid + $waiver) / $billable) * 100, 1) : 0.0,
         ];
@@ -207,7 +210,7 @@ class ExecutiveReport extends Component
             'class_performance' => [],
         ];
 
-        if (!$schoolId || !$academicYearId || !$semesterId || $activeStudentRecordIds->isEmpty()) {
+        if (! $schoolId || ! $academicYearId || ! $semesterId || $activeStudentRecordIds->isEmpty()) {
             return $fallback;
         }
 
@@ -276,7 +279,7 @@ class ExecutiveReport extends Component
 
     protected function attendanceMetrics(?int $schoolId, ?int $academicYearId, ?int $semesterId, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'sessions' => 0,
                 'records' => 0,
@@ -333,7 +336,7 @@ class ExecutiveReport extends Component
 
     protected function disciplineMetrics(?int $schoolId, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'period_total' => 0,
                 'unresolved' => 0,
@@ -355,7 +358,7 @@ class ExecutiveReport extends Component
 
     protected function engagementMetrics(?int $schoolId, Carbon $start, Carbon $end): array
     {
-        if (!$schoolId) {
+        if (! $schoolId) {
             return [
                 'active_notices' => 0,
                 'period_notices' => 0,
@@ -400,29 +403,29 @@ class ExecutiveReport extends Component
         }
 
         if (($admissions['pending'] ?? 0) > 0) {
-            $signals[] = ['tone' => 'sky', 'title' => 'Admissions awaiting action', 'body' => number_format($admissions['pending']) . ' application(s) still need review.'];
+            $signals[] = ['tone' => 'sky', 'title' => 'Admissions awaiting action', 'body' => number_format($admissions['pending']).' application(s) still need review.'];
         }
 
         if (($finance['billable'] ?? 0) > 0 && ($finance['collection_rate'] ?? 0) < 70) {
-            $signals[] = ['tone' => 'rose', 'title' => 'Fee collection below target', 'body' => 'Current collection is ' . ($finance['collection_rate'] ?? 0) . '%. Review unpaid invoice items.'];
+            $signals[] = ['tone' => 'rose', 'title' => 'Fee collection below target', 'body' => 'Current collection is '.($finance['collection_rate'] ?? 0).'%. Review unpaid invoice items.'];
         }
 
-        if (!($academics['has_context'] ?? false)) {
+        if (! ($academics['has_context'] ?? false)) {
             $signals[] = ['tone' => 'amber', 'title' => 'Academic context incomplete', 'body' => 'Set the active academic year and term to unlock result coverage metrics.'];
         } elseif (($academics['coverage_rate'] ?? 0) < 80) {
-            $signals[] = ['tone' => 'sky', 'title' => 'Result coverage needs attention', 'body' => 'Only ' . ($academics['coverage_rate'] ?? 0) . '% of active students have result entries this term.'];
+            $signals[] = ['tone' => 'sky', 'title' => 'Result coverage needs attention', 'body' => 'Only '.($academics['coverage_rate'] ?? 0).'% of active students have result entries this term.'];
         }
 
         if (($attendance['records'] ?? 0) > 0 && ($attendance['attendance_rate'] ?? 0) < 90) {
-            $signals[] = ['tone' => 'rose', 'title' => 'Attendance rate below 90%', 'body' => 'Attendance for the report window is ' . ($attendance['attendance_rate'] ?? 0) . '%.'];
+            $signals[] = ['tone' => 'rose', 'title' => 'Attendance rate below 90%', 'body' => 'Attendance for the report window is '.($attendance['attendance_rate'] ?? 0).'%.'];
         }
 
         if (($discipline['unresolved'] ?? 0) > 0) {
-            $signals[] = ['tone' => 'amber', 'title' => 'Open discipline follow-up', 'body' => number_format($discipline['unresolved']) . ' incident(s) are unresolved.'];
+            $signals[] = ['tone' => 'amber', 'title' => 'Open discipline follow-up', 'body' => number_format($discipline['unresolved']).' incident(s) are unresolved.'];
         }
 
         if (($engagement['inquiries_open'] ?? 0) > 0) {
-            $signals[] = ['tone' => 'sky', 'title' => 'Open public inquiries', 'body' => number_format($engagement['inquiries_open']) . ' inquiry thread(s) are still open.'];
+            $signals[] = ['tone' => 'sky', 'title' => 'Open public inquiries', 'body' => number_format($engagement['inquiries_open']).' inquiry thread(s) are still open.'];
         }
 
         if ($signals === []) {

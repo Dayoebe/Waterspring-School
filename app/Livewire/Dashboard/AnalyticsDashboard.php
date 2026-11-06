@@ -6,6 +6,7 @@ use App\Models\AdmissionRegistration;
 use App\Models\BroadcastMessage;
 use App\Models\ContactMessage;
 use App\Models\FeeInvoiceRecord;
+use App\Models\FeePaymentTransaction;
 use App\Models\GalleryItem;
 use App\Models\MediaAsset;
 use App\Models\Notice;
@@ -49,7 +50,7 @@ class AnalyticsDashboard extends Component
 
         foreach ($rows as $row) {
             $date = data_get($row, $dateColumn);
-            if (!$date) {
+            if (! $date) {
                 continue;
             }
 
@@ -134,18 +135,20 @@ class AnalyticsDashboard extends Component
         $waiver = (int) $allRows->sum(fn (FeeInvoiceRecord $row): int => (int) $row->getRawOriginal('waiver'));
         $outstanding = max(0, $billable - $paid - $waiver);
 
-        $rowsForPeriod = (clone $baseQuery)
-            ->whereBetween('created_at', [
+        $rowsForPeriod = FeePaymentTransaction::query()
+            ->where('school_id', auth()->user()?->school_id)
+            ->whereBetween('occurred_at', [
                 Carbon::createFromFormat('Y-m', $monthKeys[0])->startOfMonth(),
                 Carbon::createFromFormat('Y-m', end($monthKeys))->endOfMonth(),
             ])
-            ->get(['paid', 'created_at']);
+            ->get(['amount', 'type', 'occurred_at']);
 
         $monthly = array_fill_keys($monthKeys, 0);
         foreach ($rowsForPeriod as $row) {
-            $monthKey = Carbon::parse($row->created_at)->format('Y-m');
+            $monthKey = Carbon::parse($row->occurred_at)->format('Y-m');
             if (array_key_exists($monthKey, $monthly)) {
-                $monthly[$monthKey] += (int) $row->getRawOriginal('paid');
+                $amount = (int) $row->getRawOriginal('amount');
+                $monthly[$monthKey] += $row->type === 'reversal' ? -$amount : $amount;
             }
         }
 

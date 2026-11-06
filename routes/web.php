@@ -10,6 +10,7 @@ use App\Http\Controllers\ExamPaperController;
 use App\Http\Controllers\ExamPaperPortalController;
 use App\Http\Controllers\ExamSlotController;
 use App\Http\Controllers\FeeInvoiceController;
+use App\Http\Controllers\FeePaymentReceiptController;
 use App\Http\Controllers\GradeSystemController;
 use App\Http\Controllers\LockUserAccountController;
 use App\Http\Controllers\MyClassController;
@@ -427,6 +428,9 @@ Route::middleware($schoolContextMiddleware)->prefix('fees')->group(function () {
     Route::get('/fee-invoices/{fee_invoice}/print', [FeeInvoiceController::class, 'print'])
         ->middleware('permission:read fee invoice')
         ->name('fee-invoices.print');
+    Route::get('/fee-payments/{transaction}/receipt', [FeePaymentReceiptController::class, 'show'])
+        ->middleware('permission:read fee invoice')
+        ->name('fee-payments.receipt');
 });
 
 /*

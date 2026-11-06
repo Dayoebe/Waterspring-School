@@ -172,13 +172,16 @@
             @if($canManage)
             <!-- Payments Tab -->
             <div x-show="activeTab === 'payments'" x-transition>
-                <h3 class="text-xl font-bold text-gray-900 mb-4">Add Payments</h3>
+                <div class="mb-5">
+                    <h3 class="text-xl font-bold text-gray-900">Payment ledger</h3>
+                    <p class="mt-1 text-sm text-gray-600">Payments are permanent ledger entries. Corrections are recorded as linked reversals rather than edits or deletions.</p>
+                </div>
                 
                 @foreach($feeInvoice->feeInvoiceRecords as $record)
                     @php
                         $balance = $record->amount->plus($record->fine)->minus($record->waiver)->minus($record->paid);
                     @endphp
-                    <div class="border rounded-lg p-4 mb-4 {{ $balance->isLessThanOrEqualTo(0) ? 'bg-green-50 border-green-200' : '' }}">
+                    <div class="border rounded-lg p-4 mb-6 {{ $balance->isLessThanOrEqualTo(0) ? 'border-green-200' : 'border-gray-200' }}">
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <h4 class="font-bold text-gray-900">{{ $record->fee->name }}</h4>
@@ -192,23 +195,7 @@
                             </div>
                             @if($balance->isGreaterThan(0))
                                 @if($payingRecordId === $record->id)
-                                    <div class="flex gap-2">
-                                        <input type="number" 
-                                               wire:model="paymentAmount"
-                                               step="0.01"
-                                               min="0.01"
-                                               max="{{ $balance->getAmount()->toFloat() }}"
-                                               placeholder="Amount"
-                                               class="w-32 rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                        <button wire:click="addPayment" 
-                                                class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button wire:click="cancelPayment" 
-                                                class="px-3 py-1 bg-gray-400 text-white text-sm rounded hover:bg-gray-500">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
+                                    <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">Recording payment</span>
                                 @else
                                     <button wire:click="startPayment({{ $record->id }})" 
                                             class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
@@ -220,6 +207,149 @@
                                     <i class="fas fa-check-circle mr-1"></i>Paid
                                 </span>
                             @endif
+                        </div>
+
+                        @if($payingRecordId === $record->id)
+                            <div class="mb-5 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1 block text-sm font-medium text-gray-700">Amount</label>
+                                        <input type="number" wire:model="paymentAmount" step="0.01" min="0.01"
+                                               max="{{ $balance->getAmount()->toFloat() }}"
+                                               class="w-full rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                        @error('paymentAmount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-sm font-medium text-gray-700">Payment method</label>
+                                        <select wire:model="paymentMethod" class="w-full rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                            @foreach($paymentMethods as $method => $label)
+                                                <option value="{{ $method }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-sm font-medium text-gray-700">Bank, POS or cheque reference</label>
+                                        <input type="text" wire:model="paymentReference" maxlength="120"
+                                               placeholder="Optional external reference"
+                                               class="w-full rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-sm font-medium text-gray-700">Payment note</label>
+                                        <input type="text" wire:model="paymentNote" maxlength="1000"
+                                               placeholder="Optional audit note"
+                                               class="w-full rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex gap-2">
+                                    <button type="button" wire:click="addPayment"
+                                            class="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">
+                                        Record payment and issue receipt
+                                    </button>
+                                    <button type="button" wire:click="cancelPayment"
+                                            class="rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-600">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="overflow-x-auto rounded-lg border">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                                    <tr>
+                                        <th class="px-3 py-2">Date</th>
+                                        <th class="px-3 py-2">Receipt / reference</th>
+                                        <th class="px-3 py-2">Cashier</th>
+                                        <th class="px-3 py-2">Method</th>
+                                        <th class="px-3 py-2 text-right">Amount</th>
+                                        <th class="px-3 py-2">Reconciliation</th>
+                                        <th class="px-3 py-2 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    @forelse($record->paymentTransactions as $transaction)
+                                        @php($latestReconciliation = $transaction->reconciliations->first())
+                                        <tr>
+                                            <td class="whitespace-nowrap px-3 py-3 text-gray-600">{{ $transaction->occurred_at->format('d M Y H:i') }}</td>
+                                            <td class="px-3 py-3">
+                                                <a href="{{ route('fee-payments.receipt', $transaction->id) }}" target="_blank"
+                                                   class="font-semibold text-indigo-700 hover:underline">{{ $transaction->receipt_number }}</a>
+                                                @if($transaction->external_reference)
+                                                    <p class="text-xs text-gray-500">Ref: {{ $transaction->external_reference }}</p>
+                                                @endif
+                                            </td>
+                                            <td class="px-3 py-3 text-gray-700">{{ $transaction->cashier_name }}</td>
+                                            <td class="px-3 py-3 text-gray-600">
+                                                {{ $transaction->isReversal() ? 'Reversal' : ($paymentMethods[$transaction->payment_method] ?? ucfirst(str_replace('_', ' ', $transaction->payment_method))) }}
+                                            </td>
+                                            <td class="whitespace-nowrap px-3 py-3 text-right font-semibold {{ $transaction->isReversal() ? 'text-red-600' : 'text-green-700' }}">
+                                                {{ $transaction->isReversal() ? '−' : '+' }}{{ $transaction->amount->formatTo(app()->getLocale()) }}
+                                            </td>
+                                            <td class="px-3 py-3">
+                                                @if($latestReconciliation)
+                                                    <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                                                        {{ $reconciliationStatuses[$latestReconciliation->status] ?? ucfirst($latestReconciliation->status) }}
+                                                    </span>
+                                                    <p class="mt-1 text-xs text-gray-500">{{ $latestReconciliation->reconciler_name }} · {{ $latestReconciliation->created_at->format('d M Y') }}</p>
+                                                @else
+                                                    <span class="text-xs text-amber-700">Not reconciled</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-3 py-3 text-right">
+                                                <div class="flex justify-end gap-2">
+                                                    <button type="button" wire:click="startReconciliation({{ $transaction->id }})"
+                                                            class="rounded bg-slate-700 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-800">
+                                                        Reconcile
+                                                    </button>
+                                                    @if(!$transaction->isReversal() && !$transaction->reversal)
+                                                        <button type="button" wire:click="startReversal({{ $transaction->id }})"
+                                                                class="rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700">
+                                                            Reverse
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @if($reversingTransactionId === $transaction->id)
+                                            <tr class="bg-red-50">
+                                                <td colspan="7" class="px-3 py-3">
+                                                    <div class="flex flex-col gap-2 md:flex-row">
+                                                        <input type="text" wire:model="reversalReason" maxlength="1000"
+                                                               placeholder="Required reason for reversal"
+                                                               class="flex-1 rounded border-red-300 focus:border-red-500 focus:ring-red-500">
+                                                        <button type="button" wire:click="reversePayment" class="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white">Confirm reversal</button>
+                                                        <button type="button" wire:click="cancelReversal" class="rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white">Cancel</button>
+                                                    </div>
+                                                    @error('reversalReason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                                </td>
+                                            </tr>
+                                        @endif
+                                        @if($reconcilingTransactionId === $transaction->id)
+                                            <tr class="bg-slate-50">
+                                                <td colspan="7" class="px-3 py-3">
+                                                    <div class="grid grid-cols-1 gap-2 md:grid-cols-3">
+                                                        <select wire:model="reconciliationStatus" class="rounded border-gray-300">
+                                                            @foreach($reconciliationStatuses as $status => $label)
+                                                                <option value="{{ $status }}">{{ $label }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        <input type="text" wire:model="reconciliationReference" maxlength="120" placeholder="Statement reference" class="rounded border-gray-300">
+                                                        <input type="text" wire:model="reconciliationNote" maxlength="1000" placeholder="Optional note" class="rounded border-gray-300">
+                                                    </div>
+                                                    <div class="mt-2 flex gap-2">
+                                                        <button type="button" wire:click="recordReconciliation" class="rounded bg-slate-700 px-4 py-2 text-sm font-semibold text-white">Add reconciliation event</button>
+                                                        <button type="button" wire:click="cancelReconciliation" class="rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white">Cancel</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="px-3 py-5 text-center text-sm text-gray-500">No payment transactions recorded for this fee item.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 @endforeach

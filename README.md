@@ -53,6 +53,12 @@ The following modules are present in the codebase. Their availability depends on
 
 The permission matrix defines super-admin, principal, admin, teacher, student, parent, applicant and basic user roles. Access is enforced through route middleware, permissions and policies; a role does not automatically receive every action in a module. See [app/Support/PermissionMatrix.php](app/Support/PermissionMatrix.php).
 
+### Fee payment ledger
+
+Fee collections are recorded as append-only payment transactions with receipt numbers, cashier and payer snapshots, payment methods, external references and reconciliation history. Corrections create linked reversal transactions; payment and reconciliation rows cannot be edited or deleted. The historical `fee_invoice_records.paid` value is retained only as a derived compatibility projection, and existing non-zero balances are imported into the ledger during migration.
+
+The ledger includes optional provider/reference fields for future gateway callbacks, but no Paystack or Flutterwave account is configured by this repository. Online collection must not be enabled until webhook signature verification, idempotency and a live-provider acceptance test have been completed.
+
 Dashboard layouts, forms, tables, and navigation share a responsive light/dark design system. See [Dashboard design](docs/dashboard-design.md) for conventions and validation coverage.
 
 ## Requirements

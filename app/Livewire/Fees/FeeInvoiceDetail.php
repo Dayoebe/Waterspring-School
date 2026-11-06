@@ -2,15 +2,19 @@
 
 namespace App\Livewire\Fees;
 
-use App\Models\FeeInvoice;
 use App\Models\Fee;
 use App\Models\FeeCategory;
+use App\Models\FeeInvoice;
 use App\Models\FeeInvoiceRecord;
+use App\Models\FeePaymentTransaction;
+use App\Services\FeePaymentLedger;
 use App\Traits\ResolvesAccessibleStudents;
-use Livewire\Component;
-use Illuminate\Support\Facades\DB;
 use Brick\Money\Money;
+use DomainException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Livewire\Component;
 
 class FeeInvoiceDetail extends Component
 {
@@ -18,27 +22,57 @@ class FeeInvoiceDetail extends Component
     use ResolvesAccessibleStudents;
 
     public FeeInvoice $feeInvoice;
+
     public $activeTab = 'details';
+
     public bool $canManage = false;
-    
+
     // For adding new fees
     public $feeCategories = [];
+
     public $fees = [];
+
     public $selectedFeeCategory = '';
+
     public $selectedFee = '';
+
     public $newFeeAmount = 0;
+
     public $newFeeWaiver = 0;
+
     public $newFeeFine = 0;
-    
+
     // For editing records
     public $editingRecordId = null;
+
     public $editAmount = 0;
+
     public $editWaiver = 0;
+
     public $editFine = 0;
-    
+
     // For payments
     public $payingRecordId = null;
+
     public $paymentAmount = 0;
+
+    public string $paymentMethod = 'cash';
+
+    public string $paymentReference = '';
+
+    public string $paymentNote = '';
+
+    public ?int $reversingTransactionId = null;
+
+    public string $reversalReason = '';
+
+    public ?int $reconcilingTransactionId = null;
+
+    public string $reconciliationStatus = 'matched';
+
+    public string $reconciliationReference = '';
+
+    public string $reconciliationNote = '';
 
     public function mount($feeInvoiceId)
     {
@@ -59,14 +93,17 @@ class FeeInvoiceDetail extends Component
         $this->feeInvoice = $query->with([
             'user.studentRecord.myClass',
             'user.studentRecord.section',
-            'feeInvoiceRecords.fee'
+            'feeInvoiceRecords.fee',
+            'feeInvoiceRecords.paymentTransactions.cashier',
+            'feeInvoiceRecords.paymentTransactions.reversal',
+            'feeInvoiceRecords.paymentTransactions.reconciliations',
         ])->findOrFail($feeInvoiceId);
 
         $this->canManage = auth()->user()?->can('update fee invoice') ?? false;
-        if (!$this->canManage) {
+        if (! $this->canManage) {
             $this->activeTab = 'details';
         }
-        
+
         $this->loadFeeCategories();
     }
 
@@ -76,8 +113,8 @@ class FeeInvoiceDetail extends Component
             ->where('school_id', auth()->user()->school_id)
             ->orderBy('name')
             ->get();
-        
-        if ($this->feeCategories->isNotEmpty() && !$this->selectedFeeCategory) {
+
+        if ($this->feeCategories->isNotEmpty() && ! $this->selectedFeeCategory) {
             $this->selectedFeeCategory = $this->feeCategories->first()->id;
             $this->updatedSelectedFeeCategory();
         }
@@ -87,19 +124,20 @@ class FeeInvoiceDetail extends Component
     {
         if ($this->selectedFeeCategory) {
             $category = $this->getFeeCategoryForCurrentSchool($this->selectedFeeCategory);
-            
+
             // Get fees not already in this invoice
             $existingFeeIds = $this->feeInvoice->feeInvoiceRecords->pluck('fee_id')->toArray();
             $this->fees = $category ? $category->fees()->whereNotIn('id', $existingFeeIds)->get() : collect();
-            
+
             $this->selectedFee = $this->fees->isNotEmpty() ? $this->fees->first()->id : '';
         }
     }
 
     public function changeTab($tab)
     {
-        if (in_array($tab, ['payments', 'manage'], true) && !$this->canManage) {
+        if (in_array($tab, ['payments', 'manage'], true) && ! $this->canManage) {
             $this->activeTab = 'details';
+
             return;
         }
 
@@ -111,7 +149,7 @@ class FeeInvoiceDetail extends Component
         $this->ensureCanManage();
 
         $record = $this->getInvoiceRecordForCurrentInvoice($recordId);
-        
+
         $this->editingRecordId = $recordId;
         $this->editAmount = $record->amount->getAmount()->toFloat();
         $this->editWaiver = $record->waiver->getAmount()->toFloat();
@@ -135,7 +173,7 @@ class FeeInvoiceDetail extends Component
         ]);
 
         $record = $this->getInvoiceRecordForCurrentInvoice($this->editingRecordId);
-        
+
         $amount = Money::of($this->editAmount, config('app.currency'));
         $waiver = Money::of($this->editWaiver, config('app.currency'));
         $fine = Money::of($this->editFine, config('app.currency'));
@@ -145,6 +183,7 @@ class FeeInvoiceDetail extends Component
         $due = $amount->plus($fine)->minus($waiver);
         if ($due->isLessThan($paid)) {
             session()->flash('error', 'Due amount cannot be less than amount already paid');
+
             return;
         }
 
@@ -173,8 +212,9 @@ class FeeInvoiceDetail extends Component
         ]);
 
         $fee = $this->getFeeForCurrentSchool($this->selectedFee);
-        if (!$fee) {
+        if (! $fee) {
             session()->flash('error', 'Selected fee is not in your current school.');
+
             return;
         }
 
@@ -183,6 +223,7 @@ class FeeInvoiceDetail extends Component
             ->exists();
         if ($alreadyExists) {
             session()->flash('error', 'Selected fee is already attached to this invoice.');
+
             return;
         }
 
@@ -192,14 +233,13 @@ class FeeInvoiceDetail extends Component
                 'amount' => $this->newFeeAmount,
                 'waiver' => $this->newFeeWaiver ?? 0,
                 'fine' => $this->newFeeFine ?? 0,
-                'paid' => 0,
             ]);
         });
 
         $this->feeInvoice->refresh();
         $this->reset(['newFeeAmount', 'newFeeWaiver', 'newFeeFine']);
         $this->updatedSelectedFeeCategory();
-        
+
         session()->flash('success', 'Fee added to invoice successfully');
     }
 
@@ -208,7 +248,13 @@ class FeeInvoiceDetail extends Component
         $this->ensureCanManage();
 
         $record = $this->getInvoiceRecordForCurrentInvoice($recordId);
-        
+
+        if ($record->paymentTransactions()->exists()) {
+            session()->flash('error', 'Fee items with payment history cannot be deleted. Adjust the fee or reverse payments instead.');
+
+            return;
+        }
+
         DB::transaction(function () use ($record) {
             $record->delete();
         });
@@ -223,49 +269,145 @@ class FeeInvoiceDetail extends Component
 
         $this->payingRecordId = $recordId;
         $this->paymentAmount = 0;
+        $this->paymentMethod = 'cash';
+        $this->paymentReference = '';
+        $this->paymentNote = '';
     }
 
     public function cancelPayment()
     {
         $this->payingRecordId = null;
         $this->paymentAmount = 0;
+        $this->paymentMethod = 'cash';
+        $this->paymentReference = '';
+        $this->paymentNote = '';
+        $this->resetValidation(['paymentAmount', 'paymentMethod', 'paymentReference', 'paymentNote']);
     }
 
-    public function addPayment()
+    public function addPayment(FeePaymentLedger $ledger)
     {
         $this->ensureCanManage();
 
         $this->validate([
             'paymentAmount' => 'required|numeric|min:0.01',
+            'paymentMethod' => ['required', Rule::in(array_keys(FeePaymentLedger::PAYMENT_METHODS))],
+            'paymentReference' => 'nullable|string|max:120',
+            'paymentNote' => 'nullable|string|max:1000',
         ]);
 
         $record = $this->getInvoiceRecordForCurrentInvoice($this->payingRecordId);
-        
-        $pay = Money::of($this->paymentAmount, config('app.currency'));
-        $paid = $record->paid;
-        $newAmount = $paid->plus($pay);
 
-        // Check if payment is higher than due
-        $due = $record->amount->plus($record->fine)->minus($record->waiver);
-        if ($newAmount->isGreaterThan($due)) {
-            session()->flash('error', 'Payment cannot be higher than the total amount due');
+        try {
+            $transaction = $ledger->recordPayment(
+                $record,
+                $this->paymentAmount,
+                auth()->user(),
+                $this->paymentMethod,
+                $this->paymentReference,
+                $this->paymentNote
+            );
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+
             return;
         }
 
-        DB::transaction(function () use ($record, $newAmount) {
-            $record->update([
-                'paid' => $newAmount,
-            ]);
-        });
-
-        $this->feeInvoice->refresh();
+        $this->refreshInvoice();
         $this->cancelPayment();
-        session()->flash('success', 'Payment added successfully');
+        session()->flash('success', "Payment recorded. Receipt {$transaction->receipt_number} is ready.");
+    }
+
+    public function startReversal(int $transactionId): void
+    {
+        $this->ensureCanManage();
+        $this->getPaymentTransaction($transactionId);
+        $this->reversingTransactionId = $transactionId;
+        $this->reversalReason = '';
+    }
+
+    public function cancelReversal(): void
+    {
+        $this->reversingTransactionId = null;
+        $this->reversalReason = '';
+        $this->resetValidation('reversalReason');
+    }
+
+    public function reversePayment(FeePaymentLedger $ledger): void
+    {
+        $this->ensureCanManage();
+        $this->validate(['reversalReason' => 'required|string|min:5|max:1000']);
+
+        try {
+            $reversal = $ledger->reverse(
+                $this->getPaymentTransaction($this->reversingTransactionId),
+                auth()->user(),
+                $this->reversalReason
+            );
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+
+            return;
+        }
+
+        $this->refreshInvoice();
+        $this->cancelReversal();
+        session()->flash('success', "Payment reversed with audit reference {$reversal->receipt_number}.");
+    }
+
+    public function startReconciliation(int $transactionId): void
+    {
+        $this->ensureCanManage();
+        $this->getPaymentTransaction($transactionId);
+        $this->reconcilingTransactionId = $transactionId;
+        $this->reconciliationStatus = 'matched';
+        $this->reconciliationReference = '';
+        $this->reconciliationNote = '';
+    }
+
+    public function cancelReconciliation(): void
+    {
+        $this->reconcilingTransactionId = null;
+        $this->reconciliationStatus = 'matched';
+        $this->reconciliationReference = '';
+        $this->reconciliationNote = '';
+        $this->resetValidation([
+            'reconciliationStatus',
+            'reconciliationReference',
+            'reconciliationNote',
+        ]);
+    }
+
+    public function recordReconciliation(FeePaymentLedger $ledger): void
+    {
+        $this->ensureCanManage();
+        $this->validate([
+            'reconciliationStatus' => ['required', Rule::in(array_keys(FeePaymentLedger::RECONCILIATION_STATUSES))],
+            'reconciliationReference' => 'nullable|string|max:120',
+            'reconciliationNote' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $ledger->reconcile(
+                $this->getPaymentTransaction($this->reconcilingTransactionId),
+                auth()->user(),
+                $this->reconciliationStatus,
+                $this->reconciliationReference,
+                $this->reconciliationNote
+            );
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+
+            return;
+        }
+
+        $this->refreshInvoice();
+        $this->cancelReconciliation();
+        session()->flash('success', 'Reconciliation event added to the payment history.');
     }
 
     protected function getFeeCategoryForCurrentSchool($feeCategoryId): ?FeeCategory
     {
-        if (!$feeCategoryId) {
+        if (! $feeCategoryId) {
             return null;
         }
 
@@ -276,7 +418,7 @@ class FeeInvoiceDetail extends Component
 
     protected function getFeeForCurrentSchool($feeId): ?Fee
     {
-        if (!$feeId) {
+        if (! $feeId) {
             return null;
         }
 
@@ -294,6 +436,28 @@ class FeeInvoiceDetail extends Component
             ->findOrFail($recordId);
     }
 
+    protected function getPaymentTransaction(?int $transactionId): FeePaymentTransaction
+    {
+        abort_unless($transactionId, 404);
+
+        return FeePaymentTransaction::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->where('fee_invoice_id', $this->feeInvoice->id)
+            ->findOrFail($transactionId);
+    }
+
+    protected function refreshInvoice(): void
+    {
+        $this->feeInvoice->refresh()->load([
+            'user.studentRecord.myClass',
+            'user.studentRecord.section',
+            'feeInvoiceRecords.fee',
+            'feeInvoiceRecords.paymentTransactions.cashier',
+            'feeInvoiceRecords.paymentTransactions.reversal',
+            'feeInvoiceRecords.paymentTransactions.reconciliations',
+        ]);
+    }
+
     protected function ensureCanManage(): void
     {
         abort_unless($this->canManage, 403);
@@ -303,14 +467,16 @@ class FeeInvoiceDetail extends Component
     {
         return view('livewire.fees.fee-invoice-detail', [
             'feeInvoice' => $this->feeInvoice,
+            'paymentMethods' => FeePaymentLedger::PAYMENT_METHODS,
+            'reconciliationStatuses' => FeePaymentLedger::RECONCILIATION_STATUSES,
         ])
-        ->layout('layouts.dashboard', [
-            'breadcrumbs' => [
-                ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices'],
-                ['href' => route('fee-invoices.show', $this->feeInvoice->id), 'text' => $this->feeInvoice->name, 'active' => true],
-            ]
-        ])
-        ->title($this->feeInvoice->name);
+            ->layout('layouts.dashboard', [
+                'breadcrumbs' => [
+                    ['href' => route('dashboard'), 'text' => 'Dashboard'],
+                    ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices'],
+                    ['href' => route('fee-invoices.show', $this->feeInvoice->id), 'text' => $this->feeInvoice->name, 'active' => true],
+                ],
+            ])
+            ->title($this->feeInvoice->name);
     }
 }

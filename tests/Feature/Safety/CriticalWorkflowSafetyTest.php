@@ -112,7 +112,6 @@ class CriticalWorkflowSafetyTest extends TestCase
             'amount' => 100,
             'waiver' => 0,
             'fine' => 0,
-            'paid' => 0,
         ]);
 
         Livewire::actingAs($manager)

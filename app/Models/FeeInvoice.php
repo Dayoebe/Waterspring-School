@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use LogicException;
 
 class FeeInvoice extends Model
 {
@@ -19,17 +20,24 @@ class FeeInvoice extends Model
 
     protected $casts = [
         'issue_date' => 'datetime:Y-m-d',
-        'due_date'   => 'datetime:Y-m-d',
-        'amount'     => Money::class,
-        'fine'       => Money::class,
-        'paid'       => Money::class,
-        'waiver'     => Money::class,
+        'due_date' => 'datetime:Y-m-d',
+        'amount' => Money::class,
+        'fine' => Money::class,
+        'paid' => Money::class,
+        'waiver' => Money::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $invoice): void {
+            if ($invoice->feeInvoiceRecords()->whereHas('paymentTransactions')->exists()) {
+                throw new LogicException('Invoices with payment history cannot be deleted.');
+            }
+        });
+    }
 
     /**
      * Get the user that owns the FeeInvoice.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -38,8 +46,6 @@ class FeeInvoice extends Model
 
     /**
      * Get all of the feeInvoiceRecords for the FeeInvoice.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function feeInvoiceRecords(): HasMany
     {
