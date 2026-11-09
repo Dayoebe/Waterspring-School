@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Safety;
 
+use App\Livewire\Cbt\CbtManagement;
 use App\Livewire\Fees\FeeInvoiceDetail;
 use App\Livewire\Students\PromoteStudents;
 use App\Models\AcademicYear;
+use App\Models\Assessment\Assessment;
 use App\Models\ClassGroup;
 use App\Models\Fee;
 use App\Models\FeeCategory;
@@ -64,6 +66,38 @@ class CriticalWorkflowSafetyTest extends TestCase
                 ? $response->assertOk()
                 : $response->assertForbidden();
         }
+    }
+
+    public function test_cbt_library_query_keeps_current_school_assessments_visible(): void
+    {
+        $school = $this->school('CBT-LIBRARY');
+        [$academicYear, $class, $semester] = $this->academicStructure($school, 'CBT-LIBRARY');
+        $manager = $this->userWithRole($school, 'super-admin', 'cbt-library-manager');
+        $subject = Subject::query()->create([
+            'name' => 'CBT Library Subject',
+            'short_name' => 'CBTLIB',
+            'school_id' => $school->id,
+            'my_class_id' => $class->id,
+            'is_general' => false,
+            'is_legacy' => false,
+        ]);
+
+        $this->actingAs($manager);
+        Assessment::query()->create([
+            'course_id' => $class->id,
+            'lesson_id' => $subject->id,
+            'academic_year_id' => $academicYear->id,
+            'semester_id' => $semester->id,
+            'title' => 'Visible CBT library assessment',
+            'type' => 'quiz',
+            'pass_percentage' => 70,
+            'estimated_duration_minutes' => 30,
+            'max_score' => 100,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(CbtManagement::class)
+            ->assertSee('Visible CBT library assessment');
     }
 
     public function test_parent_student_access_excludes_unlinked_and_cross_school_children(): void

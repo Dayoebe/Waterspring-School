@@ -2,16 +2,13 @@
 
 namespace App\Livewire\Dashboard;
 
-use App\Models\AdmissionRegistration;
 use App\Models\Assessment\Assessment;
-use App\Models\AttendanceRecord;
 use App\Models\ClassGroup;
 use App\Models\ClubActivity;
 use App\Models\ClubWeeklyAgenda;
 use App\Models\ContactMessage;
 use App\Models\CustomTimetableItem;
 use App\Models\Exam;
-use App\Models\FeeInvoice;
 use App\Models\MyClass;
 use App\Models\Notice;
 use App\Models\Result;
@@ -25,6 +22,7 @@ use App\Models\Syllabus;
 use App\Models\Timetable;
 use App\Models\User;
 use App\Models\Weekday;
+use App\Services\Dashboard\DashboardMetrics;
 use App\Support\ResultPublicationStatus;
 use App\Support\TeacherResponsibilityBuilder;
 use App\Traits\RestrictsTeacherPortalAccess;
@@ -191,6 +189,7 @@ class DashboardStats extends Component
 
     private function loadSnapshot(User $user): void
     {
+        $metrics = app(DashboardMetrics::class);
         $schoolId = $user->school_id;
         $today = Carbon::today();
         $activeStudentRecordIds = StudentRecord::activeStudentRecordIdsForSchoolAcademicYear(
@@ -260,10 +259,10 @@ class DashboardStats extends Component
             'published_exams' => $publishedExams,
             'term_results' => $termResults,
             'active_students' => $activeStudentRecordIds->count(),
-            'attendance_rate' => $this->attendanceRateForToday($schoolId, $today),
-            'pending_admissions' => $this->pendingAdmissionsCount($user),
-            'overdue_invoices' => $this->overdueInvoicesCount($user),
-            'result_completion' => $this->resultCompletionRate($user, $activeStudentRecordIds),
+            'attendance_rate' => $metrics->attendanceRateForToday($user, $today),
+            'pending_admissions' => $metrics->pendingAdmissionsCount($user),
+            'overdue_invoices' => $metrics->overdueInvoicesCount($user),
+            'result_completion' => $metrics->resultCompletionRate($user, $activeStudentRecordIds, $this->isStaff),
         ];
     }
 
@@ -739,12 +738,13 @@ class DashboardStats extends Component
             return;
         }
 
+        $metrics = app(DashboardMetrics::class);
         $schoolId = (int) $user->school_id;
         $items = [];
 
         $candidates = [
             [
-                'count' => $this->pendingAdmissionsCount($user),
+                'count' => $metrics->pendingAdmissionsCount($user),
                 'title' => 'Admission applications waiting',
                 'description' => 'Review new applications and record the next decision.',
                 'route' => 'admissions.registrations.index',
@@ -762,7 +762,7 @@ class DashboardStats extends Component
                 'permissions' => ['read contact message'],
             ],
             [
-                'count' => $this->overdueInvoicesCount($user),
+                'count' => $metrics->overdueInvoicesCount($user),
                 'title' => 'Fee invoices overdue',
                 'description' => 'Follow up invoices that still have an outstanding balance.',
                 'route' => 'fee-invoices.index',
@@ -771,7 +771,7 @@ class DashboardStats extends Component
                 'permissions' => ['read fee invoice'],
             ],
             [
-                'count' => $this->unapprovedResultCount($user),
+                'count' => $metrics->unapprovedResultCount($user),
                 'title' => 'Result entries awaiting approval',
                 'description' => 'Review current-term scores before publication.',
                 'route' => 'result.view.class',
@@ -780,7 +780,7 @@ class DashboardStats extends Component
                 'permissions' => ['view result'],
             ],
             [
-                'count' => $this->absentStudentsToday($schoolId),
+                'count' => $metrics->absentStudentsToday($user),
                 'title' => 'Students absent today',
                 'description' => 'Review today’s attendance records and follow up where needed.',
                 'route' => 'attendance.index',
@@ -797,104 +797,6 @@ class DashboardStats extends Component
         }
 
         $this->attentionItems = array_slice($items, 0, 5);
-    }
-
-    private function pendingAdmissionsCount(User $user): int
-    {
-        if (! $user->school_id || ! $user->can('read admission registration')) {
-            return 0;
-        }
-
-        return AdmissionRegistration::query()
-            ->where('school_id', $user->school_id)
-            ->where('status', 'pending')
-            ->count();
-    }
-
-    private function overdueInvoicesCount(User $user): int
-    {
-        if (! $user->school_id || ! $user->can('read fee invoice')) {
-            return 0;
-        }
-
-        return FeeInvoice::query()
-            ->whereHas('user', fn ($query) => $query->where('school_id', $user->school_id))
-            ->whereDate('due_date', '<', today())
-            ->whereHas('feeInvoiceRecords', fn ($query) => $query->isDue())
-            ->count();
-    }
-
-    private function attendanceRateForToday(?int $schoolId, Carbon $today): ?int
-    {
-        if (! $schoolId || ! auth()->user()?->can('read attendance')) {
-            return null;
-        }
-
-        $records = AttendanceRecord::query()
-            ->whereHas('attendanceSession', fn ($query) => $query
-                ->where('school_id', $schoolId)
-                ->whereDate('attendance_date', $today))
-            ->get(['status']);
-
-        if ($records->isEmpty()) {
-            return null;
-        }
-
-        $present = $records->whereIn('status', ['present', 'late'])->count();
-
-        return (int) round(($present / $records->count()) * 100);
-    }
-
-    private function absentStudentsToday(int $schoolId): int
-    {
-        if (! auth()->user()?->can('read attendance')) {
-            return 0;
-        }
-
-        return AttendanceRecord::query()
-            ->where('status', 'absent')
-            ->whereHas('attendanceSession', fn ($query) => $query
-                ->where('school_id', $schoolId)
-                ->whereDate('attendance_date', today()))
-            ->count();
-    }
-
-    private function unapprovedResultCount(User $user): int
-    {
-        if (! $user->school?->academic_year_id || ! $user->school?->semester_id || ! $user->can('view result')) {
-            return 0;
-        }
-
-        $studentRecordIds = StudentRecord::activeStudentRecordIdsForSchoolAcademicYear(
-            $user->school_id,
-            $user->school->academic_year_id
-        );
-
-        return Result::query()
-            ->where('academic_year_id', $user->school->academic_year_id)
-            ->where('semester_id', $user->school->semester_id)
-            ->whereIn('student_record_id', $studentRecordIds)
-            ->where('approved', false)
-            ->count();
-    }
-
-    private function resultCompletionRate(User $user, $studentRecordIds): ?int
-    {
-        if (! $this->isStaff || ! $user->school?->academic_year_id || ! $user->school?->semester_id) {
-            return null;
-        }
-
-        $results = Result::query()
-            ->where('academic_year_id', $user->school->academic_year_id)
-            ->where('semester_id', $user->school->semester_id)
-            ->whereIn('student_record_id', $studentRecordIds)
-            ->get(['approved']);
-
-        if ($results->isEmpty()) {
-            return null;
-        }
-
-        return (int) round(($results->where('approved', true)->count() / $results->count()) * 100);
     }
 
     private function canAccessAction(User $user, array $action): bool

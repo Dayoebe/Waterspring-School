@@ -148,6 +148,7 @@ app/
   Livewire/               Interactive management and form components
   Models/                 School and operational records
   Policies/               Authorization rules
+  Services/               Reusable queries, actions, integrations, and data formatters
   Support/                Public content, SEO and permission helpers
 config/                   Application and public school configuration
 database/
@@ -163,6 +164,8 @@ docs/                     Implementation and migration notes
 ```
 
 ## Validation
+
+WaterSpring has an automated safety net. Database-backed feature tests cover authentication and account restrictions, tenant boundaries, admissions, payments, appointments, transport, audit history, operational health, and critical academic workflows. Database-free unit tests cover result rules, ClassPilot providers and policies, dependency compatibility, PWA privacy, export formatting, and public UX contracts.
 
 ### Test database safety
 
@@ -188,7 +191,7 @@ npm run build
 
 The public-site migration was checked with HTTP requests and Chromium at 390px and 1440px widths, including image loading, mobile navigation, FAQ controls and structured data. Those checks do not establish end-to-end coverage for the management platform. Live form submission and PWA installation were not tested.
 
-The committed PHPUnit suite covers ClassPilot access and provider safety, authentication compatibility, PDF/XLSX generation, and result assessment rules. Run it only against the dedicated `testing` database configured in `phpunit.xml`; never point PHPUnit at a database containing operational records. The complete fresh-install procedure should remain a release check on an empty disposable database.
+Run the committed PHPUnit suite only against the dedicated `testing` database configured in `phpunit.xml`; never point PHPUnit at a database containing operational records. The complete fresh-install procedure should remain a release check on an empty disposable database, and authenticated browser checks remain necessary for final release acceptance.
 
 ## License and attribution
 

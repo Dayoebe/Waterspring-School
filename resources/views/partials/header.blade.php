@@ -60,11 +60,11 @@
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between gap-4 py-3">
-            <a href="{{ route('home') }}" class="group flex min-w-0 max-w-[78%] items-center gap-3 lg:max-w-[34%] xl:max-w-[38%]">
+            <a href="{{ route('home') }}" class="group flex min-w-0 max-w-[78%] items-center gap-3 lg:max-w-[31%] xl:max-w-[35%]">
                 <img src="{{ $logoUrl }}" alt="{{ $schoolName }} Logo" width="44" height="44" decoding="async"
                     class="h-10 w-10 shrink-0 rounded-full border border-amber-300 bg-white p-1 object-contain shadow-sm transition group-hover:scale-105 sm:h-11 sm:w-11">
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-black leading-tight text-slate-900 sm:text-base">
+                    <p title="{{ $schoolName }}" class="truncate text-sm font-black leading-tight text-slate-900 sm:text-base lg:line-clamp-2 lg:whitespace-normal lg:text-sm xl:text-base">
                         {{ $schoolName }}
                     </p>
                     <p class="text-xs font-semibold text-yellow-700">{{ $schoolLocation }}</p>

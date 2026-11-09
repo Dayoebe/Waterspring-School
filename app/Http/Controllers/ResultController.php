@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\AcademicYear;
-use App\Models\Semester;
-use App\Models\Subject;
-use App\Models\StudentRecord;
-use App\Models\TermReport;
-use App\Models\Result;
-use App\Models\MyClass;
-use App\Models\TermSettings;
 use App\Exports\ClassResultsExport;
-use App\Traits\ResolvesAccessibleStudentResults;
-use App\Support\StudentPeriodActivity;
+use App\Models\AcademicYear;
+use App\Models\MyClass;
+use App\Models\Result;
+use App\Models\Semester;
+use App\Models\StudentRecord;
+use App\Models\Subject;
+use App\Models\TermReport;
+use App\Models\TermSettings;
+use App\Services\Results\AnnualResultExportFormatter;
 use App\Support\ClassExamActivity;
+use App\Support\StudentPeriodActivity;
+use App\Traits\ResolvesAccessibleStudentResults;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // Import DB facade
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ResultController extends Controller
@@ -63,8 +63,9 @@ class ResultController extends Controller
             $semester = $this->findSemesterForCurrentSchool($semesterId);
             $class = $this->findClassForCurrentSchool($classId);
 
-            if (!$academicYear || !$semester || !$class) {
+            if (! $academicYear || ! $semester || ! $class) {
                 session()->flash('error', 'One or more selected filters are invalid for your school.');
+
                 return view('livewire.result.pages.view-result', compact(
                     'academicYears',
                     'classes',
@@ -112,7 +113,7 @@ class ResultController extends Controller
                     })
                     ->get()
                     ->each(function ($result) {
-                        if (!isset($result->total_score)) {
+                        if (! isset($result->total_score)) {
                             $result->total_score =
                                 ($result->ca1_score ?? 0) +
                                 ($result->ca2_score ?? 0) +
@@ -139,7 +140,7 @@ class ResultController extends Controller
                         $query->where('academic_year_id', $academicYear->id)
                             ->whereIn('semester_id', $semesters->pluck('id'))
                             ->with('subject');
-                    }
+                    },
                 ])
                     ->whereHas('user', function ($q) {
                         $q->whereNull('deleted_at')
@@ -249,6 +250,7 @@ class ResultController extends Controller
         $semesters = $this->semestersForCurrentSchool()
             ->where('academic_year_id', $academicYearId)
             ->get();
+
         return response()->json($semesters);
     }
 
@@ -256,6 +258,7 @@ class ResultController extends Controller
     {
         $classId = $request->input('class_id');
         $subjects = $this->classSubjectsForCurrentSchool($classId)->get();
+
         return response()->json($subjects);
     }
 
@@ -263,23 +266,22 @@ class ResultController extends Controller
     {
         $academicYearId = $request->academicYearId ?? $request->input('academicYearId');
         $semesterId = $request->semesterId ?? $request->input('semesterId');
-        
-        if (!$academicYearId || !$semesterId) {
+
+        if (! $academicYearId || ! $semesterId) {
             $school = auth()->user()->school ?? null;
-            
+
             if ($school && $school->academic_year_id) {
                 $academicYearId = $school->academic_year_id;
                 $semesterId = $school->semester_id;
             }
         }
-        
-        if (!$academicYearId || !$semesterId) {
+
+        if (! $academicYearId || ! $semesterId) {
             abort(400, 'Academic year and term are required. Please ensure your school has an active academic year and term.');
         }
 
         $this->ensureFamilyCanViewTermResult($academicYearId, $semesterId);
 
-        
         $studentRecord = $this->accessibleStudentRecordsQuery()->with([
             'user',
             'myClass',
@@ -289,13 +291,15 @@ class ResultController extends Controller
                 $query->where('academic_year_id', $academicYearId)
                     ->where('semester_id', $semesterId)
                     ->with('subject');
-            }
+            },
         ])->findOrFail($studentId);
-            
+
         // No need to pass pre-calculated values here, prepareReportData will handle it
         $data = $this->prepareReportData($studentRecord, $academicYearId, $semesterId);
+
         return view('livewire.result.pages.print', $data);
     }
+
     public function printClassResults($academicYearId, $semesterId, $classId)
     {
         abort_if($this->isRestrictedToOwnFamilyResults(), 403);
@@ -304,7 +308,7 @@ class ResultController extends Controller
         $semester = $this->findSemesterForCurrentSchool($semesterId);
         $class = $this->findClassForCurrentSchool($classId);
 
-        if (!$academicYear || !$semester || !$class) {
+        if (! $academicYear || ! $semester || ! $class) {
             abort(404);
         }
 
@@ -328,7 +332,7 @@ class ResultController extends Controller
                 $query->where('academic_year_id', $academicYearId)
                     ->where('semester_id', $semesterId)
                     ->with('subject');
-            }
+            },
         ])
             ->whereIn('student_records.id', $studentRecordIds)
             ->whereHas('user', function ($q) { // Ensure user is not soft-deleted
@@ -352,7 +356,7 @@ class ResultController extends Controller
         foreach ($allClassResults->groupBy('subject_id') as $subjectId => $resultsCollection) {
             $subjectOverallStats[$subjectId] = [
                 'highest' => (int) $resultsCollection->max('total_score'),
-                'lowest' => (int) $resultsCollection->min('total_score')
+                'lowest' => (int) $resultsCollection->min('total_score'),
             ];
         }
 
@@ -406,14 +410,14 @@ class ResultController extends Controller
             $termReport = $allTermReports->get($student->id);
 
             // If no term report exists, create a default one (but don't save it)
-            if (!$termReport) {
+            if (! $termReport) {
                 $termReport = new TermReport([
                     'student_record_id' => $student->id,
                     'academic_year_id' => $academicYearId,
                     'semester_id' => $semesterId,
                     'psychomotor_traits' => TermReport::getDefaultPsychomotorScores(),
                     'affective_traits' => TermReport::getDefaultAffectiveScores(),
-                    'co_curricular_activities' => TermReport::getDefaultCoCurricularScores()
+                    'co_curricular_activities' => TermReport::getDefaultCoCurricularScores(),
                 ]);
             }
 
@@ -452,7 +456,7 @@ class ResultController extends Controller
             ->get(['id', 'user_id']);
 
         $studentRecord = $studentRecords->firstWhere('user_id', $studentId);
-        if (!$studentRecord) {
+        if (! $studentRecord) {
             return 'N/A';
         }
 
@@ -488,7 +492,7 @@ class ResultController extends Controller
             }
         )->count();
 
-        return $rank . '/' . $studentRecords->count();
+        return $rank.'/'.$studentRecords->count();
     }
 
     // New method for semester-specific position calculation
@@ -508,7 +512,7 @@ class ResultController extends Controller
             'results' => function ($query) use ($academicYearId, $semesterId) {
                 $query->where('academic_year_id', $academicYearId)
                     ->where('semester_id', $semesterId);
-            }
+            },
         ])
             ->whereIn('student_records.id', $studentRecordIds)
             ->whereHas('user', function ($q) {
@@ -555,7 +559,6 @@ class ResultController extends Controller
         return $studentPosition;
     }
 
-
     private function getDefaultComment($score)
     {
         return match (true) {
@@ -583,10 +586,10 @@ class ResultController extends Controller
         $totalStudents = 0
     ) {
         // 🔥 ADD VALIDATION AT THE START
-        if (!$academicYearId || !$semesterId) {
+        if (! $academicYearId || ! $semesterId) {
             throw new \InvalidArgumentException('Academic year and term are required to prepare report data.');
         }
-    
+
         $classIdForPeriod = $this->classIdForStudentInAcademicYear($studentRecord, $academicYearId)
             ?? $studentRecord->my_class_id;
 
@@ -595,17 +598,17 @@ class ResultController extends Controller
             return $result->academic_year_id == $academicYearId &&
                 $result->semester_id == $semesterId;
         });
-    
+
         // Get unique subject IDs from the filtered results for the current student
         $subjectIdsWithResults = $rawResults->pluck('subject_id')->unique();
-    
+
         // Fetch subjects corresponding to these IDs, ordered by name, ensuring uniqueness by name
         // This handles cases where a subject might be duplicated in the database with different IDs
         $fetchedSubjects = $this->subjectsForCurrentSchool()
             ->whereIn('id', $subjectIdsWithResults)
             ->get();
         $subjects = $fetchedSubjects->unique('name')->sortBy('name');
-    
+
         // Determine subject stats if not pre-calculated (i.e., for single print)
         if (empty($subjectOverallStats)) {
             $classStudentRecordIds = $this->studentRecordIdsForAcademicYearClass(
@@ -620,16 +623,16 @@ class ResultController extends Controller
                 ->where('semester_id', $semesterId)
                 ->whereIn('student_record_id', $classStudentRecordIds)
                 ->get();
-    
+
             foreach ($allClassResultsForStats->groupBy('subject_id') as $subjectId => $resultsCollection) {
                 $subjectOverallStats[$subjectId] = [
                     'highest' => (int) $resultsCollection->max('total_score'),
-                    'lowest' => (int) $resultsCollection->min('total_score')
+                    'lowest' => (int) $resultsCollection->min('total_score'),
                 ];
             }
         }
         $subjectStats = $subjectOverallStats;
-    
+
         $results = $rawResults->keyBy('subject_id')->map(function ($result) {
             $ca1 = (int) $result->ca1_score;
             $ca2 = (int) $result->ca2_score;
@@ -637,6 +640,7 @@ class ResultController extends Controller
             $total = $ca1 + $ca2 + $exam;
             $grade = $this->calculateGrade($total);
             $comment = $result->teacher_comment ?: $this->getDefaultComment($total);
+
             return [
                 'ca1_score' => $ca1,
                 'ca2_score' => $ca2,
@@ -646,21 +650,21 @@ class ResultController extends Controller
                 'comment' => $comment,
             ];
         });
-    
+
         // Get term settings (announcement and resumption date)
         $termSettings = TermSettings::getForTermAndClass(
             $academicYearId,
             $semesterId,
             $classIdForPeriod
         );
-    
+
         // Use term report or create if not exists
         $termReport = $termReport ?? TermReport::firstOrCreate([
             'student_record_id' => $studentRecord->id,
             'academic_year_id' => $academicYearId,
             'semester_id' => $semesterId,
         ]);
-    
+
         // Override term report announcement and resumption date if term settings exist
         if ($termSettings) {
             if ($termSettings->general_announcement) {
@@ -670,7 +674,7 @@ class ResultController extends Controller
                 $termReport->resumption_date = $termSettings->resumption_date;
             }
         }
-    
+
         // Determine total students and class position if not pre-calculated (i.e., for single print)
         if ($totalStudents === 0 || $classPosition === 'N/A') {
             $classStudentRecordIds = $this->studentRecordIdsForAcademicYearClass(
@@ -686,7 +690,7 @@ class ResultController extends Controller
                 'results' => function ($query) use ($academicYearId, $semesterId) {
                     $query->where('academic_year_id', $academicYearId)
                         ->where('semester_id', $semesterId);
-                }
+                },
             ])
                 ->whereIn('student_records.id', $classStudentRecordIds)
                 ->whereHas('user', function ($q) {
@@ -694,9 +698,9 @@ class ResultController extends Controller
                         ->where('school_id', $this->currentSchoolId());
                 })
                 ->get();
-    
+
             $totalStudents = $classStudents->count();
-    
+
             $classSubjectIds = $this->classSubjectsForCurrentSchool($classIdForPeriod)->pluck('id');
             $scores = $classStudents->map(function ($record) use ($classSubjectIds) {
                 $subjectCount = $record->studentSubjects
@@ -711,11 +715,11 @@ class ResultController extends Controller
                         : 0,
                 ];
             })->sortByDesc('average_score')->values();
-    
+
             $rank = 1;
             $prevScore = null;
             $studentsAtRank = 0;
-    
+
             foreach ($scores as $index => $data) {
                 if ($prevScore !== null && $data['average_score'] < $prevScore) {
                     $rank += $studentsAtRank;
@@ -723,7 +727,7 @@ class ResultController extends Controller
                 } else {
                     $studentsAtRank++;
                 }
-    
+
                 if ($data['id'] == $studentRecord->id) {
                     $classPosition = $rank;
                     // No need to continue loop once position is found for this student
@@ -732,16 +736,16 @@ class ResultController extends Controller
                 $prevScore = $data['average_score'];
             }
         }
-    
+
         $totalSubjects = $subjects->count();
         $maxTotalScore = $totalSubjects * 100;
         $grandTotal = $rawResults->sum('total_score');
-        $grandTotalTest = $rawResults->sum(fn($r) => $r->ca1_score + $r->ca2_score);
+        $grandTotalTest = $rawResults->sum(fn ($r) => $r->ca1_score + $r->ca2_score);
         $grandTotalExam = $rawResults->sum('exam_score');
         $percentage = $totalSubjects > 0 ? round(($grandTotal / $maxTotalScore) * 100, 2) : 0; // Corrected percentage calculation based on maxTotalScore
         $academicYearName = optional($this->findAcademicYearForCurrentSchool($academicYearId))->name ?? 'Unknown Academic Year';
         $semesterName = optional($this->findSemesterForCurrentSchool($semesterId))->name ?? 'Unknown Term';
-    
+
         $subjectsPassed = 0;
         foreach ($subjects as $subject) {
             $result = $results[$subject->id] ?? ['total_score' => 0, 'grade' => 'F9'];
@@ -749,20 +753,20 @@ class ResultController extends Controller
                 $subjectsPassed++;
             }
         }
-    
+
         $termReport->update([
             'total_score' => $grandTotal,
             'percentage' => $percentage,
             'position' => $classPosition,
         ]);
-        
+
         // Use pre-fetched term report or create if not exists (for single print scenario)
         $termReport = $termReport ?? TermReport::firstOrCreate([
             'student_record_id' => $studentRecord->id,
             'academic_year_id' => $academicYearId,
             'semester_id' => $semesterId,
         ]);
-    
+
         // Calculate dynamic comments here
         $dynamicTeacherComment = match (true) {
             $percentage >= 80 => 'An excellent and truly outstanding performance. Keep it up!',
@@ -780,23 +784,23 @@ class ResultController extends Controller
             $percentage >= 40 => 'A marginal pass. Serious improvement is required.',
             default => 'This result is below the expected standard. Urgent intervention is needed.',
         };
-    
+
         // Determine final comments based on priority: manual comment first, then dynamic
-        $finalTeacherComment = !empty($termReport->class_teacher_comment) && $termReport->class_teacher_comment !== 'Impressive'
+        $finalTeacherComment = ! empty($termReport->class_teacher_comment) && $termReport->class_teacher_comment !== 'Impressive'
             ? $termReport->class_teacher_comment
             : $dynamicTeacherComment;
-    
-        $finalPrincipalComment = !empty($termReport->principal_comment) && $termReport->principal_comment !== 'Keep up the good work!'
+
+        $finalPrincipalComment = ! empty($termReport->principal_comment) && $termReport->principal_comment !== 'Keep up the good work!'
             ? $termReport->principal_comment
             : $dynamicPrincipalComment;
-    
+
         // Update term report with calculated values
         $termReport->update([
             'total_score' => $grandTotal,
             'percentage' => $percentage,
             'position' => $classPosition,
         ]);
-    
+
         return [
             'studentRecord' => $studentRecord,
             'subjects' => $subjects,
@@ -826,6 +830,7 @@ class ResultController extends Controller
                 : null,
         ];
     }
+
     public function generatePdf($studentId)
     {
         $studentRecord = $this->studentRecordsForCurrentSchool()->with([
@@ -834,20 +839,21 @@ class ResultController extends Controller
             'section',
             'results' => function ($query) {
                 $query->with('subject');
-            }
+            },
         ])->findOrFail($studentId);
         $school = auth()->user()?->school;
         $academicYearId = $school?->academic_year_id;
         $semesterId = $school?->semester_id;
 
-        if (!$academicYearId || !$semesterId) {
+        if (! $academicYearId || ! $semesterId) {
             abort(400, 'Academic year and term are required for report generation.');
         }
 
         // For single PDF generation, we don't have pre-fetched data, so call prepareReportData without them
         $data = $this->prepareReportData($studentRecord, $academicYearId, $semesterId);
-        $pdf = PDF::loadView('livewire.result.pages.print', $data);
+        $pdf = Pdf::loadView('livewire.result.pages.print', $data);
         $pdf->setPaper('A4', 'portrait');
+
         return $pdf->download("report-{$data['studentRecord']->user->name}-{$data['semesterName']}.pdf");
     }
 
@@ -860,7 +866,7 @@ class ResultController extends Controller
         $academicYears = $this->academicYearsForCurrentSchool()
             ->orderBy('start_year', 'desc')
             ->get();
-        if (!$request->has('classId') || !$request->has('academicYearId')) {
+        if (! $request->has('classId') || ! $request->has('academicYearId')) {
             return view('livewire.result.pages.annual-class-result', [
                 'classes' => $classes,
                 'academicYears' => $academicYears,
@@ -881,7 +887,7 @@ class ResultController extends Controller
         }
         $class = $this->findClassForCurrentSchool($request->classId);
         $academicYear = $this->findAcademicYearForCurrentSchool($request->academicYearId);
-        if (!$class || !$academicYear) {
+        if (! $class || ! $academicYear) {
             abort(404);
         }
 
@@ -900,7 +906,7 @@ class ResultController extends Controller
                 'academicYears' => $academicYears,
                 'class' => $class,
                 'academicYear' => $academicYear,
-                'semesters' => $semesters, 
+                'semesters' => $semesters,
                 'students' => collect(),
                 'subjects' => collect(),
                 'annualReports' => [],
@@ -923,7 +929,7 @@ class ResultController extends Controller
                 $query->where('academic_year_id', $academicYear->id)
                     ->whereIn('semester_id', $semesters->pluck('id'))
                     ->with('subject');
-            }
+            },
         ])
             ->whereIn('student_records.id', $studentRecordIds) // Fixed: specify table
             ->join('users', 'users.id', '=', 'student_records.user_id')
@@ -953,7 +959,7 @@ class ResultController extends Controller
             $termTotals = [];
             $subjectScores = [];
             foreach ($students as $student) {
-                if (!$student->user) {
+                if (! $student->user) {
                     continue;
                 }
                 $studentSubjectIds = $student->studentSubjects
@@ -975,7 +981,7 @@ class ResultController extends Controller
                         'exam_score' => $result->exam_score,
                         'total_score' => $result->total_score,
                         'grade' => $this->calculateGrade($result->total_score),
-                        'comment' => $result->teacher_comment ?: $this->getDefaultComment($result->total_score)
+                        'comment' => $result->teacher_comment ?: $this->getDefaultComment($result->total_score),
                     ];
                 }
                 $totalScore = $results->sum('total_score');
@@ -988,7 +994,7 @@ class ResultController extends Controller
                     'total_score' => $totalScore,
                     'percentage' => $percentage,
                     'subject_count' => $studentSubjectIds->count(),
-                    'rank' => 0
+                    'rank' => 0,
                 ];
                 $termTotals[$student->id] = $totalScore;
             }
@@ -1005,17 +1011,17 @@ class ResultController extends Controller
                 $previousPercentage = $report['percentage'];
             }
             unset($report);
-            if (!empty($termReports[$semester->id])) {
+            if (! empty($termReports[$semester->id])) {
                 $termStats[$semester->id] = [
                     'average_percentage' => collect($termReports[$semester->id])->avg('percentage'),
-                    'pass_rate' => (collect($termReports[$semester->id])->filter(fn($r) => $r['percentage'] >= 50)->count() / max(1, count($termReports[$semester->id]))) * 100,
+                    'pass_rate' => (collect($termReports[$semester->id])->filter(fn ($r) => $r['percentage'] >= 50)->count() / max(1, count($termReports[$semester->id]))) * 100,
                     'top_student' => $termReports[$semester->id][0]['student']->user->name ?? 'N/A',
                     'top_score' => $termReports[$semester->id][0]['percentage'] ?? 0,
                 ];
             }
         }
         foreach ($students as $student) {
-            if (!$student->user) {
+            if (! $student->user) {
                 continue;
             }
             $annualResult = [
@@ -1036,7 +1042,7 @@ class ResultController extends Controller
                 $annualResult['grand_total'] += $termTotal;
             }
             foreach ($subjects as $subject) {
-                if (!$studentSubjectIds->contains($subject->id)) {
+                if (! $studentSubjectIds->contains($subject->id)) {
                     continue;
                 }
 
@@ -1051,7 +1057,7 @@ class ResultController extends Controller
                 $annualResult['subject_totals'][$subject->id] = [
                     'subject' => $subject,
                     'total' => $subjectTotal,
-                    'average' => $semesters->count() > 0 ? round($subjectTotal / $semesters->count(), 2) : 0
+                    'average' => $semesters->count() > 0 ? round($subjectTotal / $semesters->count(), 2) : 0,
                 ];
             }
             $annualResult['maximum_total'] = $studentSubjectIds->count() * 100 * $semesters->count();
@@ -1082,9 +1088,10 @@ class ResultController extends Controller
                     }
                 }
             }
+
             return [
                 'name' => $subject->name,
-                'avg' => count($scores) ? round(array_sum($scores) / count($scores), 1) : 0
+                'avg' => count($scores) ? round(array_sum($scores) / count($scores), 1) : 0,
             ];
         })->sortByDesc('avg')->first();
         $subjectPerformance = collect($subjects)->map(function ($subject) use ($termReports) {
@@ -1096,14 +1103,16 @@ class ResultController extends Controller
                     }
                 }
             }
+
             return [
                 'name' => $subject->name,
                 'avg' => count($scores) ? round(array_sum($scores) / count($scores), 1) : 0,
                 'max' => count($scores) ? max($scores) : 0,
                 'min' => count($scores) ? min($scores) : 0,
-                'pass_rate' => count($scores) ? round(count(array_filter($scores, fn($s) => $s >= 50)) / count($scores) * 100, 1) : 0
+                'pass_rate' => count($scores) ? round(count(array_filter($scores, fn ($s) => $s >= 50)) / count($scores) * 100, 1) : 0,
             ];
         });
+
         return view('livewire.result.pages.annual-class-result', [
             'classes' => $classes,
             'academicYears' => $academicYears,
@@ -1117,7 +1126,7 @@ class ResultController extends Controller
             'annualReports' => $annualReports,
             'stats' => $stats,
             'topSubject' => $topSubject,
-            'subjectPerformance' => $subjectPerformance
+            'subjectPerformance' => $subjectPerformance,
         ]);
     }
 
@@ -1130,7 +1139,7 @@ class ResultController extends Controller
             ->where('user_id', $studentId)
             ->firstOrFail();
         $academicYear = $this->findAcademicYearForCurrentSchool($academicYearId);
-        if (!$academicYear) {
+        if (! $academicYear) {
             abort(404);
         }
 
@@ -1163,27 +1172,30 @@ class ResultController extends Controller
                 'subject' => $subject,
                 'total' => $subjectTotal,
                 'average' => $subjectAverage,
-                'results' => $subjectResults
+                'results' => $subjectResults,
             ];
             $grandTotal += $subjectTotal;
         }
         $averagePercentage = $maxPossibleTotal > 0 ? round(($grandTotal / $maxPossibleTotal) * 100, 2) : 0;
         $classPosition = $this->calculateStudentPosition($studentId, $academicYear->id, $classIdForYear);
+
         return view('livewire.result.pages.student-annual-result', [
             'studentRecord' => $studentRecord,
-            'academicYear' => $academicYear, 
+            'academicYear' => $academicYear,
             'semesters' => $semesters,
             'subjects' => $subjects,
             'annualResults' => $annualResults,
             'grandTotal' => $grandTotal,
             'averagePercentage' => $averagePercentage,
             'classPosition' => $classPosition,
-            'totalStudents' => $this->studentRecordIdsForAcademicYearClass($academicYear->id, $classIdForYear)->count()
+            'totalStudents' => $this->studentRecordIdsForAcademicYearClass($academicYear->id, $classIdForYear)->count(),
         ]);
     }
+
     public function exportAnnualResult(Request $request)
     {
         $data = $this->annualExportData($request);
+        $formatter = app(AnnualResultExportFormatter::class);
         $export = ClassResultsExport::forAnnual(
             $data['spreadsheetData'],
             $data['subjects'],
@@ -1194,7 +1206,7 @@ class ResultController extends Controller
 
         return Excel::download(
             $export,
-            $this->annualExportFilename($data['class'], $data['academicYear'], 'xlsx')
+            $formatter->filename($data['class'], $data['academicYear'], 'xlsx')
         );
     }
 
@@ -1202,10 +1214,11 @@ class ResultController extends Controller
     {
         $data = $this->annualExportData($request);
         $data['viewType'] = 'annual';
+        $formatter = app(AnnualResultExportFormatter::class);
 
         return Pdf::loadView('livewire.result.pages.class-spreadsheet-pdf', $data)
             ->setPaper('A4', 'landscape')
-            ->download($this->annualExportFilename($data['class'], $data['academicYear'], 'pdf'));
+            ->download($formatter->filename($data['class'], $data['academicYear'], 'pdf'));
     }
 
     private function annualExportData(Request $request): array
@@ -1214,7 +1227,7 @@ class ResultController extends Controller
 
         $classId = (int) $request->input('classId');
         $academicYearId = (int) $request->input('academicYearId');
-        abort_if(!$classId || !$academicYearId, 422, 'Select a class and academic year first.');
+        abort_if(! $classId || ! $academicYearId, 422, 'Select a class and academic year first.');
         abort_unless($this->currentUserCanViewClassTeacherClass($classId), 403);
 
         $view = $this->annualClassResult(new Request([
@@ -1223,37 +1236,18 @@ class ResultController extends Controller
         ]));
         $pageData = $view->getData();
         $semesters = collect($pageData['semesters']);
+        $formatter = app(AnnualResultExportFormatter::class);
 
         abort_unless(
-            $this->hasCompleteAnnualTerms($semesters),
+            $formatter->hasCompleteTerms($semesters),
             422,
             'Annual results require exactly First, Second, and Third Term.'
         );
 
-        $spreadsheetData = collect($pageData['annualReports'])
-            ->map(function (array $report) {
-                $subjectScores = collect($report['subject_totals'])
-                    ->map(function (array $subjectData) {
-                        $average = (float) $subjectData['average'];
-
-                        return [
-                            'total' => $subjectData['total'],
-                            'average' => $average,
-                            'grade' => $this->calculateGrade($average),
-                        ];
-                    })
-                    ->all();
-
-                return [
-                    'student' => $report['student'],
-                    'term_scores' => $report['term_totals'],
-                    'subject_scores' => $subjectScores,
-                    'grand_total' => $report['grand_total'],
-                    'annual_average' => $report['average_percentage'],
-                    'position' => $report['rank'],
-                ];
-            })
-            ->all();
+        $spreadsheetData = $formatter->formatReports(
+            $pageData['annualReports'],
+            fn (float $score): string => $this->calculateGrade($score)
+        );
 
         return [
             'class' => $pageData['class'],
@@ -1262,27 +1256,6 @@ class ResultController extends Controller
             'semesters' => $semesters,
             'spreadsheetData' => $spreadsheetData,
         ];
-    }
-
-    private function annualExportFilename(MyClass $class, AcademicYear $academicYear, string $extension): string
-    {
-        return str_replace(
-            ' ',
-            '_',
-            "{$class->name}_Annual_{$academicYear->name}.{$extension}"
-        );
-    }
-
-    private function hasCompleteAnnualTerms($semesters): bool
-    {
-        $termNames = collect($semesters)
-            ->map(fn ($semester) => Str::lower(trim($semester->name)))
-            ->values();
-
-        return $termNames->count() === 3
-            && $termNames->contains(fn ($name) => Str::contains($name, 'first'))
-            && $termNames->contains(fn ($name) => Str::contains($name, 'second'))
-            && $termNames->contains(fn ($name) => Str::contains($name, 'third'));
     }
 
     protected function currentSchoolId(): ?int
@@ -1340,8 +1313,7 @@ class ResultController extends Controller
         $classId,
         $sectionId = null,
         $semesterId = null
-    )
-    {
+    ) {
         if (ClassExamActivity::excludedClassIds(
             $this->currentSchoolId(),
             (int) $academicYearId,
@@ -1380,7 +1352,7 @@ class ResultController extends Controller
     {
         $studentRecordIds = collect($studentRecordIds)->filter()->values();
 
-        if (!$academicYearId || !$semesterId || $studentRecordIds->isEmpty()) {
+        if (! $academicYearId || ! $semesterId || $studentRecordIds->isEmpty()) {
             return null;
         }
 
@@ -1408,8 +1380,8 @@ class ResultController extends Controller
             return null;
         }
 
-        return 'No uploaded results were found for ' . $currentSemesterName .
-            '. Results exist for ' . $availableTerms->join(', ') . '.';
+        return 'No uploaded results were found for '.$currentSemesterName.
+            '. Results exist for '.$availableTerms->join(', ').'.';
     }
 
     protected function findAcademicYearForCurrentSchool($academicYearId): ?AcademicYear

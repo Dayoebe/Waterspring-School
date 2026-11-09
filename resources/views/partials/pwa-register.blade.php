@@ -32,6 +32,27 @@
         opacity: 0.72;
         cursor: wait;
     }
+
+    .pwa-install-button:focus-visible {
+        outline: 3px solid rgba(14, 165, 233, 0.45);
+        outline-offset: 3px;
+    }
+
+    @media (max-width: 639px) {
+        .pwa-install-button {
+            right: 0.75rem;
+            bottom: calc(0.75rem + env(safe-area-inset-bottom));
+            width: 2.75rem;
+            height: 2.75rem;
+            padding: 0;
+            font-size: 0.875rem;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+        }
+
+        .pwa-install-label {
+            display: none;
+        }
+    }
 </style>
 
 <script>
@@ -76,7 +97,17 @@
             installButton.id = 'pwa-install-button';
             installButton.className = 'pwa-install-button';
             installButton.setAttribute('aria-label', 'Install app');
-            installButton.textContent = 'Install App';
+            installButton.title = 'Install app';
+
+            const installIcon = document.createElement('i');
+            installIcon.className = 'fas fa-download';
+            installIcon.setAttribute('aria-hidden', 'true');
+
+            const installLabel = document.createElement('span');
+            installLabel.className = 'pwa-install-label';
+            installLabel.textContent = 'Install App';
+
+            installButton.append(installIcon, installLabel);
 
             installButton.addEventListener('click', async () => {
                 if (!deferredInstallPrompt) {

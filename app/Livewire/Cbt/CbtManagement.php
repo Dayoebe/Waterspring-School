@@ -9,16 +9,17 @@ use App\Models\Assessment\StudentAnswer;
 use App\Models\MyClass;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\Cbt\AssessmentLibraryQuery;
+use App\Services\CbtResultImporter;
 use App\Traits\RestrictsTeacherCbtManagement;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Collection;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
-use App\Services\CbtResultImporter;
 
 #[Layout('layouts.dashboard', ['title' => 'CBT Exam Management', 'description' => 'Manage CBT exams', 'icon' => 'fas fa-microphone-alt'])]
 class CbtManagement extends Component
@@ -28,46 +29,78 @@ class CbtManagement extends Component
     use WithPagination;
 
     public $showCreateModal = false;
+
     public $showEditModal = false;
+
     public $showQuestionModal = false;
+
     public $showParticipantsModal = false;
+
     public $showEditQuestionModal = false;
 
     public $filterCourseId = '';
+
     public $filterLessonId = '';
+
     public $statusFilter = '';
+
     public $sortBy = 'created_at';
+
     public $sortDirection = 'desc';
+
     public $search = '';
 
     public $title = '';
+
     public $description = '';
+
     public $pass_percentage = 70;
+
     public $estimated_duration_minutes = 60;
+
     public $max_score = 100;
+
     public $max_attempts = null;
+
     public $shuffle_questions = false; // NEW
+
     public $shuffle_options = false;   // NEW
+
     public $type = 'quiz';
+
     public $course_id = null;
+
     public $lesson_id = null;
 
     public $selectedAssessment = null;
+
     public array $resultImportTargets = [];
+
     public $editingAssessment = null;
+
     public $editingQuestion = null;
 
     // Question properties
     public $question_text = '';
+
     public $question_type = 'multiple_choice';
+
     public $points = 1;
+
     public $options = ['', '', '', ''];
+
     public $correct_answers = [];
+
     public $explanation = '';
+
     public $question_media = null;
+
     public $existing_question_media_path = null;
+
     public $existing_question_media_name = null;
+
     public $existing_question_media_mime_type = null;
+
     public $remove_question_media = false;
 
     protected $validationAttributes = [
@@ -123,12 +156,13 @@ class CbtManagement extends Component
     {
         $classId = $value ? (int) $value : null;
 
-        if (!$classId || !$this->currentUserCanManageCbtClass($classId)) {
+        if (! $classId || ! $this->currentUserCanManageCbtClass($classId)) {
             $this->lesson_id = null;
+
             return;
         }
 
-        if ($this->lesson_id && !$this->currentUserCanManageCbtSubject($this->lesson_id, $classId)) {
+        if ($this->lesson_id && ! $this->currentUserCanManageCbtSubject($this->lesson_id, $classId)) {
             $this->lesson_id = null;
         }
     }
@@ -137,16 +171,17 @@ class CbtManagement extends Component
     {
         $classId = $value ? (int) $value : null;
 
-        if (!$classId || !$this->currentUserCanFilterAssessmentClass($classId)) {
+        if (! $classId || ! $this->currentUserCanFilterAssessmentClass($classId)) {
             $this->filterCourseId = '';
             $this->filterLessonId = '';
             $this->resetPage();
+
             return;
         }
 
         if (
             $this->filterLessonId
-            && !$this->currentUserCanFilterAssessmentSubject($this->filterLessonId, $classId)
+            && ! $this->currentUserCanFilterAssessmentSubject($this->filterLessonId, $classId)
         ) {
             $this->filterLessonId = '';
         }
@@ -162,8 +197,8 @@ class CbtManagement extends Component
         if (
             $subjectId
             && (
-                !$classId
-                || !$this->currentUserCanFilterAssessmentSubject($subjectId, $classId)
+                ! $classId
+                || ! $this->currentUserCanFilterAssessmentSubject($subjectId, $classId)
             )
         ) {
             $this->filterLessonId = '';
@@ -251,8 +286,9 @@ class CbtManagement extends Component
 
     public function createAssessment()
     {
-        if (!$this->hasActiveAcademicPeriod()) {
+        if (! $this->hasActiveAcademicPeriod()) {
             session()->flash('error', 'Set the current academic session and term before creating CBT assessments.');
+
             return;
         }
 
@@ -269,13 +305,15 @@ class CbtManagement extends Component
             'lesson_id' => 'required|exists:subjects,id',
         ]);
 
-        if (!$this->currentUserCanManageCbtClass($this->course_id)) {
+        if (! $this->currentUserCanManageCbtClass($this->course_id)) {
             session()->flash('error', 'You can only create CBT assessments for your assigned classes.');
+
             return;
         }
 
-        if (!$this->currentUserCanManageCbtSubject($this->lesson_id, $this->course_id)) {
+        if (! $this->currentUserCanManageCbtSubject($this->lesson_id, $this->course_id)) {
             session()->flash('error', 'You can only create CBT assessments for subjects assigned to you in this class.');
+
             return;
         }
 
@@ -306,8 +344,9 @@ class CbtManagement extends Component
     public function editAssessment($assessmentId)
     {
         $this->editingAssessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$this->editingAssessment) {
+        if (! $this->editingAssessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -327,8 +366,9 @@ class CbtManagement extends Component
 
     public function updateAssessment()
     {
-        if (!$this->hasActiveAcademicPeriod()) {
+        if (! $this->hasActiveAcademicPeriod()) {
             session()->flash('error', 'Set the current academic session and term before updating CBT assessments.');
+
             return;
         }
 
@@ -345,24 +385,28 @@ class CbtManagement extends Component
             'lesson_id' => 'required|exists:subjects,id',
         ]);
 
-        if (!$this->editingAssessment) {
+        if (! $this->editingAssessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanManageCbtClass($this->course_id)) {
+        if (! $this->currentUserCanManageCbtClass($this->course_id)) {
             session()->flash('error', 'You can only update CBT assessments for your assigned classes.');
+
             return;
         }
 
-        if (!$this->currentUserCanManageCbtSubject($this->lesson_id, $this->course_id)) {
+        if (! $this->currentUserCanManageCbtSubject($this->lesson_id, $this->course_id)) {
             session()->flash('error', 'You can only update CBT assessments for subjects assigned to you in this class.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->editingAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -386,8 +430,9 @@ class CbtManagement extends Component
 
     public function deleteAssessment($assessmentId)
     {
-        if (!$this->currentUserCanDeleteAssessments()) {
+        if (! $this->currentUserCanDeleteAssessments()) {
             session()->flash('error', 'Only super admin and principal can delete CBT assessments.');
+
             return;
         }
 
@@ -400,14 +445,16 @@ class CbtManagement extends Component
 
     public function publishResults($assessmentId): void
     {
-        if (!$this->currentUserCanPublishCbtResults()) {
+        if (! $this->currentUserCanPublishCbtResults()) {
             session()->flash('error', 'Only admin-level staff can publish or hide CBT results.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -421,14 +468,16 @@ class CbtManagement extends Component
 
     public function unpublishResults($assessmentId): void
     {
-        if (!$this->currentUserCanPublishCbtResults()) {
+        if (! $this->currentUserCanPublishCbtResults()) {
             session()->flash('error', 'Only admin-level staff can publish or hide CBT results.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -442,14 +491,16 @@ class CbtManagement extends Component
 
     public function importResultsToReportCard(int $assessmentId, CbtResultImporter $importer): void
     {
-        if (!$this->currentUserCanPublishCbtResults()) {
+        if (! $this->currentUserCanPublishCbtResults()) {
             session()->flash('error', 'Only admin-level staff can transfer CBT scores to report cards.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -470,24 +521,26 @@ class CbtManagement extends Component
 
     public function toggleAssessmentLock($assessmentId): void
     {
-        if (!$this->currentUserCanLockAssessments()) {
+        if (! $this->currentUserCanLockAssessments()) {
             session()->flash('error', 'Only super admin can lock, unlock, or publish CBT papers.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        $locking = !$assessment->is_locked;
+        $locking = ! $assessment->is_locked;
         $wasPublishedToStudents = $assessment->exam_published_at !== null;
         $attributes = [
             'is_locked' => $locking,
         ];
 
-        if (!$locking && $wasPublishedToStudents) {
+        if (! $locking && $wasPublishedToStudents) {
             $attributes['exam_published_at'] = null;
             $attributes['exam_published_by'] = null;
         }
@@ -506,24 +559,28 @@ class CbtManagement extends Component
 
     public function publishExam($assessmentId): void
     {
-        if (!$this->currentUserCanLockAssessments()) {
+        if (! $this->currentUserCanLockAssessments()) {
             session()->flash('error', 'Only super admin can lock, unlock, or publish CBT papers.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$assessment->is_locked) {
+        if (! $assessment->is_locked) {
             session()->flash('error', 'Lock and vet this CBT paper before publishing it to students.');
+
             return;
         }
 
-        if (!$assessment->questions()->exists()) {
+        if (! $assessment->questions()->exists()) {
             session()->flash('error', 'Add at least one question before publishing this CBT paper.');
+
             return;
         }
 
@@ -537,14 +594,16 @@ class CbtManagement extends Component
 
     public function unpublishExam($assessmentId): void
     {
-        if (!$this->currentUserCanLockAssessments()) {
+        if (! $this->currentUserCanLockAssessments()) {
             session()->flash('error', 'Only super admin can lock, unlock, or publish CBT papers.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($assessmentId);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -565,14 +624,16 @@ class CbtManagement extends Component
             ->with('questions')
             ->find($assessmentId);
 
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanAccessQuestionBank($this->selectedAssessment)) {
+        if (! $this->currentUserCanAccessQuestionBank($this->selectedAssessment)) {
             $this->selectedAssessment = null;
             session()->flash('error', 'This CBT paper has been locked after vetting. Only super admin can view the questions.');
+
             return;
         }
 
@@ -582,19 +643,22 @@ class CbtManagement extends Component
 
     public function addQuestion()
     {
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanEditQuestionBank($assessment)) {
+        if (! $this->currentUserCanEditQuestionBank($assessment)) {
             session()->flash('error', 'This CBT paper is locked. Unlock it before editing the questions.');
+
             return;
         }
 
@@ -605,8 +669,9 @@ class CbtManagement extends Component
             'question_media' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx|max:10240',
         ]);
 
-        if (!$this->questionHasRenderableContent()) {
+        if (! $this->questionHasRenderableContent()) {
             $this->addError('question_text', 'Provide question text or upload a question file.');
+
             return;
         }
 
@@ -617,11 +682,12 @@ class CbtManagement extends Component
             ]);
 
             $this->options = array_values(array_filter($this->options, function ($option) {
-                return !empty(trim($option));
+                return ! empty(trim($option));
             }));
 
             if (count($this->options) < 2) {
                 $this->addError('options', 'Please provide at least 2 non-empty options.');
+
                 return;
             }
         }
@@ -649,19 +715,22 @@ class CbtManagement extends Component
 
     public function editQuestion($questionId)
     {
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanEditQuestionBank($assessment)) {
+        if (! $this->currentUserCanEditQuestionBank($assessment)) {
             session()->flash('error', 'This CBT paper is locked. Unlock it before editing the questions.');
+
             return;
         }
 
@@ -670,8 +739,9 @@ class CbtManagement extends Component
             ->where('assessment_id', $assessment->id)
             ->find($questionId);
 
-        if (!$this->editingQuestion) {
+        if (! $this->editingQuestion) {
             session()->flash('error', 'Question not found.');
+
             return;
         }
 
@@ -692,24 +762,28 @@ class CbtManagement extends Component
 
     public function updateQuestion()
     {
-        if (!$this->editingQuestion) {
+        if (! $this->editingQuestion) {
             session()->flash('error', 'Question not found.');
+
             return;
         }
 
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanEditQuestionBank($assessment)) {
+        if (! $this->currentUserCanEditQuestionBank($assessment)) {
             session()->flash('error', 'This CBT paper is locked. Unlock it before editing the questions.');
+
             return;
         }
 
@@ -717,8 +791,9 @@ class CbtManagement extends Component
             ->where('assessment_id', $assessment->id)
             ->find($this->editingQuestion->id);
 
-        if (!$question) {
+        if (! $question) {
             session()->flash('error', 'Question not found.');
+
             return;
         }
 
@@ -729,8 +804,9 @@ class CbtManagement extends Component
             'question_media' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx|max:10240',
         ]);
 
-        if (!$this->questionHasRenderableContent($question)) {
+        if (! $this->questionHasRenderableContent($question)) {
             $this->addError('question_text', 'Provide question text or upload a question file.');
+
             return;
         }
 
@@ -741,7 +817,7 @@ class CbtManagement extends Component
             ]);
 
             $this->options = array_values(array_filter($this->options, function ($option) {
-                return !empty(trim($option));
+                return ! empty(trim($option));
             }));
         }
 
@@ -790,19 +866,22 @@ class CbtManagement extends Component
 
     public function reorderQuestions($orderedIds)
     {
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanEditQuestionBank($assessment)) {
+        if (! $this->currentUserCanEditQuestionBank($assessment)) {
             session()->flash('error', 'This CBT paper is locked. Unlock it before editing the questions.');
+
             return;
         }
 
@@ -813,7 +892,7 @@ class CbtManagement extends Component
 
         $order = 1;
         foreach ($orderedIds as $id) {
-            if (!$validQuestionIds->has($id)) {
+            if (! $validQuestionIds->has($id)) {
                 continue;
             }
 
@@ -827,19 +906,22 @@ class CbtManagement extends Component
 
     public function deleteQuestion($questionId)
     {
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
-        if (!$this->currentUserCanEditQuestionBank($assessment)) {
+        if (! $this->currentUserCanEditQuestionBank($assessment)) {
             session()->flash('error', 'This CBT paper is locked. Unlock it before editing the questions.');
+
             return;
         }
 
@@ -857,8 +939,9 @@ class CbtManagement extends Component
 
     public function viewParticipants($assessmentId)
     {
-        if (!$this->currentUserCanAdministerCbtParticipants()) {
+        if (! $this->currentUserCanAdministerCbtParticipants()) {
             session()->flash('error', 'Teacher CBT access is limited to setting questions for assigned classes and subjects.');
+
             return;
         }
 
@@ -870,8 +953,9 @@ class CbtManagement extends Component
         $this->selectedAssessment = $this->assessmentParticipantsQuery()
             ->find($assessmentId);
 
-        if (!$this->selectedAssessment || !$schoolId) {
+        if (! $this->selectedAssessment || ! $schoolId) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -880,7 +964,7 @@ class CbtManagement extends Component
 
     public function getParticipantsData()
     {
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             return collect();
         }
 
@@ -905,38 +989,38 @@ class CbtManagement extends Component
             ->flip();
 
         $participants = $students->map(function ($user) use ($answersByUser, $lockedUserIds, $eligibleUserIds) {
-                $answers = $answersByUser->get($user->id, collect());
-                $attempts = $answers->groupBy('attempt_number')->map(function ($attemptAnswers, $attemptNumber) {
-                    $totalPoints = $attemptAnswers->sum('points_earned');
-                    $maxPoints = $attemptAnswers->sum(function ($answer) {
-                        return $answer->question ? $answer->question->points : 0;
-                    });
-                    $percentage = $maxPoints > 0 ? round(($totalPoints / $maxPoints) * 100, 1) : 0;
-
-                    return [
-                        'attempt_number' => $attemptNumber,
-                        'total_points' => $totalPoints,
-                        'max_points' => $maxPoints,
-                        'percentage' => $percentage,
-                        'passed' => $percentage >= $this->selectedAssessment->pass_percentage,
-                        'submitted_at' => $attemptAnswers->first()->submitted_at,
-                    ];
-                })->sortByDesc('attempt_number')->values();
-
-                $bestAttempt = $attempts->sortByDesc('percentage')->first();
-                $isLocked = $lockedUserIds->has((int) $user->id);
+            $answers = $answersByUser->get($user->id, collect());
+            $attempts = $answers->groupBy('attempt_number')->map(function ($attemptAnswers, $attemptNumber) {
+                $totalPoints = $attemptAnswers->sum('points_earned');
+                $maxPoints = $attemptAnswers->sum(function ($answer) {
+                    return $answer->question ? $answer->question->points : 0;
+                });
+                $percentage = $maxPoints > 0 ? round(($totalPoints / $maxPoints) * 100, 1) : 0;
 
                 return [
-                    'user' => $user,
-                    'user_id' => (int) $user->id,
-                    'attempts' => $attempts,
-                    'best_attempt' => $bestAttempt,
-                    'total_attempts' => $attempts->count(),
-                    'is_locked' => $isLocked,
-                    'is_eligible' => !$isLocked,
-                    'eligible_for_exam' => $eligibleUserIds->has((int) $user->id),
+                    'attempt_number' => $attemptNumber,
+                    'total_points' => $totalPoints,
+                    'max_points' => $maxPoints,
+                    'percentage' => $percentage,
+                    'passed' => $percentage >= $this->selectedAssessment->pass_percentage,
+                    'submitted_at' => $attemptAnswers->first()->submitted_at,
                 ];
-            })
+            })->sortByDesc('attempt_number')->values();
+
+            $bestAttempt = $attempts->sortByDesc('percentage')->first();
+            $isLocked = $lockedUserIds->has((int) $user->id);
+
+            return [
+                'user' => $user,
+                'user_id' => (int) $user->id,
+                'attempts' => $attempts,
+                'best_attempt' => $bestAttempt,
+                'total_attempts' => $attempts->count(),
+                'is_locked' => $isLocked,
+                'is_eligible' => ! $isLocked,
+                'eligible_for_exam' => $eligibleUserIds->has((int) $user->id),
+            ];
+        })
             ->sort(function (array $left, array $right) {
                 if ($left['is_eligible'] !== $right['is_eligible']) {
                     return $left['is_eligible'] ? 1 : -1;
@@ -955,19 +1039,22 @@ class CbtManagement extends Component
 
     public function toggleStudentEligibility($userId): void
     {
-        if (!$this->currentUserCanLockAssessments()) {
+        if (! $this->currentUserCanLockAssessments()) {
             session()->flash('error', 'Only super admin can change CBT participant eligibility.');
+
             return;
         }
 
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -980,16 +1067,18 @@ class CbtManagement extends Component
             ->where('school_id', $this->currentSchoolId())
             ->find((int) $userId);
 
-        if (!$student) {
+        if (! $student) {
             session()->flash('error', 'Student not found.');
+
             return;
         }
 
         $isEligibleStudent = $this->eligibleStudentsForAssessment($assessment)
             ->contains(fn ($eligibleStudent) => (int) $eligibleStudent->id === (int) $userId);
 
-        if (!$existingLock && !$isEligibleStudent) {
+        if (! $existingLock && ! $isEligibleStudent) {
             session()->flash('error', 'Only students currently assigned to this class can be marked eligible or ineligible.');
+
             return;
         }
 
@@ -1013,19 +1102,22 @@ class CbtManagement extends Component
 
     public function clearAttempt($userId, $attemptNumber)
     {
-        if (!$this->currentUserCanAdministerCbtParticipants()) {
+        if (! $this->currentUserCanAdministerCbtParticipants()) {
             session()->flash('error', 'Only admin-level staff can clear CBT attempts.');
+
             return;
         }
 
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -1033,8 +1125,9 @@ class CbtManagement extends Component
             ->where('school_id', $this->currentSchoolId())
             ->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             session()->flash('error', 'User not found.');
+
             return;
         }
 
@@ -1057,19 +1150,22 @@ class CbtManagement extends Component
 
     public function clearAllUserAttempts($userId)
     {
-        if (!$this->currentUserCanAdministerCbtParticipants()) {
+        if (! $this->currentUserCanAdministerCbtParticipants()) {
             session()->flash('error', 'Only admin-level staff can clear CBT attempts.');
+
             return;
         }
 
-        if (!$this->selectedAssessment) {
+        if (! $this->selectedAssessment) {
             session()->flash('error', 'No assessment selected.');
+
             return;
         }
 
         $assessment = $this->getAssessmentForCurrentSchool($this->selectedAssessment->id);
-        if (!$assessment) {
+        if (! $assessment) {
             session()->flash('error', 'Assessment not found.');
+
             return;
         }
 
@@ -1077,8 +1173,9 @@ class CbtManagement extends Component
             ->where('school_id', $this->currentSchoolId())
             ->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             session()->flash('error', 'User not found.');
+
             return;
         }
 
@@ -1173,7 +1270,7 @@ class CbtManagement extends Component
 
         if (
             $question !== null
-            && !$this->remove_question_media
+            && ! $this->remove_question_media
             && is_string($question->question_media_path)
             && $question->question_media_path !== ''
         ) {
@@ -1192,7 +1289,7 @@ class CbtManagement extends Component
         $schoolId = (int) $this->currentSchoolId();
         $disk = 'public';
         $path = $this->question_media->store(
-            'cbt-questions/' . $schoolId . '/' . $assessmentId . '/' . now()->format('Y/m'),
+            'cbt-questions/'.$schoolId.'/'.$assessmentId.'/'.now()->format('Y/m'),
             $disk
         );
 
@@ -1206,7 +1303,7 @@ class CbtManagement extends Component
 
     protected function deleteQuestionMediaFile(?string $disk, ?string $path): void
     {
-        if (!is_string($path) || $path === '') {
+        if (! is_string($path) || $path === '') {
             return;
         }
 
@@ -1220,58 +1317,17 @@ class CbtManagement extends Component
 
     protected function assessmentLibraryQuery(): Builder
     {
-        $query = $this->assessmentLibraryAccessibleQuery()
-            ->leftJoin('my_classes', 'my_classes.id', '=', 'assessments.course_id')
-            ->leftJoin('subjects', 'subjects.id', '=', 'assessments.lesson_id')
-            ->select('assessments.*')
-            ->withCount('questions');
-
-        if ($this->filterCourseId !== '') {
-            $query->where('assessments.course_id', (int) $this->filterCourseId);
-        }
-
-        if ($this->filterLessonId !== '') {
-            $query->where('assessments.lesson_id', (int) $this->filterLessonId);
-        }
-
-        $searchTerm = trim((string) $this->search);
-
-        if ($searchTerm !== '') {
-            $searchTerm = '%' . $searchTerm . '%';
-
-            $query->where(function (Builder $searchQuery) use ($searchTerm) {
-                $searchQuery->where('assessments.title', 'like', $searchTerm)
-                    ->orWhere('assessments.description', 'like', $searchTerm)
-                    ->orWhere('my_classes.name', 'like', $searchTerm)
-                    ->orWhere('subjects.name', 'like', $searchTerm)
-                    ->orWhere('subjects.short_name', 'like', $searchTerm);
-            });
-        }
-
-        match ($this->statusFilter) {
-            'draft' => $query->where('assessments.is_locked', false),
-            'locked' => $query->where('assessments.is_locked', true),
-            'student_visible' => $query->whereNotNull('assessments.exam_published_at'),
-            'student_hidden' => $query->whereNull('assessments.exam_published_at'),
-            'results_visible' => $query->whereNotNull('assessments.results_published_at'),
-            'results_hidden' => $query->whereNull('assessments.results_published_at'),
-            default => null,
-        };
-
-        $direction = strtolower((string) $this->sortDirection) === 'asc' ? 'asc' : 'desc';
-
-        match ($this->sortBy) {
-            'title' => $query->orderBy('assessments.title', $direction),
-            'class' => $query->orderBy('my_classes.name', $direction)->orderBy('assessments.title'),
-            'subject' => $query->orderBy('subjects.name', $direction)->orderBy('assessments.title'),
-            'duration' => $query->orderBy('assessments.estimated_duration_minutes', $direction),
-            'pass_percentage' => $query->orderBy('assessments.pass_percentage', $direction),
-            'questions_count' => $query->orderBy('questions_count', $direction),
-            'updated_at' => $query->orderBy('assessments.updated_at', $direction),
-            default => $query->orderBy('assessments.created_at', $direction),
-        };
-
-        return $query->orderByDesc('assessments.id');
+        return app(AssessmentLibraryQuery::class)->apply(
+            $this->assessmentLibraryAccessibleQuery(),
+            [
+                'course_id' => $this->filterCourseId,
+                'lesson_id' => $this->filterLessonId,
+                'status' => $this->statusFilter,
+                'sort' => $this->sortBy,
+                'direction' => $this->sortDirection,
+                'search' => $this->search,
+            ]
+        );
     }
 
     protected function classesForCurrentSchool(): Builder
@@ -1281,7 +1337,7 @@ class CbtManagement extends Component
 
     protected function getAssessmentForCurrentSchool($assessmentId): ?Assessment
     {
-        if (!$assessmentId) {
+        if (! $assessmentId) {
             return null;
         }
 
@@ -1292,7 +1348,7 @@ class CbtManagement extends Component
     {
         $classId = $this->course_id ? (int) $this->course_id : null;
 
-        if (!$classId || !$this->currentUserCanManageCbtClass($classId)) {
+        if (! $classId || ! $this->currentUserCanManageCbtClass($classId)) {
             return collect();
         }
 
@@ -1305,11 +1361,11 @@ class CbtManagement extends Component
         $classId = $this->filterCourseId ? (int) $this->filterCourseId : null;
         $viewer = auth()->user();
 
-        if (!$classId || !$this->currentUserCanFilterAssessmentClass($classId)) {
+        if (! $classId || ! $this->currentUserCanFilterAssessmentClass($classId)) {
             return collect();
         }
 
-        if (!$this->isRestrictedTeacherCbtManager($viewer)) {
+        if (! $this->isRestrictedTeacherCbtManager($viewer)) {
             return $this->subjectsForLibraryClassQuery($classId)
                 ->get(['subjects.id', 'subjects.name', 'subjects.short_name']);
         }
@@ -1330,7 +1386,7 @@ class CbtManagement extends Component
 
     protected function currentUserCanFilterAssessmentClass(int|string|null $classId): bool
     {
-        if (!$classId) {
+        if (! $classId) {
             return false;
         }
 
@@ -1341,7 +1397,7 @@ class CbtManagement extends Component
 
     protected function currentUserCanFilterAssessmentSubject(int|string|null $subjectId, int|string|null $classId): bool
     {
-        if (!$subjectId || !$classId) {
+        if (! $subjectId || ! $classId) {
             return false;
         }
 
@@ -1351,15 +1407,15 @@ class CbtManagement extends Component
 
     protected function viewerCanManageAssessmentContent(Assessment $assessment, ?User $viewer): bool
     {
-        if (!$viewer) {
+        if (! $viewer) {
             return false;
         }
 
-        if (!$this->isRestrictedTeacherCbtManager($viewer)) {
+        if (! $this->isRestrictedTeacherCbtManager($viewer)) {
             return true;
         }
 
-        if (!$assessment->course_id || !$assessment->lesson_id) {
+        if (! $assessment->course_id || ! $assessment->lesson_id) {
             return false;
         }
 
@@ -1369,7 +1425,7 @@ class CbtManagement extends Component
 
     protected function viewerCanPrintAssessmentSummary(Assessment $assessment, ?User $viewer): bool
     {
-        if (!$viewer || !$assessment->course) {
+        if (! $viewer || ! $assessment->course) {
             return false;
         }
 
@@ -1385,119 +1441,39 @@ class CbtManagement extends Component
     protected function libraryClassesForCurrentSchool(): Builder
     {
         $viewer = auth()->user();
-        $query = MyClass::query();
-
-        if (!$viewer?->school_id) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $query->whereHas('classGroup', function (Builder $classGroupQuery) use ($viewer) {
-            $classGroupQuery->where('school_id', $viewer->school_id);
-        });
-
-        if (!$this->isRestrictedTeacherCbtManager($viewer)) {
-            return $query;
-        }
-
         $classIds = $this->accessibleCbtClassIds($viewer)
             ->merge($this->restrictedTeacherClassTeacherClassIds($viewer))
-            ->filter()
-            ->unique()
             ->values();
 
-        if ($classIds->isEmpty()) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn('my_classes.id', $classIds);
+        return app(AssessmentLibraryQuery::class)->classes(
+            MyClass::query(),
+            $viewer,
+            $this->isRestrictedTeacherCbtManager($viewer),
+            $classIds
+        );
     }
 
     protected function subjectsForLibraryClassQuery(int $classId): Builder
     {
-        $schoolId = $this->currentSchoolId();
-        $query = Subject::query();
-
-        if (!$schoolId) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->where('subjects.school_id', $schoolId)
-            ->where(function (Builder $classScope) use ($classId) {
-                $classScope->where('subjects.my_class_id', $classId)
-                    ->orWhereHas('classes', function (Builder $classQuery) use ($classId) {
-                        $classQuery->where('my_classes.id', $classId);
-                    })
-                    ->orWhereIn('subjects.id', function ($subQuery) use ($classId) {
-                        $subQuery->from('student_subject')
-                            ->where('my_class_id', $classId)
-                            ->select('subject_id');
-                    });
-            })
-            ->orderBy('subjects.name')
-            ->distinct();
+        return app(AssessmentLibraryQuery::class)->subjects(
+            Subject::query(),
+            $this->currentSchoolId(),
+            $classId
+        );
     }
 
     protected function assessmentLibraryAccessibleQuery(): Builder
     {
         $viewer = auth()->user();
-        $query = Assessment::query()->standaloneCBT();
-
-        if (!$viewer?->school_id) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $query->forSchool($viewer->school_id);
-        $query->forCurrentSchoolAcademicPeriod($viewer);
-
-        if (!$this->isRestrictedTeacherCbtManager($viewer)) {
-            return $query;
-        }
-
-        $managedClassIds = $this->accessibleCbtClassIds($viewer)
-            ->filter()
-            ->unique()
-            ->values();
-        $classTeacherClassIds = $this->restrictedTeacherClassTeacherClassIds($viewer)
-            ->filter()
-            ->unique()
-            ->values();
-
-        if ($managedClassIds->isEmpty() && $classTeacherClassIds->isEmpty()) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->where(function (Builder $assessmentQuery) use ($viewer, $managedClassIds, $classTeacherClassIds) {
-            if ($managedClassIds->isNotEmpty()) {
-                $assessmentQuery->where(function (Builder $managedAssessmentQuery) use ($viewer, $managedClassIds) {
-                    $managedAssessmentQuery->whereIn('assessments.course_id', $managedClassIds)
-                        ->whereNotNull('assessments.lesson_id')
-                        ->whereExists(function ($subQuery) use ($viewer) {
-                            $subQuery->select(DB::raw(1))
-                                ->from('subject_teacher as st')
-                                ->whereColumn('st.subject_id', 'assessments.lesson_id')
-                                ->where('st.user_id', $viewer->id)
-                                ->where('st.school_id', $viewer->school_id)
-                                ->where(function ($assignmentQuery) {
-                                    $assignmentQuery->where('st.is_general', true)
-                                        ->orWhereColumn('st.my_class_id', 'assessments.course_id');
-                                });
-                        });
-                });
-            }
-
-            $classOnlyIds = $classTeacherClassIds
-                ->diff($managedClassIds)
-                ->values();
-
-            if ($classOnlyIds->isNotEmpty()) {
-                if ($managedClassIds->isNotEmpty()) {
-                    $assessmentQuery->orWhereIn('assessments.course_id', $classOnlyIds);
-                } else {
-                    $assessmentQuery->whereIn('assessments.course_id', $classOnlyIds);
-                }
-            }
-        });
+        return app(AssessmentLibraryQuery::class)->accessible(
+            Assessment::query()->standaloneCBT(),
+            $viewer,
+            $this->isRestrictedTeacherCbtManager($viewer),
+            $this->accessibleCbtClassIds($viewer),
+            $this->restrictedTeacherClassTeacherClassIds($viewer)
+        );
     }
+
     protected function currentUserCanAdministerCbtParticipants(): bool
     {
         return auth()->user()?->hasAnyRole(['super-admin', 'super_admin', 'principal', 'admin']) === true;
@@ -1515,12 +1491,12 @@ class CbtManagement extends Component
 
     protected function currentUserCanAccessQuestionBank(Assessment $assessment): bool
     {
-        return !$assessment->is_locked || $this->currentUserCanLockAssessments();
+        return ! $assessment->is_locked || $this->currentUserCanLockAssessments();
     }
 
     protected function currentUserCanEditQuestionBank(Assessment $assessment): bool
     {
-        return !$assessment->is_locked;
+        return ! $assessment->is_locked;
     }
 
     protected function eligibleStudentsForAssessment(Assessment $assessment): Collection
@@ -1528,7 +1504,7 @@ class CbtManagement extends Component
         $schoolId = $this->currentSchoolId();
         $academicYearId = auth()->user()?->school?->academic_year_id;
 
-        if (!$assessment->course_id || !$schoolId || !$academicYearId) {
+        if (! $assessment->course_id || ! $schoolId || ! $academicYearId) {
             return collect();
         }
 
