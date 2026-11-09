@@ -577,7 +577,7 @@
 
                 <div
                     class="flex flex-col gap-3 border-b border-slate-200/80 pb-5 md:flex-row md:items-end md:justify-between">
-                    <div>
+                    <div class="py-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick access</p>
                         <h3 class="mt-2 text-2xl font-bold text-slate-900">Your tools</h3>
                         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
