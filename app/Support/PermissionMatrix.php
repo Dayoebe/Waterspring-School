@@ -119,6 +119,7 @@ class PermissionMatrix
             'manage behavioural reports',
             'access student support',
             'manage student support',
+            'manage parent teacher appointments',
             'view schemes of work',
             'manage schemes of work',
             'manage assignment',
@@ -214,6 +215,7 @@ class PermissionMatrix
             'access behavioural reports',
             'access student support',
             'manage student support',
+            'manage parent teacher appointments',
             'view schemes of work',
             'manage assigned schemes of work',
 
@@ -277,6 +279,7 @@ class PermissionMatrix
             'view own broadcasts',
             'access behavioural reports',
             'access student support',
+            'book parent teacher appointment',
         ];
 
         $basicUser = [
@@ -341,6 +344,8 @@ class PermissionMatrix
             'manage behavioural reports',
             'access student support',
             'manage student support',
+            'manage parent teacher appointments',
+            'book parent teacher appointment',
             'view schemes of work',
             'manage schemes of work',
             'manage assigned schemes of work',

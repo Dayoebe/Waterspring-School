@@ -41,6 +41,7 @@ trait RestrictsTeacherPortalAccess
             'attendance.index',
             'behaviour-reports.index',
             'student-support.index',
+            'appointments.index',
             'clubs.index',
             'syllabi.index',
             'syllabi.create',

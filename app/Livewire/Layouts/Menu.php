@@ -696,6 +696,13 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'icon' => 'fas fa-calendar-check',
+                        'text' => 'Parent-Teacher Appointments',
+                        'route' => 'appointments.index',
+                        'permissions' => ['manage parent teacher appointments', 'book parent teacher appointment'],
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'icon' => 'fas fa-envelope',
                         'text' => 'Website Enquiries',
                         'route' => 'contacts.messages.index',

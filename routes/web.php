@@ -36,6 +36,7 @@ use App\Livewire\Admins\AdminDetail;
 use App\Livewire\Admins\ManageAdmins;
 use App\Livewire\Administration\AuditLog;
 use App\Livewire\Admissions\ManageAdmissionRegistrations;
+use App\Livewire\Appointments\AppointmentHub;
 use App\Livewire\Assignments\AssignmentHub;
 use App\Livewire\Attendance\ManageAttendance;
 use App\Livewire\Attendance\ParentStudentWelfare;
@@ -310,6 +311,10 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/dashboard/student-support', StudentSupportHub::class)
         ->middleware('permission:access student support')
         ->name('student-support.index');
+
+    Route::get('/dashboard/appointments', AppointmentHub::class)
+        ->middleware('permission:manage parent teacher appointments|book parent teacher appointment')
+        ->name('appointments.index');
 
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])
