@@ -32,6 +32,7 @@ class PermissionMatrix
             'read analytics dashboard',
             'manage user roles',
             'view audit log',
+            'manage school transport',
             'read staff directory',
             'manage staff directory',
 
@@ -280,6 +281,7 @@ class PermissionMatrix
             'access behavioural reports',
             'access student support',
             'book parent teacher appointment',
+            'view child transport',
         ];
 
         $basicUser = [
@@ -358,6 +360,8 @@ class PermissionMatrix
             'lock user',
             'manage user roles',
             'view audit log',
+            'manage school transport',
+            'view child transport',
             'read applicant',
             'update applicant',
 

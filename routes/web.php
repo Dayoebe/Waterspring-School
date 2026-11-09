@@ -99,6 +99,7 @@ use App\Livewire\Teachers\FamilyTeachers;
 use App\Livewire\Teachers\ManageTeachers;
 use App\Livewire\Teachers\TeacherDetail;
 use App\Livewire\Timetable\ManageTimetables;
+use App\Livewire\Transport\TransportHub;
 use App\Livewire\Users\ManageUserRoles;
 use App\Models\User;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -315,6 +316,10 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/dashboard/appointments', AppointmentHub::class)
         ->middleware('permission:manage parent teacher appointments|book parent teacher appointment')
         ->name('appointments.index');
+
+    Route::get('/dashboard/transport', TransportHub::class)
+        ->middleware('permission:manage school transport|view child transport')
+        ->name('transport.index');
 
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])

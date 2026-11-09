@@ -616,6 +616,13 @@ class Menu extends Component
             ['header' => 'Operations & Finance'],
             [
                 'type' => 'menu-item',
+                'text' => 'Transport & Authorised Pickup',
+                'icon' => 'fas fa-bus-school',
+                'route' => 'transport.index',
+                'permissions' => ['manage school transport', 'view child transport'],
+            ],
+            [
+                'type' => 'menu-item',
                 'text' => 'Library, Inventory & Assets',
                 'icon' => 'fas fa-boxes-stacked',
                 'route' => 'resources.index',
