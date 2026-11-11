@@ -1,13 +1,12 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-// Livewire Components
 use App\Http\Controllers\AdmissionDocumentController;
+// Livewire Components
 use App\Http\Controllers\AdmissionOfferController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CbtResultController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DatabaseBackupController;
-use App\Http\Controllers\OperationalHealthController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamPaperController;
 use App\Http\Controllers\ExamPaperPortalController;
@@ -18,6 +17,7 @@ use App\Http\Controllers\GradeSystemController;
 use App\Http\Controllers\LockUserAccountController;
 use App\Http\Controllers\MyClassController;
 use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\OperationalHealthController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwaController;
@@ -32,9 +32,9 @@ use App\Livewire\AcademicYears\ManageAcademicYears;
 use App\Livewire\AcademicYears\ManageSemesters;
 use App\Livewire\AcademicYears\ShowAcademicYear;
 use App\Livewire\AccountApplications\ManageAccountApplications;
+use App\Livewire\Administration\AuditLog;
 use App\Livewire\Admins\AdminDetail;
 use App\Livewire\Admins\ManageAdmins;
-use App\Livewire\Administration\AuditLog;
 use App\Livewire\Admissions\ManageAdmissionRegistrations;
 use App\Livewire\Appointments\AppointmentHub;
 use App\Livewire\Assignments\AssignmentHub;
@@ -165,6 +165,9 @@ Route::get('/ai.txt', [SeoController::class, 'ai'])->name('seo.ai')->withoutMidd
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/academics', [PageController::class, 'academics'])->name('academics');
+Route::get('/open-learning', [PageController::class, 'openLearning'])
+    ->middleware('throttle:120,1')
+    ->name('open-learning');
 Route::get('/why-watersprings', [PageController::class, 'whyWatersprings'])->name('why-watersprings');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/admission', [PageController::class, 'admission'])->name('admission');

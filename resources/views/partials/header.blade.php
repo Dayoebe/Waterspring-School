@@ -92,6 +92,7 @@
                         </div>
                     </div>
                 @endforeach
+                <a href="{{ route('open-learning') }}" @if(request()->routeIs('open-learning')) aria-current="page" @endif class="rounded-xl px-3 py-3 text-sm font-semibold {{ request()->routeIs('open-learning') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Open Learning</a>
                 <a href="{{ route('contact') }}" @if(request()->routeIs('contact')) aria-current="page" @endif class="rounded-xl px-3 py-3 text-sm font-semibold {{ request()->routeIs('contact') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Contact</a>
             </nav>
 
@@ -167,6 +168,7 @@
                     </div>
                 </div>
             @endforeach
+            <a href="{{ route('open-learning') }}" @if(request()->routeIs('open-learning')) aria-current="page" @endif class="block rounded-xl px-4 py-3 text-sm font-semibold {{ request()->routeIs('open-learning') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Open Learning</a>
             <a href="{{ route('contact') }}" @if(request()->routeIs('contact')) aria-current="page" @endif class="block rounded-xl px-4 py-3 text-sm font-semibold {{ request()->routeIs('contact') ? 'bg-sky-50 text-sky-800' : 'text-slate-700 hover:bg-slate-50' }}">Contact</a>
 
             <div class="grid grid-cols-1 gap-2 pt-2">

@@ -19,7 +19,7 @@ class PublicSeo
     {
         $pages = [];
 
-        foreach (['home', 'about', 'team', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
+        foreach (['home', 'about', 'team', 'academics', 'open-learning', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
             $pages[$routeName] = self::pageMeta($routeName, $settings);
         }
 
@@ -31,7 +31,7 @@ class PublicSeo
      */
     public static function pageMeta(?string $routeName, array $settings): array
     {
-        $routeName = in_array($routeName, ['home', 'about', 'team', 'academics', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
+        $routeName = in_array($routeName, ['home', 'about', 'team', 'academics', 'open-learning', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
             ? $routeName
             : 'home';
 
@@ -54,6 +54,15 @@ class PublicSeo
                 'changefreq' => 'monthly',
                 'priority' => '0.9',
                 'schemaType' => 'WebPage',
+            ],
+            'open-learning' => [
+                'label' => 'Open Learning',
+                'title' => 'Open Learning | Free AI-Guided Lessons at '.$siteName,
+                'description' => 'Learn from published Watersprings curriculum with progressive AI-guided lessons, questions, practical applications and assessments—no registration required.',
+                'summary' => 'A public curriculum-grounded learning experience with progressive explanations, contextual questions, real-world applications and detailed assessment feedback.',
+                'changefreq' => 'weekly',
+                'priority' => '0.9',
+                'schemaType' => 'LearningResource',
             ],
             'why-watersprings' => [
                 'label' => 'Why Watersprings',
@@ -404,7 +413,9 @@ class PublicSeo
     {
         $timestamps = [
             @filemtime(resource_path('views/layouts/app.blade.php')) ?: 0,
-            @filemtime(resource_path('views/livewire/site/'.($page ?: 'home').'.blade.php')) ?: 0,
+            @filemtime($page === 'open-learning'
+                ? resource_path('views/livewire/open-learning/workspace.blade.php')
+                : resource_path('views/livewire/site/'.($page ?: 'home').'.blade.php')) ?: 0,
             @filemtime(app_path('Support/SiteSettings.php')) ?: 0,
             @filemtime(config_path('public-school.php')) ?: 0,
             @filemtime(app_path('Support/PublicSeo.php')) ?: 0,

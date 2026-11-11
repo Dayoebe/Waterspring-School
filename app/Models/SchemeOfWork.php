@@ -25,6 +25,11 @@ class SchemeOfWork extends Model
         return $this->belongsTo(AcademicYear::class);
     }
 
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
+
     public function semester()
     {
         return $this->belongsTo(Semester::class);

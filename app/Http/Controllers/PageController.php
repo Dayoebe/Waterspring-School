@@ -10,6 +10,11 @@ use App\Support\SiteSettings;
 
 class PageController extends Controller
 {
+    public function openLearning()
+    {
+        return view('pages.open-learning');
+    }
+
     public function home()
     {
         $clubs = $this->publicClubs()->limit(6)->get();

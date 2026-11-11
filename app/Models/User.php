@@ -224,6 +224,11 @@ class User extends Authenticatable implements MustVerifyEmail
         ]);
     }
 
+    public function openLearningRecords()
+    {
+        return $this->hasMany(OpenLearningRecord::class);
+    }
+
     // Profile Photo
     public function getProfilePhotoUrlAttribute()
     {
