@@ -108,6 +108,31 @@ class OpenLearningTest extends TestCase
         $this->assertStringContainsString('Use thorough explanations', collect($provider->calls)->last()['system']);
     }
 
+    public function test_classes_subjects_and_terms_remain_available_before_topics_are_published(): void
+    {
+        $data = $this->curriculum();
+        $data['scheme']->update(['published_at' => null]);
+        $catalog = app(CurriculumCatalog::class);
+
+        $this->assertTrue($catalog->classes($data['school'])->contains('id', $data['class']->id));
+        $this->assertTrue($catalog->subjects($data['school'], $data['class']->id)->contains('id', $data['subject']->id));
+        $this->assertTrue($catalog->terms($data['school'], $data['class']->id, $data['subject']->id)->contains('id', $data['term']->id));
+        $this->assertEmpty($catalog->topics(
+            $data['school'],
+            $data['class']->id,
+            $data['subject']->id,
+            $data['term']->id,
+        ));
+
+        Livewire::test(Workspace::class)
+            ->set('classId', (string) $data['class']->id)
+            ->assertSee('Mathematics')
+            ->set('subjectId', (string) $data['subject']->id)
+            ->assertSee('Second Term')
+            ->set('semesterId', (string) $data['term']->id)
+            ->assertSee('No published topics for this selection yet');
+    }
+
     public function test_assessment_answers_stay_hidden_until_server_side_marking_and_duplicate_submission_is_rejected(): void
     {
         $data = $this->curriculum();

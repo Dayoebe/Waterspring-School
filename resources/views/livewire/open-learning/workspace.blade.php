@@ -79,6 +79,12 @@
                                 <label class="block"><span class="mb-2 block text-sm font-bold text-slate-700"><span class="mr-2 text-sky-700">4.</span>Select topic</span><select wire:model.live="topicId" @disabled($semesterId === '') class="w-full rounded-xl border-slate-300 bg-white px-4 py-3 disabled:bg-slate-100 focus:border-sky-500 focus:ring-sky-500"><option value="">{{ $semesterId === '' ? 'Choose a term first' : ($topics->isEmpty() ? 'No published topics' : 'Choose a topic') }}</option>@foreach($topics as $topic)<option value="{{ $topic->id }}">Week {{ $topic->week_number }} — {{ $topic->topic }}</option>@endforeach</select>@error('topicId')<span class="mt-1 block text-sm text-rose-600">{{ $message }}</span>@enderror</label>
                             </div>
 
+                            @if($classId !== '' && $subjects->isEmpty())
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><h3 class="font-black">No subjects are assigned to this class yet</h3><p class="mt-1 leading-6">Choose another class, or check back after the school assigns subjects.</p></div>
+                            @elseif($semesterId !== '' && $topics->isEmpty())
+                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><h3 class="font-black">No published topics for this selection yet</h3><p class="mt-1 leading-6">The class, subject and term are available, but their scheme of work has not been published. Try another selection or check back later.</p></div>
+                            @endif
+
                             <fieldset>
                                 <legend class="text-sm font-black text-slate-800">Choose how you would like to learn</legend>
                                 <div class="mt-3 grid gap-3 sm:grid-cols-2">

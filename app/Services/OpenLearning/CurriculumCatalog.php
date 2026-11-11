@@ -3,7 +3,6 @@
 namespace App\Services\OpenLearning;
 
 use App\Models\MyClass;
-use App\Models\SchemeOfWork;
 use App\Models\SchemeTopic;
 use App\Models\School;
 use App\Models\Semester;
@@ -11,6 +10,7 @@ use App\Models\Subject;
 use App\Models\Syllabus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CurriculumCatalog
 {
@@ -37,34 +37,29 @@ class CurriculumCatalog
             return collect();
         }
 
-        $classIds = $this->publishedSchemes($school)->whereHas('topics')->pluck('my_class_id');
+        $classIds = DB::table('class_subject')
+            ->join('subjects', 'subjects.id', '=', 'class_subject.subject_id')
+            ->where('class_subject.school_id', $school->id)
+            ->where('subjects.school_id', $school->id)
+            ->where('subjects.is_legacy', false)
+            ->whereNull('subjects.deleted_at')
+            ->pluck('class_subject.my_class_id');
 
         return MyClass::query()->whereIn('id', $classIds)->instructional()->orderBy('name')->get(['id', 'name']);
     }
 
     public function subjects(School $school, int $classId): Collection
     {
-        $subjectIds = $this->publishedSchemes($school)
-            ->where('my_class_id', $classId)
-            ->whereHas('topics')
-            ->whereNotNull('subject_id')
-            ->pluck('subject_id');
-
         return Subject::query()->allSchools()->where('school_id', $school->id)->active()
-            ->whereIn('id', $subjectIds)->orderBy('name')->get(['id', 'name', 'short_name']);
+            ->whereHas('classes', fn (Builder $query) => $query->where('my_classes.id', $classId))
+            ->orderBy('name')->get(['id', 'name', 'short_name']);
     }
 
     public function terms(School $school, int $classId, int $subjectId): Collection
     {
-        $termIds = $this->publishedSchemes($school)
-            ->where('my_class_id', $classId)
-            ->where('subject_id', $subjectId)
-            ->whereHas('topics')
-            ->pluck('semester_id');
-
         return Semester::query()->allSchools()->where('school_id', $school->id)
             ->where('academic_year_id', $school->academic_year_id)
-            ->whereIn('id', $termIds)->orderBy('id')->get(['id', 'name']);
+            ->orderBy('id')->get(['id', 'name']);
     }
 
     public function topics(School $school, int $classId, int $subjectId, int $semesterId): Collection
@@ -139,21 +134,6 @@ class CurriculumCatalog
                 $syllabus ? ['type' => 'syllabus', 'id' => $syllabus->id, 'title' => $syllabus->name] : null,
             ])),
         ];
-    }
-
-    private function publishedSchemes(School $school): Builder
-    {
-        return SchemeOfWork::query()->allSchools()
-            ->where('school_id', $school->id)
-            ->where('academic_year_id', $school->academic_year_id)
-            ->whereExists(function ($query): void {
-                $query->selectRaw('1')
-                    ->from('class_subject')
-                    ->whereColumn('class_subject.school_id', 'schemes_of_work.school_id')
-                    ->whereColumn('class_subject.my_class_id', 'schemes_of_work.my_class_id')
-                    ->whereColumn('class_subject.subject_id', 'schemes_of_work.subject_id');
-            })
-            ->whereNotNull('published_at');
     }
 
     private function scopePublishedSelection(Builder $query, School $school, int $classId, int $subjectId, int $semesterId): Builder
