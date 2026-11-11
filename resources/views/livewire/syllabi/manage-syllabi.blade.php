@@ -141,9 +141,27 @@
                         @enderror
                     </div>
                     <div><label class="mb-2 block text-sm font-bold text-slate-700">Subject <span class="text-red-500">*</span></label><select wire:model="subject" class="w-full rounded-lg border-gray-300 @error('subject') border-red-500 @enderror" @if($subjects->isEmpty()) disabled @endif><option value="">Select Subject</option>@foreach ($subjects as $item)<option value="{{ $item->id }}">{{ $item->name }}</option>@endforeach</select>@error('subject')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
-                    <div class="md:col-span-2"><label class="mb-2 block text-sm font-bold text-slate-700">Syllabus title <span class="text-red-500">*</span></label><input wire:model="name" class="w-full rounded-lg border-gray-300" placeholder="e.g. Year 8 Mathematics — First Term Syllabus">@error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    <div class="md:col-span-2">
+                        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <label for="syllabus-name" class="text-sm font-bold text-slate-700">Syllabus title or topic <span class="text-red-500">*</span></label>
+                            <button type="button" wire:click="generateSyllabusWithAi" wire:loading.attr="disabled" wire:target="generateSyllabusWithAi" class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-800 transition hover:border-violet-300 hover:bg-violet-100 disabled:cursor-wait disabled:opacity-60" title="Ask AI to fill the blank syllabus fields">
+                                <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+                                <span wire:loading.remove wire:target="generateSyllabusWithAi">Draft blank fields with AI</span>
+                                <span wire:loading wire:target="generateSyllabusWithAi">Drafting…</span>
+                            </button>
+                        </div>
+                        <input id="syllabus-name" wire:model="name" class="w-full rounded-lg border-gray-300" placeholder="e.g. Fractions or Year 8 Mathematics — First Term">
+                        <p class="mt-1 text-xs text-slate-500">Enter the title or topic first. AI runs only when you click the button, fills blank fields only, and never saves or publishes for you.</p>
+                        @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
                     <div class="md:col-span-2"><label class="mb-2 block text-sm font-bold text-slate-700">Course description <span class="text-red-500">*</span></label><textarea wire:model="description" rows="3" class="w-full rounded-lg border-gray-300" placeholder="A concise summary of the subject, term focus, and its relevance to learners"></textarea>@error('description')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
                 </div>
+                @error('aiGeneration')
+                    <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800" role="alert">{{ $message }}</div>
+                @enderror
+                @if ($aiGenerationNotice)
+                    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status"><i class="fas fa-circle-check mr-2" aria-hidden="true"></i>{{ $aiGenerationNotice }}</div>
+                @endif
             </section>
 
             <section class="rounded-2xl border border-sky-200 bg-white p-6 shadow-sm"><div class="mb-5"><p class="text-xs font-bold uppercase tracking-widest text-sky-700">2. Curriculum direction</p><h2 class="mt-1 text-xl font-black text-slate-950">Purpose and expected learning</h2></div><div class="grid gap-4 lg:grid-cols-2">

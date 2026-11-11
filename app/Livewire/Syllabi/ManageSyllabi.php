@@ -5,6 +5,9 @@ namespace App\Livewire\Syllabi;
 use App\Models\MyClass;
 use App\Models\Subject;
 use App\Models\Syllabus;
+use App\Services\ClassPilot\CurriculumContext;
+use App\Services\ClassPilot\Exceptions\ClassPilotException;
+use App\Services\ClassPilot\Manager;
 use App\Traits\ResolvesRestrictedTeacherAssignments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -58,6 +61,8 @@ class ManageSyllabi extends Component
     public string $homeworkPolicy = '';
 
     public string $references = '';
+
+    public string $aiGenerationNotice = '';
 
     public bool $isPublished = true;
 
@@ -285,8 +290,109 @@ class ManageSyllabi extends Component
             'crossCurricularLinks',
             'homeworkPolicy',
             'references',
+            'aiGenerationNotice',
         ]);
         $this->isPublished = true;
+    }
+
+    public function generateSyllabusWithAi(Manager $manager, CurriculumContext $curriculumContext): void
+    {
+        $this->ensurePermission('create syllabus');
+        $this->resetErrorBag(['aiGeneration', 'class', 'subject', 'name']);
+        $this->aiGenerationNotice = '';
+
+        $this->validate([
+            'class' => 'required|integer',
+            'subject' => 'required|integer',
+            'name' => 'required|string|max:255',
+        ], [], ['name' => 'syllabus title or topic']);
+
+        $classId = (int) $this->class;
+        if (! $this->classBelongsToCurrentSchool($classId)) {
+            $this->addError('class', 'Selected class is not in your current school.');
+
+            return;
+        }
+
+        $subject = $this->getSubjectForCurrentSchool((int) $this->subject);
+        if (! $subject || ! $this->subjectMatchesClass($subject, $classId)) {
+            $this->addError('subject', 'Selected subject is not valid for the selected class.');
+
+            return;
+        }
+
+        $user = auth()->user();
+        $school = $user->school;
+        if (! $school?->academic_year_id || ! $school->semester_id) {
+            $this->addError('aiGeneration', 'Set an active academic year and term before asking AI to draft a syllabus.');
+
+            return;
+        }
+
+        $schoolClass = MyClass::query()->findOrFail($classId);
+        $existingDraft = array_filter([
+            'description' => $this->description,
+            'overview' => $this->overview,
+            'aims' => $this->aims,
+            'learning_outcomes' => $this->learningOutcomes,
+            'scope_and_sequence' => $this->scopeAndSequence,
+            'prerequisites' => $this->prerequisites,
+            'teaching_methodology' => $this->teachingMethodology,
+            'assessment_plan' => $this->assessmentPlan,
+            'learning_resources' => $this->learningResources,
+            'differentiation' => $this->differentiation,
+            'cross_curricular_links' => $this->crossCurricularLinks,
+            'homework_policy' => $this->homeworkPolicy,
+            'references' => $this->references,
+        ], fn ($value) => filled($value));
+
+        $context = $curriculumContext->forSelection(
+            $school->id,
+            $classId,
+            $subject->id,
+            $school->academic_year_id,
+            $school->semester_id,
+            trim($this->name),
+        );
+
+        try {
+            $draft = $manager->generate($user, 'syllabus', [
+                'title_or_topic' => trim($this->name),
+                'class' => $schoolClass->name,
+                'subject' => $subject->name,
+                'academic_year' => $school->academicYear?->name,
+                'term' => $school->semester?->name,
+                'existing_teacher_draft' => $existingDraft,
+            ], $context);
+        } catch (ClassPilotException $exception) {
+            $this->addError('aiGeneration', $exception->getMessage());
+
+            return;
+        }
+
+        $fieldMap = [
+            'description' => 'description',
+            'overview' => 'overview',
+            'aims' => 'aims',
+            'learning_outcomes' => 'learningOutcomes',
+            'scope_and_sequence' => 'scopeAndSequence',
+            'prerequisites' => 'prerequisites',
+            'teaching_methodology' => 'teachingMethodology',
+            'assessment_plan' => 'assessmentPlan',
+            'learning_resources' => 'learningResources',
+            'differentiation' => 'differentiation',
+            'cross_curricular_links' => 'crossCurricularLinks',
+            'homework_policy' => 'homeworkPolicy',
+            'references' => 'references',
+        ];
+
+        foreach ($fieldMap as $responseField => $property) {
+            if (blank($this->{$property})) {
+                $this->{$property} = trim((string) ($draft[$responseField] ?? ''));
+            }
+        }
+
+        $this->aiGenerationNotice = 'AI filled the blank syllabus fields. Review and edit the draft before you create or publish it.';
     }
 
     public function createSyllabus()

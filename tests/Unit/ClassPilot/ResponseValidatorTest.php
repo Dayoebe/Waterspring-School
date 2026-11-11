@@ -32,4 +32,40 @@ class ResponseValidatorTest extends TestCase
         $this->expectException(ClassPilotException::class);
         app(ResponseValidator::class)->validate('tutor', ['suggested_next_steps' => []]);
     }
+
+    public function test_it_accepts_a_complete_syllabus_draft(): void
+    {
+        $result = app(ResponseValidator::class)->validate('syllabus', $this->syllabusDraft());
+
+        $this->assertSame('A practical course description.', $result['description']);
+        $this->assertArrayHasKey('references', $result);
+    }
+
+    public function test_it_rejects_an_incomplete_syllabus_draft(): void
+    {
+        $this->expectException(ClassPilotException::class);
+
+        app(ResponseValidator::class)->validate('syllabus', [
+            'description' => 'Only one field was returned.',
+        ]);
+    }
+
+    private function syllabusDraft(): array
+    {
+        return [
+            'description' => 'A practical course description.',
+            'overview' => 'Explore the central ideas in a clear learning journey.',
+            'aims' => 'Build understanding and confident application.',
+            'learning_outcomes' => 'Explain concepts and apply them to familiar problems.',
+            'scope_and_sequence' => "Weeks 1-3: Foundations\nWeeks 4-8: Application",
+            'prerequisites' => 'Relevant foundational knowledge.',
+            'teaching_methodology' => 'Modelling, guided practice, and discussion.',
+            'assessment_plan' => 'Diagnostic, formative, and summative checks.',
+            'learning_resources' => 'Teacher-created examples and local materials.',
+            'differentiation' => 'Scaffolds for support and extension tasks.',
+            'cross_curricular_links' => 'Connections to communication and daily life.',
+            'homework_policy' => 'Short purposeful practice with feedback.',
+            'references' => '',
+        ];
+    }
 }

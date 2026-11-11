@@ -13,6 +13,21 @@ class ResponseValidator
             'lesson' => ['title' => 'required|string|max:200', 'summary' => 'required|string', 'objectives' => 'required|array|min:1', 'sections' => 'required|array|min:1'],
             'assessment' => ['title' => 'required|string|max:200', 'instructions' => 'required|string', 'questions' => 'required|array|min:1', 'questions.*.prompt' => 'required|string', 'questions.*.marks' => 'required|integer|min:1|max:100', 'total_marks' => 'required|integer|min:1'],
             'practice' => ['title' => 'required|string|max:200', 'questions' => 'required|array|min:1', 'questions.*.prompt' => 'required|string', 'questions.*.answer' => 'required|string', 'questions.*.explanation' => 'required|string'],
+            'syllabus' => [
+                'description' => 'required|string|max:5000',
+                'overview' => 'required|string|max:10000',
+                'aims' => 'required|string|max:10000',
+                'learning_outcomes' => 'required|string|max:15000',
+                'scope_and_sequence' => 'required|string|max:30000',
+                'prerequisites' => 'present|nullable|string|max:5000',
+                'teaching_methodology' => 'required|string|max:10000',
+                'assessment_plan' => 'required|string|max:10000',
+                'learning_resources' => 'required|string|max:10000',
+                'differentiation' => 'present|nullable|string|max:10000',
+                'cross_curricular_links' => 'present|nullable|string|max:10000',
+                'homework_policy' => 'present|nullable|string|max:5000',
+                'references' => 'present|nullable|string|max:10000',
+            ],
             default => ['answer' => 'required|string|max:30000', 'suggested_next_steps' => 'nullable|array'],
         };
 
