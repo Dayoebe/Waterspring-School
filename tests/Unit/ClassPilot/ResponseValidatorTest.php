@@ -75,6 +75,29 @@ class ResponseValidatorTest extends TestCase
         $this->assertSame('Understand equal parts.', $topic['aim']);
     }
 
+    public function test_it_accepts_club_profile_activity_plan_and_agenda_drafts(): void
+    {
+        $validator = app(ResponseValidator::class);
+
+        $this->assertSame('Creative', $validator->validate('club_profile', [
+            'category' => 'Creative',
+            'description' => 'Students explore storytelling and publishing.',
+        ])['category']);
+        $this->assertArrayHasKey('description', $validator->validate('club_activity', [
+            'description' => 'Students prepare and share a short club showcase.',
+        ]));
+        $this->assertArrayHasKey('success_indicators', $validator->validate('club_term_plan', [
+            'objectives' => 'Develop skills through purposeful weekly practice.',
+            'strengths' => 'Curiosity and willingness to collaborate.',
+            'focus_areas' => 'Planning, practice, and reflection.',
+            'resources_needed' => 'Coordinator-reviewed materials appropriate to each session.',
+            'success_indicators' => 'Students demonstrate progress through completed club work.',
+        ]));
+        $this->assertArrayHasKey('agenda', $validator->validate('club_agenda', [
+            'agenda' => 'Welcome, guided practice, collaborative task, and reflection.',
+        ]));
+    }
+
     private function syllabusDraft(): array
     {
         return [

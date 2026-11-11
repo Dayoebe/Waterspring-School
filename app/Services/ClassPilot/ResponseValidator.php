@@ -46,6 +46,23 @@ class ResponseValidator
                 'assessment' => 'required|string|max:5000',
                 'homework' => 'required|string|max:5000',
             ],
+            'club_profile' => [
+                'category' => 'required|string|max:80',
+                'description' => 'required|string|max:5000',
+            ],
+            'club_activity' => [
+                'description' => 'required|string|max:5000',
+            ],
+            'club_term_plan' => [
+                'objectives' => 'required|string|max:10000',
+                'strengths' => 'required|string|max:5000',
+                'focus_areas' => 'required|string|max:5000',
+                'resources_needed' => 'required|string|max:5000',
+                'success_indicators' => 'required|string|max:5000',
+            ],
+            'club_agenda' => [
+                'agenda' => 'required|string|max:10000',
+            ],
             default => ['answer' => 'required|string|max:30000', 'suggested_next_steps' => 'nullable|array'],
         };
 

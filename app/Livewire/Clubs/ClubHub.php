@@ -7,6 +7,8 @@ use App\Models\ClubActivity;
 use App\Models\ClubTermPlan;
 use App\Models\ClubWeeklyAgenda;
 use App\Models\User;
+use App\Services\ClassPilot\Exceptions\ClassPilotException;
+use App\Services\ClassPilot\Manager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -39,6 +41,8 @@ class ClubHub extends Component
 
     public bool $isActive = true;
 
+    public string $clubAiNotice = '';
+
     public ?int $selectedInstructorId = null;
 
     public ?int $selectedStudentId = null;
@@ -59,6 +63,8 @@ class ClubHub extends Component
 
     public string $activityStatus = 'scheduled';
 
+    public string $activityAiNotice = '';
+
     public bool $showPlanForm = false;
 
     public string $planGoal = '';
@@ -77,6 +83,8 @@ class ClubHub extends Component
 
     public bool $publishPlan = true;
 
+    public string $planAiNotice = '';
+
     public bool $showAgendaForm = false;
 
     public ?int $editingAgendaId = null;
@@ -88,6 +96,8 @@ class ClubHub extends Component
     public string $agendaTitle = '';
 
     public string $agendaDetails = '';
+
+    public string $agendaAiNotice = '';
 
     public function mount(): void
     {
@@ -113,6 +123,7 @@ class ClubHub extends Component
     {
         $this->ensureCanManageAll();
         $club = Club::query()->findOrFail($clubId);
+        $this->clubAiNotice = '';
         $this->editingClubId = $club->id;
         $this->name = $club->name;
         $this->category = (string) $club->category;
@@ -153,6 +164,36 @@ class ClubHub extends Component
         $this->selectedClubId = $club->id;
         $this->resetClubForm();
         session()->flash('success', 'Club saved successfully.');
+    }
+
+    public function generateClubProfileWithAi(Manager $manager): void
+    {
+        $this->ensureCanManageAll();
+        $this->resetErrorBag(['clubAiGeneration', 'name']);
+        $this->clubAiNotice = '';
+        $this->validate(['name' => ['required', 'string', 'max:150']]);
+
+        try {
+            $draft = $manager->generate(auth()->user(), 'club_profile', [
+                'club_name' => trim($this->name),
+                'existing_coordinator_draft' => array_filter([
+                    'category' => $this->category,
+                    'description' => $this->description,
+                ], fn ($value) => filled($value)),
+            ], $this->emptyAiContext());
+        } catch (ClassPilotException $exception) {
+            $this->addError('clubAiGeneration', $exception->getMessage());
+
+            return;
+        }
+
+        if (blank($this->category)) {
+            $this->category = trim((string) ($draft['category'] ?? ''));
+        }
+        if (blank($this->description)) {
+            $this->description = trim((string) ($draft['description'] ?? ''));
+        }
+        $this->clubAiNotice = 'AI filled the blank club profile fields. Review and edit the draft before saving it.';
     }
 
     public function deleteClub(int $clubId): void
@@ -270,6 +311,7 @@ class ClubHub extends Component
     {
         $activity = ClubActivity::query()->with('club')->findOrFail($activityId);
         $this->ensureCanManageClub($activity->club);
+        $this->activityAiNotice = '';
         $this->editingActivityId = $activity->id;
         $this->activityTitle = $activity->title;
         $this->activityDescription = (string) $activity->description;
@@ -299,6 +341,38 @@ class ClubHub extends Component
         session()->flash('success', 'Club activity saved.');
     }
 
+    public function generateActivityWithAi(Manager $manager): void
+    {
+        $club = Club::query()->findOrFail($this->selectedClubId);
+        $this->ensureCanManageClub($club);
+        $this->resetErrorBag(['activityAiGeneration', 'activityTitle']);
+        $this->activityAiNotice = '';
+        $this->validate(['activityTitle' => ['required', 'string', 'max:180']]);
+
+        try {
+            $draft = $manager->generate(auth()->user(), 'club_activity', [
+                'club_name' => $club->name,
+                'club_description' => $club->description,
+                'activity_title' => trim($this->activityTitle),
+                'starts_at' => $this->activityStartsAt ?: null,
+                'ends_at' => $this->activityEndsAt ?: null,
+                'location' => $this->activityLocation ?: null,
+                'existing_coordinator_draft' => array_filter([
+                    'description' => $this->activityDescription,
+                ], fn ($value) => filled($value)),
+            ], $this->emptyAiContext());
+        } catch (ClassPilotException $exception) {
+            $this->addError('activityAiGeneration', $exception->getMessage());
+
+            return;
+        }
+
+        if (blank($this->activityDescription)) {
+            $this->activityDescription = trim((string) ($draft['description'] ?? ''));
+        }
+        $this->activityAiNotice = 'AI filled the blank activity details. Review and edit the draft before saving it.';
+    }
+
     public function deleteActivity(int $activityId): void
     {
         $activity = ClubActivity::query()->with('club')->findOrFail($activityId);
@@ -312,6 +386,7 @@ class ClubHub extends Component
     {
         $club = Club::query()->findOrFail($this->selectedClubId);
         $this->ensureCanManageClub($club);
+        $this->planAiNotice = '';
         $plan = $this->currentTermPlan($club);
         $this->planGoal = (string) $plan?->goal;
         $this->planObjectives = (string) $plan?->objectives;
@@ -359,6 +434,57 @@ class ClubHub extends Component
         session()->flash('success', 'The club plan for this term has been saved.');
     }
 
+    public function generateTermPlanWithAi(Manager $manager): void
+    {
+        $club = Club::query()->findOrFail($this->selectedClubId);
+        $this->ensureCanManageClub($club);
+        $this->resetErrorBag(['planAiGeneration', 'planGoal']);
+        $this->planAiNotice = '';
+        $this->validate(['planGoal' => ['required', 'string', 'max:5000']]);
+
+        $school = auth()->user()->school;
+        if (! $school?->academic_year_id || ! $school->semester_id) {
+            $this->addError('planAiGeneration', 'Set the current academic year and term before asking AI to draft a club plan.');
+
+            return;
+        }
+
+        try {
+            $draft = $manager->generate(auth()->user(), 'club_term_plan', [
+                'club_name' => $club->name,
+                'club_category' => $club->category,
+                'club_description' => $club->description,
+                'term_goal' => trim($this->planGoal),
+                'academic_year' => $school->academicYear?->name,
+                'term' => $school->semester?->name,
+                'existing_coordinator_draft' => array_filter([
+                    'objectives' => $this->planObjectives,
+                    'strengths' => $this->planStrengths,
+                    'focus_areas' => $this->planFocusAreas,
+                    'resources_needed' => $this->planResourcesNeeded,
+                    'success_indicators' => $this->planSuccessIndicators,
+                ], fn ($value) => filled($value)),
+            ], $this->emptyAiContext());
+        } catch (ClassPilotException $exception) {
+            $this->addError('planAiGeneration', $exception->getMessage());
+
+            return;
+        }
+
+        foreach ([
+            'objectives' => 'planObjectives',
+            'strengths' => 'planStrengths',
+            'focus_areas' => 'planFocusAreas',
+            'resources_needed' => 'planResourcesNeeded',
+            'success_indicators' => 'planSuccessIndicators',
+        ] as $responseField => $property) {
+            if (blank($this->{$property})) {
+                $this->{$property} = trim((string) ($draft[$responseField] ?? ''));
+            }
+        }
+        $this->planAiNotice = 'AI filled the blank term-plan fields. Review and edit the draft before saving or publishing it.';
+    }
+
     public function createAgenda(): void
     {
         $club = Club::query()->findOrFail($this->selectedClubId);
@@ -373,6 +499,7 @@ class ClubHub extends Component
     {
         $agenda = ClubWeeklyAgenda::query()->with('termPlan.club')->findOrFail($agendaId);
         $this->ensureCanManageClub($agenda->termPlan->club);
+        $this->agendaAiNotice = '';
         $this->editingAgendaId = $agenda->id;
         $this->agendaWeekNumber = $agenda->week_number;
         $this->agendaScheduledFor = $agenda->scheduled_for?->format('Y-m-d') ?? '';
@@ -401,6 +528,43 @@ class ClubHub extends Component
         ])->save();
         $this->resetAgendaForm();
         session()->flash('success', 'Weekly agenda saved.');
+    }
+
+    public function generateAgendaWithAi(Manager $manager): void
+    {
+        $club = Club::query()->findOrFail($this->selectedClubId);
+        $this->ensureCanManageClub($club);
+        $plan = $this->currentTermPlan($club);
+        abort_unless($plan, 422, 'Save the term plan before drafting a weekly agenda.');
+        $this->resetErrorBag(['agendaAiGeneration', 'agendaTitle']);
+        $this->agendaAiNotice = '';
+        $this->validate([
+            'agendaWeekNumber' => ['required', 'integer', 'min:1', 'max:60'],
+            'agendaTitle' => ['required', 'string', 'max:180'],
+        ]);
+
+        try {
+            $draft = $manager->generate(auth()->user(), 'club_agenda', [
+                'club_name' => $club->name,
+                'term_goal' => $plan->goal,
+                'term_objectives' => $plan->objectives,
+                'week' => $this->agendaWeekNumber,
+                'scheduled_date' => $this->agendaScheduledFor ?: null,
+                'weekly_focus' => trim($this->agendaTitle),
+                'existing_coordinator_draft' => array_filter([
+                    'agenda' => $this->agendaDetails,
+                ], fn ($value) => filled($value)),
+            ], $this->emptyAiContext());
+        } catch (ClassPilotException $exception) {
+            $this->addError('agendaAiGeneration', $exception->getMessage());
+
+            return;
+        }
+
+        if (blank($this->agendaDetails)) {
+            $this->agendaDetails = trim((string) ($draft['agenda'] ?? ''));
+        }
+        $this->agendaAiNotice = 'AI filled the blank weekly-agenda details. Review and edit the draft before saving it.';
     }
 
     public function toggleAgendaDone(int $agendaId): void
@@ -434,6 +598,7 @@ class ClubHub extends Component
     public function cancelPlanForm(): void
     {
         $this->showPlanForm = false;
+        $this->planAiNotice = '';
         $this->resetValidation();
     }
 
@@ -450,6 +615,11 @@ class ClubHub extends Component
         }
 
         return $club->termPlans()->where('academic_year_id', $school->academic_year_id)->where('semester_id', $school->semester_id)->first();
+    }
+
+    protected function emptyAiContext(): array
+    {
+        return ['text' => '', 'sources' => [], 'grounded' => false];
     }
 
     protected function visibleClubQuery(): Builder
@@ -512,12 +682,13 @@ class ClubHub extends Component
         $this->resetClubForm();
         $this->resetActivityForm();
         $this->showPlanForm = false;
+        $this->planAiNotice = '';
         $this->resetAgendaForm();
     }
 
     protected function resetClubForm(): void
     {
-        $this->reset(['showClubForm', 'editingClubId', 'name', 'category', 'description', 'meetingDay', 'meetingTime', 'meetingLocation', 'capacity']);
+        $this->reset(['showClubForm', 'editingClubId', 'name', 'category', 'description', 'meetingDay', 'meetingTime', 'meetingLocation', 'capacity', 'clubAiNotice']);
         $this->colour = 'sky';
         $this->isActive = true;
         $this->resetValidation();
@@ -525,14 +696,14 @@ class ClubHub extends Component
 
     protected function resetActivityForm(): void
     {
-        $this->reset(['showActivityForm', 'editingActivityId', 'activityTitle', 'activityDescription', 'activityStartsAt', 'activityEndsAt', 'activityLocation']);
+        $this->reset(['showActivityForm', 'editingActivityId', 'activityTitle', 'activityDescription', 'activityStartsAt', 'activityEndsAt', 'activityLocation', 'activityAiNotice']);
         $this->activityStatus = 'scheduled';
         $this->resetValidation();
     }
 
     protected function resetAgendaForm(): void
     {
-        $this->reset(['showAgendaForm', 'editingAgendaId', 'agendaScheduledFor', 'agendaTitle', 'agendaDetails']);
+        $this->reset(['showAgendaForm', 'editingAgendaId', 'agendaScheduledFor', 'agendaTitle', 'agendaDetails', 'agendaAiNotice']);
         $this->agendaWeekNumber = 1;
         $this->resetValidation();
     }
@@ -580,6 +751,7 @@ class ClubHub extends Component
         $wardMemberships = $user->hasRole('parent') && $selectedClub
             ? $user->children()->orderBy('name')->get()->map(function (User $child) use ($selectedClub) {
                 $child->setAttribute('club_membership_status', $selectedClub->members()->whereKey($child->id)->first()?->pivot?->status);
+
                 return $child;
             })
             : collect();
