@@ -119,7 +119,7 @@
                 <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
                     <div class="flex flex-col gap-3 border-b border-indigo-100 bg-indigo-50 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div><p class="text-xs font-bold uppercase tracking-widest text-indigo-700">Current term</p><h3 class="mt-1 text-xl font-black">Club direction & weekly agenda</h3><p class="mt-1 text-sm text-slate-600">The moderator's plan, priorities and week-by-week programme.</p></div>
-                        @if($canManageSelected)<button wire:click="editTermPlan" class="rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-800"><i class="fas fa-pen-to-square mr-2"></i>{{ $termPlan ? 'Edit term plan' : 'Create term plan' }}</button>@endif
+                        @if($canManageSelected)<div class="flex flex-wrap items-center gap-2"><span class="inline-flex items-center rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-black text-violet-800"><i class="fas fa-wand-magic-sparkles mr-2" aria-hidden="true"></i>AI drafting available</span><button wire:click="editTermPlan" class="rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-800"><i class="fas fa-pen-to-square mr-2"></i>{{ $termPlan ? 'Edit term plan' : 'Create term plan' }}</button></div>@endif
                     </div>
 
                     @if($showPlanForm && $canManageSelected)

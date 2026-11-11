@@ -31,6 +31,7 @@ class SchemeAiDraftTest extends TestCase
         $component = Livewire::actingAs($data['user'])
             ->test(SchemeOfWorkHub::class)
             ->call('createScheme')
+            ->assertSee('Published subject schemes feed subject-based Open Learning')
             ->set('type', 'subject')
             ->set('classId', $data['class']->id)
             ->set('subjectId', $data['subject']->id)

@@ -28,6 +28,7 @@ class ClubAiDraftTest extends TestCase
 
         $component = Livewire::actingAs($data['user'])
             ->test(ClubHub::class)
+            ->assertSee('AI drafting available')
             ->call('createClub')
             ->set('name', 'Young Authors Club')
             ->set('category', 'Teacher-selected category');
