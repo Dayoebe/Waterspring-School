@@ -50,6 +50,31 @@ class ResponseValidatorTest extends TestCase
         ]);
     }
 
+    public function test_it_accepts_scheme_and_weekly_topic_drafts(): void
+    {
+        $scheme = app(ResponseValidator::class)->validate('scheme', [
+            'aim' => 'Build secure understanding.',
+            'objectives' => 'Explain and apply the key ideas.',
+            'teaching_approach' => 'Model, discuss, practise, and reflect.',
+            'assessment_strategy' => 'Use observation, short tasks, and a final application.',
+            'resources' => 'Teacher-created examples and local materials.',
+            'learner_support' => 'Scaffolds, peer support, and extension tasks.',
+        ]);
+        $topic = app(ResponseValidator::class)->validate('scheme_topic', [
+            'aim' => 'Understand equal parts.',
+            'objectives' => 'Identify and compare simple fractions.',
+            'content_outline' => 'Meaning, representation, and comparison of fractions.',
+            'teacher_activities' => 'Model equal sharing with concrete materials.',
+            'learner_activities' => 'Build and compare fraction models.',
+            'resources' => 'Paper shapes and fraction strips.',
+            'assessment' => 'Label and compare two fraction models.',
+            'homework' => 'Find three examples of fractions at home.',
+        ]);
+
+        $this->assertSame('Build secure understanding.', $scheme['aim']);
+        $this->assertSame('Understand equal parts.', $topic['aim']);
+    }
+
     private function syllabusDraft(): array
     {
         return [

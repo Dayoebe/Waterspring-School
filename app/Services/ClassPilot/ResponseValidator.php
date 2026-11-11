@@ -28,6 +28,24 @@ class ResponseValidator
                 'homework_policy' => 'present|nullable|string|max:5000',
                 'references' => 'present|nullable|string|max:10000',
             ],
+            'scheme' => [
+                'aim' => 'required|string|max:5000',
+                'objectives' => 'required|string|max:10000',
+                'teaching_approach' => 'required|string|max:5000',
+                'assessment_strategy' => 'required|string|max:5000',
+                'resources' => 'required|string|max:5000',
+                'learner_support' => 'required|string|max:5000',
+            ],
+            'scheme_topic' => [
+                'aim' => 'required|string|max:5000',
+                'objectives' => 'required|string|max:10000',
+                'content_outline' => 'required|string|max:10000',
+                'teacher_activities' => 'required|string|max:10000',
+                'learner_activities' => 'required|string|max:10000',
+                'resources' => 'required|string|max:5000',
+                'assessment' => 'required|string|max:5000',
+                'homework' => 'required|string|max:5000',
+            ],
             default => ['answer' => 'required|string|max:30000', 'suggested_next_steps' => 'nullable|array'],
         };
 
