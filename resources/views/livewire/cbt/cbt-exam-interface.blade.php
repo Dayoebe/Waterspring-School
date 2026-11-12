@@ -451,21 +451,6 @@
                                 </div>
                             </div>
 
-                            {{-- Instruction --}}
-                            @if(!empty($question['explanation']))
-                            <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 md:p-5 dark:border-amber-800 dark:bg-amber-900/20">
-                                <div class="mb-2 flex items-center gap-2 text-amber-900 dark:text-amber-200">
-                                    <i class="fas fa-circle-info text-amber-600 dark:text-amber-400"></i>
-                                    <span class="text-sm font-semibold uppercase tracking-[0.18em]">Instruction</span>
-                                </div>
-                                <div class="prose prose-base max-w-none text-amber-950 dark:prose-invert math-content whitespace-pre-line break-words leading-relaxed"
-                                     wire:key="instruction-{{ $question['id'] }}"
-                                     x-init="renderMathInElement($el)">
-                                    {!! \App\Support\SafeHtml::math($question['explanation']) !!}
-                                </div>
-                            </div>
-                            @endif
-
                             @if(!empty($question['question_media_url']))
                             <div class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5 dark:border-slate-700 dark:bg-slate-900/40">
                                 <div class="mb-3 flex items-center gap-2 text-slate-800 dark:text-slate-200">
@@ -950,6 +935,7 @@ function registerCbtExamAlpineComponents() {
         timerInterval: null,
         heartbeatInterval: null,
         navigationRequest: Promise.resolve(),
+        answerSaveQueue: Promise.resolve(),
         heartbeatInFlight: false,
         livewireListenersRegistered: false,
         startExamFeedbackTimeout: null,
@@ -1144,6 +1130,7 @@ function registerCbtExamAlpineComponents() {
                     }
 
                     try {
+                        await this.answerSaveQueue;
                         await this.$wire.call('submitExamWithAnswers', this.answerSnapshot);
                     } catch (error) {
                         this.submitFeedback = this.resolveSubmitClientErrorMessage(error);
@@ -1274,6 +1261,7 @@ function registerCbtExamAlpineComponents() {
             this.submitFeedback = '';
 
             try {
+                await this.answerSaveQueue;
                 await this.$wire.call('submitExamWithAnswers', this.answerSnapshot);
             } catch (error) {
                 this.submitFeedback = this.resolveSubmitClientErrorMessage(error);
@@ -1500,14 +1488,17 @@ function registerCbtExamAlpineComponents() {
 
                 this.broadcastTimerSync();
 
-                if (this.timeRemaining <= 30 || this.timeRemaining % 15 === 0) {
+                if (
+                    (this.timeRemaining > 30 && this.timeRemaining % 30 === 0)
+                    || (this.timeRemaining <= 30 && this.timeRemaining % 5 === 0)
+                ) {
                     this.syncWithServer();
                 }
             }, 1000);
 
             this.heartbeatInterval = setInterval(() => {
                 this.syncWithServer();
-            }, 15000);
+            }, 30000);
 
         },
 
@@ -1620,7 +1611,9 @@ function registerCbtExamAlpineComponents() {
             this.recordAnswer(questionId, answer);
 
             if (this.$wire && typeof this.$wire.call === 'function') {
-                this.$wire.call('saveAnswer', questionId, answer);
+                this.answerSaveQueue = this.answerSaveQueue
+                    .catch(() => undefined)
+                    .then(() => this.$wire.call('saveAnswer', questionId, answer));
             }
         },
 
