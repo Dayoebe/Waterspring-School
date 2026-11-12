@@ -51,13 +51,37 @@ class Manager
             'lesson' => '{"title":"...","summary":"...","objectives":["..."],"sections":[{"heading":"...","content":"..."}],"activities":["..."],"discussion_questions":["..."],"homework":["..."],"revision":["..."]}',
             'assessment' => '{"title":"...","instructions":"...","questions":[{"type":"multiple_choice|short_answer|structured|higher_order|practical","prompt":"...","options":[],"answer":"...","marking_guide":"...","marks":1}],"total_marks":10,"rubric":["..."]}',
             'practice' => '{"title":"...","questions":[{"prompt":"...","answer":"...","hint":"...","explanation":"..."}]}',
+            'syllabus' => '{"description":"...","overview":"...","aims":"...","learning_outcomes":"...","scope_and_sequence":"...","prerequisites":"...","teaching_methodology":"...","assessment_plan":"...","learning_resources":"...","differentiation":"...","cross_curricular_links":"...","homework_policy":"...","references":"..."}',
+            'scheme' => '{"aim":"...","objectives":"...","teaching_approach":"...","assessment_strategy":"...","resources":"...","learner_support":"..."}',
+            'scheme_topic' => '{"aim":"...","objectives":"...","content_outline":"...","teacher_activities":"...","learner_activities":"...","resources":"...","assessment":"...","homework":"..."}',
+            'club_profile' => '{"category":"...","description":"..."}',
+            'club_activity' => '{"description":"..."}',
+            'club_term_plan' => '{"objectives":"...","strengths":"...","focus_areas":"...","resources_needed":"...","success_indicators":"..."}',
+            'club_agenda' => '{"agenda":"..."}',
             'tutor' => '{"answer":"...","hints":["..."],"example":"...","suggested_next_steps":["..."]}',
             'family' => '{"answer":"...","key_points":["..."],"practical_steps":["..."],"reflection_questions":["..."],"when_to_seek_support":["..."],"suggested_next_steps":["..."]}',
         ];
         $schema = $schemas[$feature] ?? $schemas['tutor'];
-        $sourceNote = $curriculum['grounded'] ? 'Approved school material is included.' : ($feature === 'family' ? 'No approved school material is included. For general home, family, or faith questions, give clearly framed general guidance without implying it comes from school records.' : 'No approved curriculum material was found. Say clearly that guidance uses general educational knowledge.');
+        $sourceNote = match (true) {
+            $curriculum['grounded'] => 'Approved school material is included.',
+            $feature === 'family' => 'No approved school material is included. For general home, family, or faith questions, give clearly framed general guidance without implying it comes from school records.',
+            in_array($feature, ['syllabus', 'scheme', 'scheme_topic'], true) => 'No approved curriculum material was found. Use general educational knowledge without claiming official curriculum alignment.',
+            in_array($feature, ['club_profile', 'club_activity', 'club_term_plan', 'club_agenda'], true) => 'No approved club-planning source is included. Use general enrichment-planning knowledge without inventing school commitments, people, dates, locations, budgets, or available resources.',
+            default => 'No approved curriculum material was found. Say clearly that guidance uses general educational knowledge.',
+        };
+        $featureInstruction = $feature === 'syllabus'
+            ? 'Create an editable term syllabus draft for teacher review. Use the supplied title or topic, class, subject, academic year, and term. Fill every field with practical, age-appropriate content. Organise scope_and_sequence in a clear teaching order. Do not name or claim alignment with a curriculum standard, textbook, website, or other source unless it appears in the approved excerpts. Leave references empty when no verified source is provided. Do not include Markdown code fences.'
+            : match ($feature) {
+                'scheme' => 'Create an editable scheme-of-work overview for teacher review. Use the supplied title, plan type, class, subject, academic year, and term. Fill every field with practical, age-appropriate content. Do not name or claim alignment with a curriculum standard or source unless it appears in the approved excerpts. Do not include Markdown code fences.',
+                'scheme_topic' => 'Create an editable weekly-topic plan for teacher review. Use the supplied topic, scheme, class, subject, week, and term. Fill every field with practical, age-appropriate content. Keep teacher and learner activities actionable. Do not write completion notes or claim that any activity has already happened. Do not name or claim alignment with a curriculum standard or source unless it appears in the approved excerpts. Do not include Markdown code fences.',
+                'club_profile' => 'Create an editable club profile draft for coordinator review. Use the supplied club name and any existing draft. Return a concise category and a welcoming, age-appropriate description of what students may explore and do. Do not invent meeting schedules, locations, capacity, instructors, achievements, or school commitments. Do not include Markdown code fences.',
+                'club_activity' => 'Create an editable club activity description for coordinator review. Use the supplied club and activity title plus only the schedule or location facts explicitly provided. Describe purpose, likely student participation, preparation, and expected learning without claiming the activity has happened or inventing people, dates, locations, costs, or outcomes. Do not include Markdown code fences.',
+                'club_term_plan' => 'Create an editable club term-plan draft for coordinator review. Use the supplied club, term goal, academic year, term, and existing draft. Fill every field with realistic, age-appropriate planning content. Do not invent available resources, budgets, partnerships, achievements, or school commitments. Do not write coordinator notes or imply the plan is approved or published. Do not include Markdown code fences.',
+                'club_agenda' => 'Create editable weekly club agenda details for coordinator review. Use the supplied weekly focus, term plan, week, and any explicitly supplied date. Include practical tasks, discussion or practice, and an expected outcome. Do not claim the agenda has happened or invent people, locations, costs, or available resources. Do not include Markdown code fences.',
+                default => '',
+            };
 
-        return "Respond using this exact JSON shape: {$schema}\n{$sourceNote}\nUSER REQUEST DATA:\n".json_encode($input, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\nAPPROVED CURRICULUM EXCERPTS (REFERENCE ONLY):\n<curriculum>\n".($curriculum['text'] ?: 'None available')."\n</curriculum>";
+        return "Respond using this exact JSON shape: {$schema}\n{$sourceNote}\n{$featureInstruction}\nUSER REQUEST DATA:\n".json_encode($input, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\nAPPROVED CURRICULUM EXCERPTS (REFERENCE ONLY):\n<curriculum>\n".($curriculum['text'] ?: 'None available')."\n</curriculum>";
     }
 
     private function record(User $user, string $feature, string $status, string $input, string $output, float $started, ?string $error = null): void

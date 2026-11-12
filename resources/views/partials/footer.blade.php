@@ -99,6 +99,7 @@
                     <li><a href="{{ route('home') }}" class="transition hover:text-white">Home</a></li>
                     <li><a href="{{ route('about') }}" class="transition hover:text-white">About Us</a></li>
                     <li><a href="{{ route('why-watersprings') }}" class="transition hover:text-white">Why Watersprings</a></li>
+                    <li><a href="{{ route('open-learning') }}" class="transition hover:text-white">Open Learning</a></li>
                     <li><a href="{{ route('admission') }}" class="transition hover:text-white">Admission</a></li>
                     <li><a href="{{ route('prospectus') }}" class="transition hover:text-white">Prospectus</a></li>
                     <li><a href="{{ route('gallery') }}" class="transition hover:text-white">Gallery</a></li>
@@ -115,6 +116,7 @@
                     <li><a href="{{ route('academics') }}#key-stage-2" class="transition hover:text-white">Key Stage 2</a></li>
                     <li><a href="{{ route('academics') }}#key-stage-3" class="transition hover:text-white">Key Stage 3</a></li>
                     <li><a href="{{ route('academics') }}#clubs" class="transition hover:text-white">Clubs and Leadership</a></li>
+                    <li><a href="{{ route('open-learning') }}" class="font-semibold text-cyan-200 transition hover:text-white">Learn online with Open Learning</a></li>
                     <li>Learn, Play and Grow Together</li>
                 </ul>
             </div>

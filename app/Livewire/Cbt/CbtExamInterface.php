@@ -4,40 +4,65 @@ namespace App\Livewire\Cbt;
 
 use App\Models\Assessment\Assessment;
 use App\Models\Assessment\AttemptSession;
+use App\Models\Assessment\Question;
 use App\Models\Assessment\StudentAnswer;
+use App\Services\AuditTrail;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 #[Layout('layouts.exam', ['title' => 'CBT Exam', 'description' => 'Secure CBT exam interface'])]
 class CbtExamInterface extends Component
 {
+    #[Locked]
     public $assessment;
+
+    #[Locked]
     public $questions;
+
+    #[Locked]
     public $currentQuestionIndex = 0;
+
+    #[Locked]
     public $answers = [];
     public $timeRemaining;
+    #[Locked]
     public $examStarted = false;
+
+    #[Locked]
     public $examCompleted = false;
+    #[Locked]
     public $results = null;
+    #[Locked]
     public $flaggedQuestions = [];
+
+    #[Locked]
     public $attemptNumber;
     public $startTime;
+    #[Locked]
     public $securityViolations = [];
     public $isFullscreenForced = false;
+    #[Locked]
     public $questionOrder = [];
+
+    #[Locked]
     public ?int $attemptSessionId = null;
     public bool $resumedAttempt = false;
+    #[Locked]
     public bool $resultsVisible = true;
+
+    #[Locked]
     public bool $pendingPublish = false;
     public string $resultNotice = '';
     public string $resumeBanner = '';
 
+    #[Locked]
     public $progressTracking = [
         'question_start_times' => [],
         'question_end_times' => [],
@@ -134,59 +159,15 @@ class CbtExamInterface extends Component
                 ->values();
         }
 
-        $this->questions = $questionCollection->map(function ($question) {
-            $q = $question->toArray();
+        $trustedQuestions = $questionCollection
+            ->map(fn (Question $question): array => $this->buildTrustedQuestionData($question))
+            ->values();
 
-            $q['options'] = is_string($q['options'] ?? null)
-                ? json_decode($q['options'], true) ?? []
-                : ($q['options'] ?? []);
-
-            $correctAnswers = $q['correct_answers'] ?? $question->correct_answers;
-            if (is_string($correctAnswers)) {
-                $correctAnswers = json_decode($correctAnswers, true) ?? [$correctAnswers];
-            } elseif (!is_array($correctAnswers)) {
-                $correctAnswers = [$correctAnswers];
-            }
-            $q['original_correct_answers'] = array_map('intval', $correctAnswers);
-
-            if (
-                $this->assessment->shuffle_options
-                && !empty($q['options'])
-                && $q['question_type'] === 'multiple_choice'
-            ) {
-                $indexed = [];
-                foreach ($q['options'] as $idx => $text) {
-                    $indexed[] = [
-                        'orig_idx' => (int) $idx,
-                        'text' => $text,
-                        'weight' => $this->deterministicHash('option-order:' . $q['id'], (int) $idx),
-                    ];
-                }
-
-                usort($indexed, fn ($a, $b) => strcmp($a['weight'], $b['weight']));
-
-                $newOptions = [];
-                $displayToOriginal = [];
-                foreach ($indexed as $newIdx => $item) {
-                    $newOptions[$newIdx] = $item['text'];
-                    $displayToOriginal[$newIdx] = $item['orig_idx'];
-                }
-
-                $q['options'] = $newOptions;
-                $q['display_to_original_map'] = $displayToOriginal;
-                $q['was_shuffled'] = true;
-            } else {
-                $q['display_to_original_map'] = null;
-                $q['was_shuffled'] = false;
-            }
-
-            if ($q['question_type'] === 'true_false') {
-                $q['original_correct_answers'] = array_map('intval', $q['original_correct_answers']);
-            }
-
-            $q['points'] = floatval($q['points'] ?? 1);
-            return $q;
-        })->values()->toArray();
+        // Livewire serializes public properties into the browser. Only send fields
+        // required to display the paper; marking keys and option mappings stay server-side.
+        $this->questions = $trustedQuestions
+            ->map(fn (array $question): array => $this->displayQuestionData($question))
+            ->all();
 
         $this->questionOrder = collect($this->questions)->pluck('id')->toArray();
     }
@@ -243,31 +224,37 @@ class CbtExamInterface extends Component
     #[Renderless]
     public function saveAnswer($questionId, $answer): void
     {
-        if ($answer === null || $answer === '' || $answer === 'null') {
-            $this->answers[$questionId] = null;
-        } else {
-            $this->answers[$questionId] = (int) $answer;
+        $session = $this->currentAttemptSession();
+        if (!$this->sessionAcceptsAnswers($session)) {
+            return;
         }
 
-        $this->persistCurrentAnswer((int) $questionId);
-        $this->persistAttemptSessionState();
+        $question = $this->trustedQuestionDataForId((int) $questionId, $session);
+        if (!$question) {
+            return;
+        }
+
+        $this->answers[(int) $questionId] = $this->normalizeDisplayAnswer($question, $answer);
+
+        $this->persistCurrentAnswer((int) $questionId, $session, $question);
+        $this->persistAttemptSessionState($session);
     }
 
     #[Renderless]
     public function syncAnswers(array $answers): void
     {
-        foreach ($this->answers as $questionId => $currentValue) {
-            $incomingAnswer = $answers[$questionId] ?? $answers[(string) $questionId] ?? null;
-
-            if ($incomingAnswer === null || $incomingAnswer === '' || $incomingAnswer === 'null') {
-                $this->answers[$questionId] = null;
-                continue;
-            }
-
-            $this->answers[$questionId] = (int) $incomingAnswer;
+        $session = $this->currentAttemptSession();
+        if (!$this->sessionAcceptsAnswers($session)) {
+            return;
         }
 
-        $this->persistAttemptSessionState();
+        foreach ($this->trustedQuestionsForSession($session) as $question) {
+            $questionId = (int) $question['id'];
+            $incomingAnswer = $answers[$questionId] ?? $answers[(string) $questionId] ?? null;
+            $this->answers[$questionId] = $this->normalizeDisplayAnswer($question, $incomingAnswer);
+        }
+
+        $this->persistAttemptSessionState($session);
     }
 
     public function submitExamWithAnswers(array $answers): void
@@ -312,7 +299,7 @@ class CbtExamInterface extends Component
         }
 
         $session = $this->currentAttemptSession();
-        if (!$session) {
+        if (!$session || $session->status !== 'in_progress') {
             $this->skipRender();
 
             return [
@@ -325,11 +312,11 @@ class CbtExamInterface extends Component
         $remaining = max(0, now()->diffInSeconds($session->expires_at, false));
         $this->timeRemaining = $remaining;
 
-        $session->update([
+        $this->updateAttemptSession($session, [
             'last_activity_at' => now(),
             'current_question_index' => (int) $this->currentQuestionIndex,
-            'answers_snapshot' => $this->answers,
             'flagged_question_ids' => array_values($this->flaggedQuestions),
+            'state_revision' => DB::raw('state_revision + 1'),
         ]);
 
         if ($remaining <= 0) {
@@ -357,31 +344,52 @@ class CbtExamInterface extends Component
 
         try {
             $this->trackQuestionTime($this->currentQuestionIndex);
-            $session = $attemptSession ?: $this->currentAttemptSession();
-            $this->mergeAnswersFromSession($session);
+            $sessionId = (int) ($attemptSession?->id ?: $this->attemptSessionId);
 
-            $timeSpent = $this->startTime ? abs($this->startTime->diffInSeconds(now(), false)) : 0;
+            $submission = DB::transaction(function () use ($sessionId, $isAutoSubmit) {
+                $session = $this->attemptSessionQuery()
+                    ->whereKey($sessionId)
+                    ->lockForUpdate()
+                    ->first();
 
-            $submissionSummary = DB::transaction(function () use ($session, $isAutoSubmit) {
+                if (!$session) {
+                    throw new \RuntimeException('The authenticated CBT attempt could not be confirmed.');
+                }
+
+                $this->attemptSessionId = (int) $session->id;
+                $this->attemptNumber = (int) $session->attempt_number;
+                $trustedQuestions = $this->trustedQuestionsForSession($session);
+
+                if ($session->status !== 'in_progress') {
+                    return [
+                        'session' => $session,
+                        'questions' => $trustedQuestions,
+                        'summary' => $this->summarizeStoredSubmission($session, $trustedQuestions),
+                    ];
+                }
+
+                $this->mergeAnswersFromSession($session);
                 $totalPoints = 0;
                 $correctAnswers = 0;
                 $answeredQuestions = 0;
                 $submittedAt = now();
 
-                foreach ($this->questions as $questionIndex => $qData) {
+                foreach ($trustedQuestions as $questionIndex => $qData) {
                     $qId = (int) $qData['id'];
                     $userDisplayAnswer = $this->answers[$qId] ?? null;
 
-                    if ($userDisplayAnswer === null || $userDisplayAnswer === '') {
-                        continue;
-                    }
+                    $userDisplayAnswer = $this->normalizeDisplayAnswer($qData, $userDisplayAnswer);
+                    $userOriginalAnswer = $userDisplayAnswer === null
+                        ? null
+                        : $this->mapDisplayToOriginalAnswer($qData, $userDisplayAnswer);
 
-                    $answeredQuestions++;
-                    $userOriginalAnswer = $this->mapDisplayToOriginalAnswer($qData, (int) $userDisplayAnswer);
+                    if ($userOriginalAnswer !== null) {
+                        $answeredQuestions++;
+                    }
 
                     $examData = [
                         'was_shuffled' => $qData['was_shuffled'],
-                        'user_displayed_answer' => (int) $userDisplayAnswer,
+                        'user_displayed_answer' => $userDisplayAnswer,
                         'user_original_answer' => $userOriginalAnswer,
                         'display_to_original_map' => $qData['display_to_original_map'],
                         'original_correct_answers' => $qData['original_correct_answers'],
@@ -390,16 +398,19 @@ class CbtExamInterface extends Component
                     ];
 
                     $questionDurationSeconds = (int) round($this->progressTracking['question_durations'][$questionIndex] ?? 0);
-                    $grading = $this->gradeSubmittedAnswer($qData, $userOriginalAnswer);
+                    $grading = $userOriginalAnswer === null
+                        ? ['is_correct' => false, 'points_earned' => 0]
+                        : $this->gradeSubmittedAnswer($qData, $userOriginalAnswer);
 
                     $studentAnswer = StudentAnswer::updateOrCreate(
                         [
-                            'user_id' => Auth::id(),
-                            'assessment_id' => $this->assessment->id,
+                            'attempt_session_id' => $session->id,
                             'question_id' => $qId,
-                            'attempt_number' => $this->attemptNumber,
                         ],
                         [
+                            'user_id' => $session->user_id,
+                            'assessment_id' => $session->assessment_id,
+                            'attempt_number' => $session->attempt_number,
                             'answer' => $userOriginalAnswer,
                             'time_spent_seconds' => $questionDurationSeconds,
                             'submitted_at' => $submittedAt,
@@ -417,44 +428,71 @@ class CbtExamInterface extends Component
                     $totalPoints += $studentAnswer->points_earned ?? 0;
                 }
 
-                if ($session) {
-                    $session->update([
-                        'status' => $isAutoSubmit ? 'expired' : 'submitted',
-                        'completed_at' => now(),
-                        'last_activity_at' => now(),
-                        'current_question_index' => (int) $this->currentQuestionIndex,
-                        'answers_snapshot' => $this->answers,
-                        'flagged_question_ids' => array_values($this->flaggedQuestions),
-                        'security_violations' => $this->securityViolations,
-                    ]);
-                }
+                $this->updateAttemptSession($session, [
+                    'status' => $isAutoSubmit ? 'expired' : 'submitted',
+                    'completed_at' => now(),
+                    'last_activity_at' => now(),
+                    'current_question_index' => (int) $this->currentQuestionIndex,
+                    'answers_snapshot' => $this->answers,
+                    'flagged_question_ids' => array_values($this->flaggedQuestions),
+                    'security_violations' => $this->securityViolations,
+                    'state_revision' => DB::raw('state_revision + 1'),
+                ]);
+
+                app(AuditTrail::class)->record(
+                    $session->school_id,
+                    'cbt',
+                    $isAutoSubmit ? 'cbt.attempt_auto_submitted' : 'cbt.attempt_submitted',
+                    $isAutoSubmit ? 'A CBT attempt was submitted automatically.' : 'A CBT attempt was submitted.',
+                    $session,
+                    ['status' => 'in_progress'],
+                    ['status' => $session->status],
+                    [
+                        'assessment_id' => $session->assessment_id,
+                        'user_id' => $session->user_id,
+                        'attempt_number' => $session->attempt_number,
+                        'answered_questions' => $answeredQuestions,
+                    ],
+                    subjectLabel: 'CBT attempt #'.$session->attempt_number,
+                );
 
                 return [
-                    'total_points' => $totalPoints,
-                    'correct_answers' => $correctAnswers,
-                    'answered_questions' => $answeredQuestions,
+                    'session' => $session->fresh(),
+                    'questions' => $trustedQuestions,
+                    'summary' => [
+                        'total_points' => $totalPoints,
+                        'correct_answers' => $correctAnswers,
+                        'answered_questions' => $answeredQuestions,
+                    ],
                 ];
             });
 
-            $maxPoints = collect($this->questions)->sum('points') ?: 100;
+            $session = $submission['session'];
+            $trustedQuestions = $submission['questions'];
+            $submissionSummary = $submission['summary'];
+            $maxPoints = collect($trustedQuestions)->sum('points') ?: 100;
             $percentage = $maxPoints > 0
                 ? round(($submissionSummary['total_points'] / $maxPoints) * 100, 1)
                 : 0;
+            $timeSpent = $session->started_at
+                ? abs($session->started_at->diffInSeconds($session->completed_at ?: now(), false))
+                : 0;
 
-            $this->results = [
-                'total_questions' => count($this->questions),
+            $resultPayload = [
+                'total_questions' => count($trustedQuestions),
                 'answered_questions' => $submissionSummary['answered_questions'],
                 'correct_answers' => $submissionSummary['correct_answers'],
                 'total_points' => $submissionSummary['total_points'],
                 'max_points' => $maxPoints,
                 'percentage' => $percentage,
                 'passed' => $percentage >= $this->assessment->pass_percentage,
-                'attempt_number' => $this->attemptNumber,
+                'attempt_number' => $session->attempt_number,
                 'time_spent' => $timeSpent,
             ];
 
             $this->resultsVisible = $this->assessment->canUserViewResults(Auth::user());
             $this->pendingPublish = !$this->resultsVisible;
+            $this->results = $this->resultsVisible ? $resultPayload : null;
             $this->resultNotice = $this->pendingPublish
                 ? 'Exam submitted. Your school will publish the result when ready.'
                 : '';
@@ -728,15 +766,27 @@ class CbtExamInterface extends Component
     protected function currentAttemptSession(): ?AttemptSession
     {
         if ($this->attemptSessionId) {
-            return AttemptSession::query()->find($this->attemptSessionId);
+            return $this->attemptSessionQuery()->find($this->attemptSessionId);
         }
 
         return $this->getActiveAttemptSession();
     }
 
+    protected function attemptSessionQuery(): Builder
+    {
+        return AttemptSession::query()
+            ->where('assessment_id', (int) $this->assessment->id)
+            ->where('user_id', (int) Auth::id())
+            ->where('school_id', (int) $this->currentSchoolId());
+    }
+
     protected function restoreAttemptSnapshot(AttemptSession $session): void
     {
-        $snapshot = is_array($session->answers_snapshot) ? $session->answers_snapshot : [];
+        $snapshot = $this->persistedDisplayAnswers($session);
+
+        if ($snapshot === []) {
+            $snapshot = is_array($session->answers_snapshot) ? $session->answers_snapshot : [];
+        }
 
         foreach ($this->answers as $questionId => $value) {
             if (array_key_exists($questionId, $snapshot)) {
@@ -758,29 +808,38 @@ class CbtExamInterface extends Component
 
     protected function mergeAnswersFromSession(?AttemptSession $session): void
     {
-        if (!$session || !is_array($session->answers_snapshot)) {
+        if (!$session) {
             return;
         }
 
-        foreach ($session->answers_snapshot as $questionId => $answer) {
+        $snapshot = $this->persistedDisplayAnswers($session);
+        if ($snapshot === [] && is_array($session->answers_snapshot)) {
+            $snapshot = $session->answers_snapshot;
+        }
+
+        foreach ($snapshot as $questionId => $answer) {
             if (array_key_exists((int) $questionId, $this->answers) && $this->answers[(int) $questionId] === null) {
                 $this->answers[(int) $questionId] = $answer;
             }
         }
     }
 
-    protected function persistCurrentAnswer(int $questionId): void
+    protected function persistCurrentAnswer(
+        int $questionId,
+        ?AttemptSession $session = null,
+        ?array $questionData = null
+    ): void
     {
         if (!$this->examStarted || $this->examCompleted) {
             return;
         }
 
-        $session = $this->currentAttemptSession();
-        if (!$session) {
+        $session ??= $this->currentAttemptSession();
+        if (!$this->sessionAcceptsAnswers($session)) {
             return;
         }
 
-        $questionData = collect($this->questions)->firstWhere('id', $questionId);
+        $questionData ??= $this->trustedQuestionDataForId($questionId, $session);
         if (!$questionData) {
             return;
         }
@@ -802,12 +861,13 @@ class CbtExamInterface extends Component
 
         StudentAnswer::updateOrCreate(
             [
-                'user_id' => Auth::id(),
-                'assessment_id' => $this->assessment->id,
+                'attempt_session_id' => $session->id,
                 'question_id' => $questionId,
-                'attempt_number' => $this->attemptNumber,
             ],
             [
+                'user_id' => $session->user_id,
+                'assessment_id' => $session->assessment_id,
+                'attempt_number' => $session->attempt_number,
                 'answer' => $originalAnswer,
                 'submitted_at' => null,
                 'question_order' => $this->questionOrder,
@@ -816,20 +876,184 @@ class CbtExamInterface extends Component
         );
     }
 
-    protected function persistAttemptSessionState(): void
+    protected function persistAttemptSessionState(?AttemptSession $session = null): void
     {
-        $session = $this->currentAttemptSession();
-        if (!$session || $session->status !== 'in_progress') {
+        $session ??= $this->currentAttemptSession();
+        if (!$this->sessionAcceptsAnswers($session)) {
             return;
         }
 
-        $session->update([
+        $this->updateAttemptSession($session, [
             'last_activity_at' => now(),
             'current_question_index' => (int) $this->currentQuestionIndex,
-            'answers_snapshot' => $this->answers,
             'flagged_question_ids' => array_values($this->flaggedQuestions),
             'security_violations' => $this->securityViolations,
+            'state_revision' => DB::raw('state_revision + 1'),
         ]);
+    }
+
+    protected function buildTrustedQuestionData(Question $question): array
+    {
+        $options = is_array($question->options) ? array_values($question->options) : [];
+        $correctAnswers = is_array($question->correct_answers)
+            ? $question->correct_answers
+            : (json_decode((string) $question->correct_answers, true) ?: []);
+        $displayToOriginal = null;
+        $wasShuffled = false;
+
+        if (
+            $this->assessment->shuffle_options
+            && $options !== []
+            && $question->question_type === 'multiple_choice'
+        ) {
+            $indexed = [];
+            foreach ($options as $index => $text) {
+                $indexed[] = [
+                    'original_index' => (int) $index,
+                    'text' => $text,
+                    'weight' => $this->deterministicHash('option-order:'.$question->id, (int) $index),
+                ];
+            }
+
+            usort($indexed, fn (array $left, array $right): int => strcmp($left['weight'], $right['weight']));
+            $options = [];
+            $displayToOriginal = [];
+            foreach ($indexed as $displayIndex => $item) {
+                $options[$displayIndex] = $item['text'];
+                $displayToOriginal[$displayIndex] = $item['original_index'];
+            }
+            $wasShuffled = true;
+        }
+
+        return [
+            'id' => (int) $question->id,
+            'question_text' => (string) ($question->question_text ?? ''),
+            'question_type' => (string) $question->question_type,
+            'options' => $options,
+            'points' => (float) ($question->points ?? 1),
+            'question_media_url' => $question->question_media_url,
+            'question_media_is_image' => (bool) $question->question_media_is_image,
+            'question_media_original_name' => $question->question_media_original_name,
+            'was_shuffled' => $wasShuffled,
+            'display_to_original_map' => $displayToOriginal,
+            'original_correct_answers' => array_values(array_map('intval', $correctAnswers)),
+        ];
+    }
+
+    protected function updateAttemptSession(AttemptSession $session, array $attributes): void
+    {
+        AttemptSession::query()
+            ->whereKey($session->id)
+            ->update($attributes);
+
+        $session->refresh();
+    }
+
+    protected function displayQuestionData(array $question): array
+    {
+        return collect($question)
+            ->except(['display_to_original_map', 'original_correct_answers'])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function trustedQuestionsForSession(AttemptSession $session): array
+    {
+        $questionsById = Question::query()
+            ->withTrashed()
+            ->where('assessment_id', $session->assessment_id)
+            ->get()
+            ->keyBy('id');
+        $order = is_array($session->question_order) && $session->question_order !== []
+            ? array_map('intval', $session->question_order)
+            : $questionsById->keys()->map(fn ($id): int => (int) $id)->all();
+
+        return collect($order)
+            ->map(fn (int $questionId) => $questionsById->get($questionId))
+            ->filter()
+            ->map(fn (Question $question): array => $this->buildTrustedQuestionData($question))
+            ->values()
+            ->all();
+    }
+
+    protected function trustedQuestionDataForId(int $questionId, AttemptSession $session): ?array
+    {
+        return collect($this->trustedQuestionsForSession($session))->firstWhere('id', $questionId);
+    }
+
+    protected function normalizeDisplayAnswer(array $question, mixed $answer): ?int
+    {
+        if ($answer === null || $answer === '' || $answer === 'null') {
+            return null;
+        }
+
+        if (!is_numeric($answer)) {
+            return null;
+        }
+
+        $answer = (int) $answer;
+        $validAnswers = match ($question['question_type'] ?? null) {
+            'multiple_choice' => array_keys($question['options'] ?? []),
+            'true_false' => [0, 1],
+            default => [],
+        };
+
+        return in_array($answer, array_map('intval', $validAnswers), true) ? $answer : null;
+    }
+
+    protected function sessionAcceptsAnswers(?AttemptSession $session): bool
+    {
+        return $session !== null
+            && $session->status === 'in_progress'
+            && !$session->isExpired();
+    }
+
+    /**
+     * @return array<int, int|null>
+     */
+    protected function persistedDisplayAnswers(AttemptSession $session): array
+    {
+        return StudentAnswer::query()
+            ->where(function (Builder $query) use ($session): void {
+                $query->where('attempt_session_id', $session->id)
+                    ->orWhere(function (Builder $legacy) use ($session): void {
+                        $legacy->whereNull('attempt_session_id')
+                            ->where('user_id', $session->user_id)
+                            ->where('assessment_id', $session->assessment_id)
+                            ->where('attempt_number', $session->attempt_number);
+                    });
+            })
+            ->get()
+            ->mapWithKeys(function (StudentAnswer $answer): array {
+                $displayAnswer = data_get($answer->exam_data, 'user_displayed_answer');
+
+                return [(int) $answer->question_id => $displayAnswer === null ? null : (int) $displayAnswer];
+            })
+            ->all();
+    }
+
+    protected function summarizeStoredSubmission(AttemptSession $session, array $questions): array
+    {
+        $answers = StudentAnswer::query()
+            ->where(function (Builder $query) use ($session): void {
+                $query->where('attempt_session_id', $session->id)
+                    ->orWhere(function (Builder $legacy) use ($session): void {
+                        $legacy->whereNull('attempt_session_id')
+                            ->where('user_id', $session->user_id)
+                            ->where('assessment_id', $session->assessment_id)
+                            ->where('attempt_number', $session->attempt_number);
+                    });
+            })
+            ->whereNotNull('submitted_at')
+            ->get();
+
+        return [
+            'total_points' => (float) $answers->sum('points_earned'),
+            'correct_answers' => $answers->where('is_correct', true)->count(),
+            'answered_questions' => $answers->filter(fn (StudentAnswer $answer): bool => $answer->answer !== null)->count(),
+        ];
     }
 
     protected function mapDisplayToOriginalAnswer(array $questionData, int $displayAnswer): int
