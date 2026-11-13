@@ -41,6 +41,12 @@
                 @if($payment->external_reference)
                     <div><p class="label">External reference</p><p class="value">{{ $payment->external_reference }}</p></div>
                 @endif
+                @if($payment->provider)
+                    <div><p class="label">Payment provider</p><p class="value">{{ ucfirst($payment->provider) }}</p></div>
+                @endif
+                @if($payment->provider_reference)
+                    <div><p class="label">Provider reference</p><p class="value">{{ $payment->provider_reference }}</p></div>
+                @endif
                 @if($payment->originalTransaction)
                     <div><p class="label">Original receipt</p><p class="value">{{ $payment->originalTransaction->receipt_number }}</p></div>
                 @endif

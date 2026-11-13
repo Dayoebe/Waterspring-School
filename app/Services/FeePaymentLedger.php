@@ -10,6 +10,7 @@ use Brick\Money\Money;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class FeePaymentLedger
 {
@@ -48,7 +49,7 @@ class FeePaymentLedger
             throw new DomainException('Payment amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use (
+        $transaction = DB::transaction(function () use (
             $record,
             $amountMinor,
             $cashier,
@@ -101,8 +102,120 @@ class FeePaymentLedger
 
             $this->syncPaidProjection($lockedRecord->id);
 
+            app(AuditTrail::class)->record(
+                $schoolId,
+                'finance',
+                'payment.recorded',
+                'A payment was added to the immutable fee ledger.',
+                $transaction,
+                [],
+                ['receipt_number' => $transaction->receipt_number, 'amount' => (string) $transaction->amount],
+                ['payment_method' => $paymentMethod, 'fee_invoice_id' => $lockedRecord->fee_invoice_id],
+                $cashier,
+                $transaction->payer_name,
+            );
+
             return $transaction;
         }, 3);
+
+        $this->queueReceiptAfterCommit($transaction);
+
+        return $transaction;
+    }
+
+    public function recordGatewayPayment(
+        FeeInvoiceRecord $record,
+        int $amountMinor,
+        string $provider,
+        string $providerReference,
+        ?string $externalReference = null,
+        array $metadata = []
+    ): FeePaymentTransaction {
+        $provider = trim($provider);
+        $providerReference = trim($providerReference);
+
+        if ($amountMinor <= 0 || $provider === '' || $providerReference === '') {
+            throw new DomainException('The verified gateway payment is incomplete.');
+        }
+
+        $transaction = DB::transaction(function () use (
+            $record,
+            $amountMinor,
+            $provider,
+            $providerReference,
+            $externalReference,
+            $metadata
+        ): FeePaymentTransaction {
+            $existing = FeePaymentTransaction::query()
+                ->where('provider', $provider)
+                ->where('provider_reference', $providerReference)
+                ->first();
+
+            if ($existing) {
+                if ((int) $existing->fee_invoice_record_id !== (int) $record->id
+                    || $existing->amount->getMinorAmount()->toInt() !== $amountMinor) {
+                    throw new DomainException('The gateway reference is already attached to a different payment.');
+                }
+
+                return $existing;
+            }
+
+            $lockedRecord = FeeInvoiceRecord::query()
+                ->with('feeInvoice.user')
+                ->lockForUpdate()
+                ->findOrFail($record->id);
+            $schoolId = (int) $lockedRecord->feeInvoice->user->school_id;
+            $dueMinor = (int) $lockedRecord->getRawOriginal('amount')
+                + (int) $lockedRecord->getRawOriginal('fine')
+                - (int) $lockedRecord->getRawOriginal('waiver');
+            $paidMinor = $this->netPaidMinor($lockedRecord->id);
+
+            if ($paidMinor + $amountMinor > $dueMinor) {
+                throw new DomainException('This verified payment is higher than the current outstanding balance and needs review.');
+            }
+
+            $transaction = FeePaymentTransaction::query()->create([
+                'school_id' => $schoolId,
+                'fee_invoice_id' => $lockedRecord->fee_invoice_id,
+                'fee_invoice_record_id' => $lockedRecord->id,
+                'type' => 'payment',
+                'amount' => Money::ofMinor($amountMinor, config('app.currency')),
+                'currency' => strtoupper((string) config('app.currency')),
+                'receipt_number' => $this->receiptNumber('PAY', $schoolId),
+                'payment_method' => 'online',
+                'external_reference' => $this->nullableTrimmed($externalReference),
+                'provider' => $provider,
+                'provider_reference' => $providerReference,
+                'cashier_id' => null,
+                'cashier_name' => ucfirst($provider).' gateway',
+                'payer_name' => $lockedRecord->feeInvoice->user->name,
+                'notes' => null,
+                'metadata' => ['source' => 'verified_gateway'] + $metadata,
+                'recorded_ip' => request()?->ip(),
+                'user_agent' => Str::limit((string) request()?->userAgent(), 1000, ''),
+                'occurred_at' => now(),
+            ]);
+
+            $this->syncPaidProjection($lockedRecord->id);
+
+            app(AuditTrail::class)->record(
+                $schoolId,
+                'finance',
+                'payment.recorded',
+                'A verified online payment was added to the immutable ledger.',
+                $transaction,
+                [],
+                ['receipt_number' => $transaction->receipt_number, 'amount' => (string) $transaction->amount],
+                ['provider' => $provider, 'provider_reference' => $providerReference],
+                subjectLabel: $transaction->payer_name,
+            );
+
+            return $transaction;
+        }, 3);
+
+        $this->queueReceiptAfterCommit($transaction);
+
+        return $transaction;
     }
 
     public function reverse(
@@ -237,5 +350,18 @@ class FeePaymentLedger
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    private function queueReceiptAfterCommit(FeePaymentTransaction $transaction): void
+    {
+        DB::afterCommit(
+            function () use ($transaction): void {
+                try {
+                    app(FeePaymentNotificationService::class)->queueReceipt($transaction);
+                } catch (Throwable $exception) {
+                    report($exception);
+                }
+            }
+        );
     }
 }

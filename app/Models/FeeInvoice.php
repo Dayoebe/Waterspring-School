@@ -52,6 +52,9 @@ class FeeInvoice extends Model
             if ($invoice->feeInvoiceRecords()->whereHas('paymentTransactions')->exists()) {
                 throw new LogicException('Invoices with payment history cannot be deleted.');
             }
+            if ($invoice->feeInvoiceRecords()->whereHas('paymentAttempts')->exists()) {
+                throw new LogicException('Invoices with online payment attempts cannot be deleted.');
+            }
         });
     }
 

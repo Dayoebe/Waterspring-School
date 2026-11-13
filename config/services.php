@@ -42,4 +42,15 @@ return [
         'sender' => env('SMS_SENDER'),
     ],
 
+    'paystack' => [
+        'enabled' => env('PAYSTACK_ENABLED', false),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'webhook_secret' => env('PAYSTACK_WEBHOOK_SECRET'),
+        'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
+        'callback_url' => env('PAYSTACK_CALLBACK_URL'),
+        'timeout' => env('PAYSTACK_TIMEOUT', 15),
+        'webhook_tolerance' => env('PAYSTACK_WEBHOOK_TOLERANCE', 300),
+    ],
+
 ];

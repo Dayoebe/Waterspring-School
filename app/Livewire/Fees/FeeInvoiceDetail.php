@@ -469,6 +469,8 @@ class FeeInvoiceDetail extends Component
             'feeInvoice' => $this->feeInvoice,
             'paymentMethods' => FeePaymentLedger::PAYMENT_METHODS,
             'reconciliationStatuses' => FeePaymentLedger::RECONCILIATION_STATUSES,
+            'paystackEnabled' => (bool) config('services.paystack.enabled')
+                && filled(config('services.paystack.secret_key')),
         ])
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
 use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\PreventGraduatedStudent;
@@ -28,3 +29,7 @@ Route::middleware([
 ])->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/payments/paystack/webhook', PaystackWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('api.fee-payments.paystack.webhook');
