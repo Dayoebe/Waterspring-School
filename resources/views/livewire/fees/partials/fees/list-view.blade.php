@@ -90,6 +90,12 @@
                             Category
                         </th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Default Amount
+                        </th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Approval
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
                         </th>
                     </tr>
@@ -110,8 +116,31 @@
                                     {{ $fee->feeCategory->name }}
                                 </span>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right font-semibold text-gray-900">
+                                {{ $fee->default_amount->formatTo(app()->getLocale()) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                @if($fee->status === 'approved')
+                                    <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Approved
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                                        <i class="fas fa-clock mr-1"></i>Draft
+                                    </span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end gap-2">
+                                    @if($fee->status !== 'approved')
+                                        @can('approve fee')
+                                            <button wire:click="approveFee({{ $fee->id }})"
+                                                    wire:confirm="Approve this fee and email its amount and explanation to parents?"
+                                                    class="text-green-700 hover:text-green-900" title="Approve and notify parents">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        @endcan
+                                    @endif
                                     @can('update fee')
                                         <a href="{{ route('fees.edit', $fee->id) }}" 
                                            wire:navigate
@@ -131,7 +160,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center">
+                            <td colspan="6" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center justify-center">
                                     <i class="fas fa-receipt text-gray-300 text-5xl mb-4"></i>
                                     <p class="text-gray-500 text-lg">No fees found</p>

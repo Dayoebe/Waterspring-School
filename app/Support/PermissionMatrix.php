@@ -156,6 +156,7 @@ class PermissionMatrix
             'read fee',
             'create fee',
             'update fee',
+            'approve fee',
             'delete fee',
             'read fee invoice',
             'create fee invoice',
@@ -282,6 +283,7 @@ class PermissionMatrix
             'access student support',
             'book parent teacher appointment',
             'view child transport',
+            'read fee invoice',
         ];
 
         $basicUser = [
@@ -481,6 +483,7 @@ class PermissionMatrix
             'read fee',
             'create fee',
             'update fee',
+            'approve fee',
             'delete fee',
             'read fee invoice',
             'create fee invoice',

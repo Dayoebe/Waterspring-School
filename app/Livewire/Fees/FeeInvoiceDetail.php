@@ -127,10 +127,19 @@ class FeeInvoiceDetail extends Component
 
             // Get fees not already in this invoice
             $existingFeeIds = $this->feeInvoice->feeInvoiceRecords->pluck('fee_id')->toArray();
-            $this->fees = $category ? $category->fees()->whereNotIn('id', $existingFeeIds)->get() : collect();
+            $this->fees = $category
+                ? $category->fees()->approved()->whereNotIn('id', $existingFeeIds)->orderBy('name')->get()
+                : collect();
 
             $this->selectedFee = $this->fees->isNotEmpty() ? $this->fees->first()->id : '';
+            $this->updatedSelectedFee();
         }
+    }
+
+    public function updatedSelectedFee(): void
+    {
+        $fee = $this->fees->firstWhere('id', (int) $this->selectedFee);
+        $this->newFeeAmount = $fee ? (string) $fee->default_amount->getAmount() : 0;
     }
 
     public function changeTab($tab)
@@ -422,7 +431,7 @@ class FeeInvoiceDetail extends Component
             return null;
         }
 
-        return Fee::whereHas('feeCategory', function ($query) {
+        return Fee::approved()->whereHas('feeCategory', function ($query) {
             $query->where('school_id', auth()->user()->school_id);
         })->find($feeId);
     }

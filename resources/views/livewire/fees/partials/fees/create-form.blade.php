@@ -35,9 +35,17 @@
 
                 <!-- Fee Category -->
                 <div>
-                    <label for="fee_category_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Fee Category <span class="text-red-500">*</span>
-                    </label>
+                    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <label for="fee_category_id" class="block text-sm font-medium text-gray-700">
+                            Fee Category <span class="text-red-500">*</span>
+                        </label>
+                        @can('create fee category')
+                            <button type="button" wire:click="$toggle('showCategoryCreator')"
+                                    class="text-sm font-semibold text-indigo-700 hover:text-indigo-900">
+                                <i class="fas fa-plus-circle mr-1"></i>{{ $showCategoryCreator ? 'Close category creator' : 'Create category here' }}
+                            </button>
+                        @endcan
+                    </div>
                     <select id="fee_category_id"
                             wire:model="fee_category_id"
                             class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('fee_category_id') border-red-500 @enderror">
@@ -49,6 +57,33 @@
                     @error('fee_category_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                    @if($showCategoryCreator)
+                        <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                            <h3 class="font-semibold text-indigo-950">New fee category</h3>
+                            <p class="mt-1 text-sm text-indigo-700">Create it here and it will be selected automatically.</p>
+                            <div class="mt-4 grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label for="newCategoryName" class="mb-1 block text-sm font-medium text-gray-700">Category name</label>
+                                    <input id="newCategoryName" type="text" wire:model="newCategoryName" maxlength="100"
+                                           placeholder="e.g., Tuition fees"
+                                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('newCategoryName') border-red-500 @enderror">
+                                    @error('newCategoryName') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label for="newCategoryDescription" class="mb-1 block text-sm font-medium text-gray-700">Category description</label>
+                                    <input id="newCategoryDescription" type="text" wire:model="newCategoryDescription" maxlength="1000"
+                                           placeholder="What belongs in this category?"
+                                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                    @error('newCategoryDescription') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                </div>
+                            </div>
+                            <button type="button" wire:click="createCategoryInline" wire:loading.attr="disabled" wire:target="createCategoryInline"
+                                    class="mt-4 rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 disabled:opacity-60">
+                                <span wire:loading.remove wire:target="createCategoryInline">Create and select category</span>
+                                <span wire:loading wire:target="createCategoryInline">Creating…</span>
+                            </button>
+                        </div>
+                    @endif
                     @if($feeCategories->isEmpty())
                         <p class="mt-2 text-sm text-amber-600">
                             <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -58,16 +93,28 @@
                     @endif
                 </div>
 
+                <!-- Default Amount -->
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
+                        Default Amount ({{ strtoupper(config('app.currency')) }}) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" id="amount" wire:model="amount" min="0.01" max="21474836.47" step="0.01"
+                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('amount') border-red-500 @enderror"
+                           placeholder="0.00">
+                    <p class="mt-1 text-sm text-gray-500">This amount will prefill new invoices and can still be adjusted before an invoice is issued.</p>
+                    @error('amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
                 <!-- Description -->
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                        Description
+                        Explanation for parents <span class="text-red-500">*</span>
                     </label>
                     <textarea id="description"
                               wire:model="description"
                               rows="4"
                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('description') border-red-500 @enderror"
-                              placeholder="Enter a description for this fee"></textarea>
+                              placeholder="Explain what this fee covers and any important payment information"></textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror

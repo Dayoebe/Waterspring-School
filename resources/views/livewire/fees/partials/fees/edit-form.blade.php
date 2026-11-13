@@ -51,16 +51,27 @@
                     @enderror
                 </div>
 
+                <!-- Default Amount -->
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
+                        Default Amount ({{ strtoupper(config('app.currency')) }}) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" id="amount" wire:model="amount" min="0.01" max="21474836.47" step="0.01"
+                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('amount') border-red-500 @enderror">
+                    <p class="mt-1 text-sm text-amber-700">Changing an approved fee returns it to draft so the revised amount and explanation can be approved again.</p>
+                    @error('amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
                 <!-- Description -->
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                        Description
+                        Explanation for parents <span class="text-red-500">*</span>
                     </label>
                     <textarea id="description"
                               wire:model="description"
                               rows="4"
                               class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('description') border-red-500 @enderror"
-                              placeholder="Enter a description for this fee"></textarea>
+                              placeholder="Explain what this fee covers and any important payment information"></textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror

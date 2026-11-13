@@ -220,7 +220,7 @@ class ManageFeeInvoices extends Component
     {
         if ($this->selectedFeeCategory) {
             $category = $this->getFeeCategoryForCurrentSchool($this->selectedFeeCategory);
-            $this->fees = $category ? $category->fees : collect();
+            $this->fees = $category ? $category->fees()->approved()->orderBy('name')->get() : collect();
             $this->selectedFee = '';
         }
     }
@@ -235,7 +235,7 @@ class ManageFeeInvoices extends Component
                 $this->selectedFees[$fee->id] = [
                     'id' => $fee->id,
                     'name' => $fee->name,
-                    'amount' => 0,
+                    'amount' => (string) $fee->default_amount->getAmount(),
                     'waiver' => 0,
                     'fine' => 0,
                 ];
@@ -243,12 +243,12 @@ class ManageFeeInvoices extends Component
         } elseif ($this->selectedFeeCategory) {
             $category = $this->getFeeCategoryForCurrentSchool($this->selectedFeeCategory);
             if ($category) {
-                foreach ($category->fees as $fee) {
+                foreach ($category->fees()->approved()->orderBy('name')->get() as $fee) {
                     if (! isset($this->selectedFees[$fee->id])) {
                         $this->selectedFees[$fee->id] = [
                             'id' => $fee->id,
                             'name' => $fee->name,
-                            'amount' => 0,
+                            'amount' => (string) $fee->default_amount->getAmount(),
                             'waiver' => 0,
                             'fine' => 0,
                         ];
@@ -305,6 +305,9 @@ class ManageFeeInvoices extends Component
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'note' => 'nullable|string|max:1000',
+            'selectedFees.*.amount' => 'required|numeric|min:0.01|max:21474836.47|decimal:0,2',
+            'selectedFees.*.waiver' => 'required|numeric|min:0|max:21474836.47|decimal:0,2',
+            'selectedFees.*.fine' => 'required|numeric|min:0|max:21474836.47|decimal:0,2',
         ]);
 
         if (empty($this->selectedStudents)) {
@@ -338,10 +341,11 @@ class ManageFeeInvoices extends Component
         $selectedFeesById = collect($this->selectedFees)->keyBy('id');
         $feeIds = $selectedFeesById->keys()->map(fn ($id) => (int) $id)->values();
         $fees = Fee::whereIn('id', $feeIds)
+            ->approved()
             ->whereHas('feeCategory', function ($query) {
                 $query->where('school_id', auth()->user()->school_id);
             })
-            ->get(['id', 'name'])
+            ->get(['id', 'name', 'default_amount'])
             ->keyBy('id');
 
         if ($fees->count() !== $feeIds->count()) {
@@ -569,7 +573,7 @@ class ManageFeeInvoices extends Component
             return null;
         }
 
-        return Fee::whereHas('feeCategory', function ($query) {
+        return Fee::approved()->whereHas('feeCategory', function ($query) {
             $query->where('school_id', auth()->user()->school_id);
         })->find($feeId);
     }

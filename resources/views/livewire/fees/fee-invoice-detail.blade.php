@@ -470,7 +470,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Fee</label>
-                                    <select wire:model="selectedFee" 
+                                    <select wire:model.live="selectedFee"
                                             class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                                             @if(!$selectedFeeCategory) disabled @endif>
                                         <option value="">Select Fee</option>
