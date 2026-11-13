@@ -7,7 +7,7 @@
                     <h2 class="text-2xl font-bold text-gray-900">Create Fee</h2>
                     <p class="text-gray-600 mt-1">Add a new fee item to your school</p>
                 </div>
-                <a href="{{ route('fees.index') }}"
+                <a href="{{ route('fees.index', ['tab' => 'catalog']) }}"
                    wire:navigate
                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                     <i class="fas fa-arrow-left mr-2"></i>Back to List

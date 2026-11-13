@@ -496,7 +496,7 @@ class FeeInvoiceDetail extends Component
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices'],
+                    ['href' => route('fees.index'), 'text' => 'Fees & Payments'],
                     ['href' => route('fee-invoices.show', $this->feeInvoice->id), 'text' => $this->feeInvoice->name, 'active' => true],
                 ],
             ])

@@ -822,7 +822,7 @@
                             </span>
                         </div>
 
-                        <a href="{{ route('fee-invoices.index') }}" wire:navigate
+                        <a href="{{ route('fees.index') }}" wire:navigate
                            class="mt-5 flex flex-col gap-4 rounded-2xl border {{ ($parentPanel['outstanding_minor'] ?? 0) > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50' }} p-5 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <p class="text-xs font-black uppercase tracking-widest {{ ($parentPanel['outstanding_minor'] ?? 0) > 0 ? 'text-amber-700' : 'text-emerald-700' }}">Outstanding school fees</p>

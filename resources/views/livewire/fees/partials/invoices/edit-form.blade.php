@@ -6,7 +6,7 @@
                 <h2 class="text-2xl font-bold text-gray-900">Edit Invoice Settings</h2>
                 <p class="text-gray-600 mt-1">Update invoice dates and notes</p>
             </div>
-            <a href="{{ route('fee-invoices.index') }}" 
+            <a href="{{ route('fees.index') }}"
                wire:navigate
                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                 <i class="fas fa-arrow-left mr-2"></i>Back to List
@@ -73,7 +73,7 @@
 
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t">
-                    <a href="{{ route('fee-invoices.index') }}" 
+                    <a href="{{ route('fees.index') }}"
                        wire:navigate
                        class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                         Cancel

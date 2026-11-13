@@ -1,22 +1,24 @@
 <div class="space-y-6">
-    <!-- Header Card -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div class="p-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Fees</h2>
-                    <p class="text-gray-600 mt-1">Manage your school's fee items</p>
+    @unless($embedded)
+        <!-- Header Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Fees</h2>
+                        <p class="text-gray-600 mt-1">Manage your school's fee items</p>
+                    </div>
+                    @can('create fee')
+                        <a href="{{ route('fees.create') }}"
+                           wire:navigate
+                           class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-plus mr-2"></i>Create Fee / Invoice
+                        </a>
+                    @endcan
                 </div>
-                @can('create fee')
-                    <a href="{{ route('fees.create') }}" 
-                       wire:navigate
-                       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                        <i class="fas fa-plus mr-2"></i>Create Fee / Invoice
-                    </a>
-                @endcan
             </div>
         </div>
-    </div>
+    @endunless
 
     <!-- Filters Card -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200">

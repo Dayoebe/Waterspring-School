@@ -4,6 +4,7 @@ namespace Tests\Feature\Fees;
 
 use App\Livewire\Fees\ManageFeeInvoices;
 use App\Livewire\Fees\ManageFees;
+use App\Livewire\Layouts\Menu;
 use App\Mail\FeeApprovedParentMail;
 use App\Models\Fee;
 use App\Models\FeeCategory;
@@ -274,6 +275,65 @@ class FeeCatalogWorkflowTest extends TestCase
             ->assertSet("selectedFees.{$fee->id}.amount", '20000.00')
             ->assertSet("selectedFees.{$fee->id}.waiver", '2000.00')
             ->assertSet("selectedFees.{$fee->id}.fine", '500.00');
+    }
+
+    public function test_fee_catalogue_and_invoices_share_one_role_aware_finance_hub(): void
+    {
+        $school = $this->school('HUB');
+        $manager = $this->user($school, 'hub-manager');
+        $manager->givePermissionTo([
+            Permission::findOrCreate('read fee', 'web'),
+            Permission::findOrCreate('read fee invoice', 'web'),
+            Permission::findOrCreate('read fee category', 'web'),
+        ]);
+
+        $this->actingAs($manager);
+        $this->get(route('fees.index'))
+            ->assertOk()
+            ->assertSee('Fees &amp; Payments', false)
+            ->assertSee('Student Invoices')
+            ->assertSee('Fee Catalogue');
+        $this->get(route('fee-invoices.index'))
+            ->assertOk()
+            ->assertSee('Fees &amp; Payments', false)
+            ->assertSee('Student Invoices')
+            ->assertSee('Fee Catalogue');
+        $this->get(route('fees.index', ['tab' => 'catalog']))
+            ->assertOk()
+            ->assertSee('All Categories');
+
+        Livewire::actingAs($manager)
+            ->test(ManageFeeInvoices::class)
+            ->call('showTab', 'catalog')
+            ->assertSet('tab', 'catalog');
+
+        $invoiceViewer = $this->user($school, 'invoice-viewer');
+        $invoiceViewer->givePermissionTo(Permission::findOrCreate('read fee invoice', 'web'));
+
+        $this->actingAs($invoiceViewer)
+            ->get(route('fees.index', ['tab' => 'catalog']))
+            ->assertOk()
+            ->assertSee('Student Invoices')
+            ->assertDontSee('Fee Catalogue');
+    }
+
+    public function test_navigation_contains_one_direct_fees_and_payments_entry(): void
+    {
+        $school = $this->school('MENU');
+        $manager = $this->user($school, 'menu-manager');
+        $manager->givePermissionTo([
+            Permission::findOrCreate('read fee', 'web'),
+            Permission::findOrCreate('read fee invoice', 'web'),
+        ]);
+
+        $menu = Livewire::actingAs($manager)->test(Menu::class)->get('menu');
+        $financeEntries = collect($menu)
+            ->filter(fn (array $item): bool => ($item['text'] ?? null) === 'Fees & Payments')
+            ->values();
+
+        $this->assertCount(1, $financeEntries);
+        $this->assertSame('fees.index', $financeEntries->first()['route']);
+        $this->assertArrayNotHasKey('submenu', $financeEntries->first());
     }
 
     private function fee(School $school, string $name, int|float $amount, string $description): Fee

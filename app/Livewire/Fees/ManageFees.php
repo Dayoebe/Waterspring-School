@@ -448,13 +448,19 @@ class ManageFees extends Component
             $fees = $this->getFeesQuery()->paginate($this->perPage);
         }
 
-        return view('livewire.fees.manage-fees', compact('fees'))
+        $view = match ($this->mode) {
+            'create' => 'livewire.fees.partials.fees.create-form',
+            'edit' => 'livewire.fees.partials.fees.edit-form',
+            default => 'livewire.fees.partials.fees.list-view',
+        };
+
+        return view($view, compact('fees'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('fees.index'), 'text' => 'Fees', 'active' => true],
+                    ['href' => route('fees.index', ['tab' => 'catalog']), 'text' => 'Fees & Payments', 'active' => true],
                 ],
             ])
-            ->title('Manage Fees');
+            ->title($this->mode === 'edit' ? 'Edit Fee' : 'Fees & Payments');
     }
 }

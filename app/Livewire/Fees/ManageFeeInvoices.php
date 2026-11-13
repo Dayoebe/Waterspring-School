@@ -25,6 +25,8 @@ class ManageFeeInvoices extends Component
 
     public $mode = 'list';
 
+    public string $tab = 'invoices';
+
     // Filters
     public $search = '';
 
@@ -77,6 +79,7 @@ class ManageFeeInvoices extends Component
 
     protected $queryString = [
         'mode' => ['except' => 'list'],
+        'tab' => ['except' => 'invoices'],
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
     ];
@@ -104,6 +107,42 @@ class ManageFeeInvoices extends Component
             $this->mode = 'list';
             $this->feeInvoiceId = null;
         }
+
+        if ($this->mode === 'list') {
+            $this->normaliseWorkspaceTab();
+        }
+    }
+
+    public function showTab(string $tab): void
+    {
+        abort_unless(in_array($tab, ['invoices', 'catalog'], true), 404);
+
+        $permission = $tab === 'catalog' ? 'read fee' : 'read fee invoice';
+        $this->ensurePermission($permission);
+        $this->tab = $tab;
+        $this->resetPage();
+    }
+
+    public function updatedTab(): void
+    {
+        $this->normaliseWorkspaceTab();
+        $this->resetPage();
+    }
+
+    protected function normaliseWorkspaceTab(): void
+    {
+        $canReadInvoices = auth()->user()?->can('read fee invoice') ?? false;
+        $canReadCatalog = auth()->user()?->can('read fee') ?? false;
+
+        if ($this->tab === 'catalog' && $canReadCatalog) {
+            return;
+        }
+
+        if ($this->tab === 'invoices' && $canReadInvoices) {
+            return;
+        }
+
+        $this->tab = $canReadCatalog && ! $canReadInvoices ? 'catalog' : 'invoices';
     }
 
     protected function hydrateModeFromRoute(): void
@@ -688,18 +727,28 @@ class ManageFeeInvoices extends Component
     {
         $feeInvoices = collect();
 
-        if ($this->mode === 'list') {
+        if ($this->mode === 'list' && $this->tab === 'invoices') {
             $feeInvoices = $this->getFeeInvoicesQuery()->paginate($this->perPage);
         }
 
-        $pageTitle = $this->mode === 'create' ? 'Create Fee / Invoice' : 'Manage Fee Invoices';
+        $pageTitle = match ($this->mode) {
+            'create' => 'Create Fee / Invoice',
+            'edit' => 'Edit Fee Invoice',
+            default => 'Fees & Payments',
+        };
 
         return view('livewire.fees.manage-fee-invoices', compact('feeInvoices'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices'],
-                    ['href' => request()->url(), 'text' => $pageTitle, 'active' => true],
+                    [
+                        'href' => route('fees.index'),
+                        'text' => 'Fees & Payments',
+                        'active' => $this->mode === 'list',
+                    ],
+                    ...($this->mode === 'list' ? [] : [
+                        ['href' => request()->url(), 'text' => $pageTitle, 'active' => true],
+                    ]),
                 ],
             ])
             ->title($pageTitle);

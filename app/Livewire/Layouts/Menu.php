@@ -629,34 +629,11 @@ class Menu extends Component
                 'permissions' => ['read school resources'],
             ],
             [
+                'type' => 'menu-item',
                 'text' => 'Fees & Payments',
                 'icon' => 'fas fa-wallet',
-                'submenu' => array_values(array_filter([
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Fee Invoices',
-                        'route' => 'fee-invoices.index',
-                        'permissions' => ['read fee invoice'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Create Fee / Invoice',
-                        'route' => 'fee-invoices.create',
-                        'permissions' => ['create fee invoice'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Fees',
-                        'route' => 'fees.index',
-                        'permissions' => ['read fee'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Fee Categories',
-                        'route' => 'fee-categories.index',
-                        'permissions' => ['read fee category'],
-                    ],
-                ])),
+                'route' => 'fees.index',
+                'permissions' => ['read fee', 'read fee invoice'],
             ],
         ];
     }
