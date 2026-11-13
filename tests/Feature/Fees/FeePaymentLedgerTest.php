@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Fees;
 
+use App\Mail\FeePaymentAdminAlertMail;
+use App\Mail\FeePaymentReceiptMail;
 use App\Models\AuditEvent;
 use App\Models\Fee;
 use App\Models\FeeCategory;
@@ -10,10 +12,13 @@ use App\Models\FeeInvoiceRecord;
 use App\Models\School;
 use App\Models\User;
 use App\Services\FeePaymentLedger;
+use App\Services\FeePaymentNotificationService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use LogicException;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class FeePaymentLedgerTest extends TestCase
@@ -44,6 +49,37 @@ class FeePaymentLedgerTest extends TestCase
         $this->assertMatchesRegularExpression('/^WSP-PAY-\d+-\d{8}-[A-Z0-9]{10}$/', $payment->receipt_number);
         $this->assertSame(3550, (int) $payment->getRawOriginal('amount'));
         $this->assertSame(3550, (int) $record->fresh()->getRawOriginal('paid'));
+    }
+
+    public function test_each_payment_sends_one_deduplicated_alert_to_the_primary_school_superadmin(): void
+    {
+        Mail::fake();
+        [$school, $cashier, $record] = $this->paymentContext();
+        $primaryAdmin = $this->user($school, 'primary-superadmin');
+        $primaryAdmin->assignRole(Role::findOrCreate('super-admin', 'web'));
+        $secondaryAdmin = $this->user($school, 'secondary-superadmin');
+        $secondaryAdmin->assignRole(Role::findOrCreate('super_admin', 'web'));
+
+        $payment = app(FeePaymentLedger::class)->recordPayment($record, 25, $cashier, 'cash');
+        app(FeePaymentNotificationService::class)->queueReceipt($payment);
+
+        Mail::assertQueued(FeePaymentReceiptMail::class, 1);
+        Mail::assertQueued(FeePaymentAdminAlertMail::class, function ($mail) use ($primaryAdmin, $payment): bool {
+            return $mail->recipient->is($primaryAdmin) && $mail->transaction->is($payment);
+        });
+        Mail::assertQueued(FeePaymentAdminAlertMail::class, 1);
+        $this->assertDatabaseCount('fee_payment_notification_deliveries', 2);
+        $this->assertDatabaseHas('fee_payment_notification_deliveries', [
+            'fee_payment_transaction_id' => $payment->id,
+            'recipient_id' => $primaryAdmin->id,
+            'event' => 'payment_admin_alert',
+            'status' => 'queued',
+        ]);
+        $this->assertDatabaseMissing('fee_payment_notification_deliveries', [
+            'fee_payment_transaction_id' => $payment->id,
+            'recipient_id' => $secondaryAdmin->id,
+            'event' => 'payment_admin_alert',
+        ]);
     }
 
     public function test_overpayment_is_rejected_without_changing_the_ledger(): void
