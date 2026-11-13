@@ -74,7 +74,7 @@
 
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-6">
-                <a href="{{ route('fee-invoices.index') }}" 
+                <a href="{{ route('fees.index') }}"
                    wire:navigate
                    class="px-4 py-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg transition">
                     <i class="fas fa-arrow-left mr-2"></i>Back

@@ -6,7 +6,7 @@
                 <h2 class="text-2xl font-bold text-gray-900">Edit Fee</h2>
                 <p class="text-gray-600 mt-1">Update fee information</p>
             </div>
-            <a href="{{ route('fees.index') }}" 
+            <a href="{{ route('fees.index', ['tab' => 'catalog']) }}"
                wire:navigate
                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                 <i class="fas fa-arrow-left mr-2"></i>Back to List
@@ -25,7 +25,7 @@
                     </label>
                     <input type="text" 
                            id="name"
-                           wire:model="name"
+                           wire:model.live.debounce.300ms="name"
                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('name') border-red-500 @enderror"
                            placeholder="e.g., Monthly Tuition, Admission Fee">
                     @error('name')
@@ -51,16 +51,7 @@
                     @enderror
                 </div>
 
-                <!-- Default Amount -->
-                <div>
-                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
-                        Default Amount ({{ strtoupper(config('app.currency')) }}) <span class="text-red-500">*</span>
-                    </label>
-                    <input type="number" id="amount" wire:model="amount" min="0.01" max="21474836.47" step="0.01"
-                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('amount') border-red-500 @enderror">
-                    <p class="mt-1 text-sm text-amber-700">Changing an approved fee returns it to draft so the revised amount and explanation can be approved again.</p>
-                    @error('amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
+                @include('livewire.fees.partials.fees.pricing-fields', ['editing' => true])
 
                 <!-- Description -->
                 <div>

@@ -9,9 +9,11 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\User;
 use App\Traits\ResolvesAccessibleStudents;
+use Brick\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,6 +24,8 @@ class ManageFeeInvoices extends Component
     use WithPagination;
 
     public $mode = 'list';
+
+    public string $tab = 'invoices';
 
     // Filters
     public $search = '';
@@ -75,6 +79,7 @@ class ManageFeeInvoices extends Component
 
     protected $queryString = [
         'mode' => ['except' => 'list'],
+        'tab' => ['except' => 'invoices'],
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
     ];
@@ -102,13 +107,49 @@ class ManageFeeInvoices extends Component
             $this->mode = 'list';
             $this->feeInvoiceId = null;
         }
+
+        if ($this->mode === 'list') {
+            $this->normaliseWorkspaceTab();
+        }
+    }
+
+    public function showTab(string $tab): void
+    {
+        abort_unless(in_array($tab, ['invoices', 'catalog'], true), 404);
+
+        $permission = $tab === 'catalog' ? 'read fee' : 'read fee invoice';
+        $this->ensurePermission($permission);
+        $this->tab = $tab;
+        $this->resetPage();
+    }
+
+    public function updatedTab(): void
+    {
+        $this->normaliseWorkspaceTab();
+        $this->resetPage();
+    }
+
+    protected function normaliseWorkspaceTab(): void
+    {
+        $canReadInvoices = auth()->user()?->can('read fee invoice') ?? false;
+        $canReadCatalog = auth()->user()?->can('read fee') ?? false;
+
+        if ($this->tab === 'catalog' && $canReadCatalog) {
+            return;
+        }
+
+        if ($this->tab === 'invoices' && $canReadInvoices) {
+            return;
+        }
+
+        $this->tab = $canReadCatalog && ! $canReadInvoices ? 'catalog' : 'invoices';
     }
 
     protected function hydrateModeFromRoute(): void
     {
         $routeName = request()->route()?->getName();
 
-        if ($routeName === 'fee-invoices.create') {
+        if (in_array($routeName, ['fee-invoices.create', 'fees.create'], true)) {
             $this->mode = 'create';
             $this->feeInvoiceId = null;
 
@@ -232,30 +273,40 @@ class ManageFeeInvoices extends Component
         if ($this->selectedFee) {
             $fee = $this->getFeeForCurrentSchool($this->selectedFee);
             if ($fee && ! isset($this->selectedFees[$fee->id])) {
-                $this->selectedFees[$fee->id] = [
-                    'id' => $fee->id,
-                    'name' => $fee->name,
-                    'amount' => (string) $fee->default_amount->getAmount(),
-                    'waiver' => 0,
-                    'fine' => 0,
-                ];
+                $this->selectedFees[$fee->id] = $fee->invoiceDefaults();
             }
         } elseif ($this->selectedFeeCategory) {
             $category = $this->getFeeCategoryForCurrentSchool($this->selectedFeeCategory);
             if ($category) {
                 foreach ($category->fees()->approved()->orderBy('name')->get() as $fee) {
                     if (! isset($this->selectedFees[$fee->id])) {
-                        $this->selectedFees[$fee->id] = [
-                            'id' => $fee->id,
-                            'name' => $fee->name,
-                            'amount' => (string) $fee->default_amount->getAmount(),
-                            'waiver' => 0,
-                            'fine' => 0,
-                        ];
+                        $this->selectedFees[$fee->id] = $fee->invoiceDefaults();
                     }
                 }
             }
         }
+    }
+
+    #[On('fee-approved-for-invoice')]
+    public function addApprovedFeeFromCreator(int $feeId): void
+    {
+        $this->ensurePermission('create fee invoice');
+        $fee = $this->getFeeForCurrentSchool($feeId);
+
+        if (! $fee) {
+            session()->flash('error', 'The new fee could not be added because it is not approved for this school.');
+
+            return;
+        }
+
+        $this->feeCategories = FeeCategory::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->orderBy('name')
+            ->get();
+        $this->selectedFeeCategory = $fee->fee_category_id;
+        $this->fees = $fee->feeCategory->fees()->approved()->orderBy('name')->get();
+        $this->selectedFee = $fee->id;
+        $this->selectedFees[$fee->id] = $fee->invoiceDefaults();
     }
 
     public function removeFee($feeId)
@@ -319,6 +370,10 @@ class ManageFeeInvoices extends Component
         if (empty($this->selectedFees)) {
             session()->flash('error', 'Please select at least one fee');
 
+            return;
+        }
+
+        if (! $this->selectedFeeTotalsAreValid()) {
             return;
         }
 
@@ -404,6 +459,24 @@ class ManageFeeInvoices extends Component
 
         session()->flash('success', 'Fee invoice updated successfully');
         $this->switchMode('list');
+    }
+
+    protected function selectedFeeTotalsAreValid(): bool
+    {
+        $valid = true;
+
+        foreach ($this->selectedFees as $index => $fee) {
+            $total = Money::of((string) ($fee['amount'] ?? 0), config('app.currency'))
+                ->plus(Money::of((string) ($fee['fine'] ?? 0), config('app.currency')))
+                ->minus(Money::of((string) ($fee['waiver'] ?? 0), config('app.currency')));
+
+            if ($total->isLessThan(0)) {
+                $this->addError("selectedFees.{$index}.waiver", 'The waiver cannot make the fee total negative.');
+                $valid = false;
+            }
+        }
+
+        return $valid;
     }
 
     public function deleteFeeInvoice($feeInvoiceId)
@@ -654,17 +727,30 @@ class ManageFeeInvoices extends Component
     {
         $feeInvoices = collect();
 
-        if ($this->mode === 'list') {
+        if ($this->mode === 'list' && $this->tab === 'invoices') {
             $feeInvoices = $this->getFeeInvoicesQuery()->paginate($this->perPage);
         }
+
+        $pageTitle = match ($this->mode) {
+            'create' => 'Create Fee / Invoice',
+            'edit' => 'Edit Fee Invoice',
+            default => 'Fees & Payments',
+        };
 
         return view('livewire.fees.manage-fee-invoices', compact('feeInvoices'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices', 'active' => true],
+                    [
+                        'href' => route('fees.index'),
+                        'text' => 'Fees & Payments',
+                        'active' => $this->mode === 'list',
+                    ],
+                    ...($this->mode === 'list' ? [] : [
+                        ['href' => request()->url(), 'text' => $pageTitle, 'active' => true],
+                    ]),
                 ],
             ])
-            ->title('Manage Fee Invoices');
+            ->title($pageTitle);
     }
 }

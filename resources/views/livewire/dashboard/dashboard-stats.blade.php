@@ -6,6 +6,8 @@
     @else
         @php
             $user = auth()->user();
+            $formatMinor = fn (int $amount) => \Brick\Money\Money::ofMinor($amount, config('app.currency'))
+                ->formatTo(app()->getLocale());
 
             $roleTheme = match (true) {
                 $isSuperAdmin => [
@@ -260,6 +262,7 @@
             $teacherManagedClasses = collect($teacherPanel['managed_classes'] ?? []);
             $teacherSubjectAssignments = collect($teacherPanel['subject_assignments'] ?? []);
             $teacherFocusItems = $teacherPanel['focus_items'] ?? [];
+            $teacherFeeArrears = $teacherPanel['fee_arrears'] ?? ['unpaid_count' => 0, 'hidden_count' => 0, 'students' => []];
             $teacherHighlights = [
                 ['label' => 'Managed Classes', 'value' => $teacherPanel['class_teacher_classes'] ?? 0],
                 ['label' => 'Teaching Classes', 'value' => $teacherPanel['teaching_classes'] ?? 0],
@@ -386,6 +389,49 @@
                         </div>
                     @endforeach
                 </div>
+
+                @if (($teacherPanel['class_teacher_classes'] ?? 0) > 0)
+                    <div class="mt-6 rounded-xl border {{ ($teacherFeeArrears['unpaid_count'] ?? 0) > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50' }} p-5">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide {{ ($teacherFeeArrears['unpaid_count'] ?? 0) > 0 ? 'text-amber-700' : 'text-emerald-700' }}">Fee follow-up</p>
+                                <h4 class="mt-1 text-xl font-bold text-slate-900">Students with outstanding school fees</h4>
+                                <p class="mt-1 text-sm text-slate-600">Visible only for classes where you are the assigned class teacher. Payment amounts remain private.</p>
+                            </div>
+                            <span class="w-fit rounded-full bg-white px-3 py-1 text-sm font-bold text-slate-900 shadow-sm">
+                                {{ $teacherFeeArrears['unpaid_count'] ?? 0 }} unpaid
+                            </span>
+                        </div>
+
+                        @if (($teacherFeeArrears['unpaid_count'] ?? 0) > 0)
+                            <div class="mt-4 overflow-x-auto rounded-xl border border-amber-200 bg-white">
+                                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                    <thead class="bg-amber-50 text-left text-xs font-semibold uppercase tracking-wide text-amber-800">
+                                        <tr>
+                                            <th class="px-4 py-3">Student</th>
+                                            <th class="px-4 py-3">Class</th>
+                                            <th class="px-4 py-3 text-right">Outstanding invoices</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        @foreach ($teacherFeeArrears['students'] as $student)
+                                            <tr>
+                                                <td class="px-4 py-3 font-semibold text-slate-900">{{ $student['name'] }}</td>
+                                                <td class="px-4 py-3 text-slate-600">{{ $student['class_name'] }}</td>
+                                                <td class="px-4 py-3 text-right font-semibold text-amber-800">{{ $student['invoice_count'] }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (($teacherFeeArrears['hidden_count'] ?? 0) > 0)
+                                <p class="mt-3 text-sm text-amber-800">+{{ $teacherFeeArrears['hidden_count'] }} more student(s) require fee follow-up.</p>
+                            @endif
+                        @else
+                            <p class="mt-4 rounded-xl bg-white p-4 text-sm font-semibold text-emerald-800">No linked student in your managed classes currently has an outstanding invoice.</p>
+                        @endif
+                    </div>
+                @endif
 
                 @if ($teacherFocusItems !== [])
                     <div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
@@ -776,6 +822,16 @@
                             </span>
                         </div>
 
+                        <a href="{{ route('fees.index') }}" wire:navigate
+                           class="mt-5 flex flex-col gap-4 rounded-2xl border {{ ($parentPanel['outstanding_minor'] ?? 0) > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50' }} p-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs font-black uppercase tracking-widest {{ ($parentPanel['outstanding_minor'] ?? 0) > 0 ? 'text-amber-700' : 'text-emerald-700' }}">Outstanding school fees</p>
+                                <p class="mt-2 text-3xl font-black text-slate-950">{{ $formatMinor((int) ($parentPanel['outstanding_minor'] ?? 0)) }}</p>
+                                <p class="mt-1 text-sm text-slate-600">Across {{ $parentPanel['outstanding_invoice_count'] ?? 0 }} unpaid invoice(s) for your linked children.</p>
+                            </div>
+                            <span class="shrink-0 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white">View fees <i class="fas fa-arrow-right ml-2"></i></span>
+                        </a>
+
                         @if (($parentPanel['total_children'] ?? 0) > 0)
                             <div class="mt-5 space-y-3">
                                 @foreach ($parentPanel['children'] as $child)
@@ -793,6 +849,9 @@
                                             </span>
                                         </div>
                                         <p class="mt-2 text-sm opacity-80">Section: {{ $child['section_name'] }}</p>
+                                        <p class="mt-3 text-sm font-bold {{ ($child['outstanding_minor'] ?? 0) > 0 ? 'text-amber-800' : 'text-emerald-700' }}">
+                                            {{ ($child['outstanding_minor'] ?? 0) > 0 ? 'Outstanding: '.$formatMinor((int) $child['outstanding_minor']) : 'School fees cleared' }}
+                                        </p>
                                     </div>
                                 @endforeach
                             </div>

@@ -8,16 +8,37 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Create Fee Invoice</h2>
-                <p class="text-gray-600 mt-1">Generate invoices for students</p>
+                <h2 class="text-2xl font-bold text-gray-900">Create Fee / Invoice</h2>
+                <p class="text-gray-600 mt-1">Create or reuse an approved fee, then assign it to students</p>
             </div>
-            <a href="{{ route('fee-invoices.index') }}" 
+            <a href="{{ route('fees.index') }}"
                wire:navigate
                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                 <i class="fas fa-arrow-left mr-2"></i>Back to List
             </a>
         </div>
     </div>
+
+    @can('create fee')
+        <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-6"
+             x-data="{ showFeeCreator: @js(request()->routeIs('fees.create') || request()->boolean('newFee')) }">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-indigo-950">Need a new fee?</h3>
+                    <p class="mt-1 text-sm text-indigo-800">Create its category and pricing here without leaving the invoice workflow.</p>
+                </div>
+                <button type="button" x-on:click="showFeeCreator = ! showFeeCreator"
+                        class="inline-flex items-center justify-center rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">
+                    <i class="fas mr-2" :class="showFeeCreator ? 'fa-minus' : 'fa-plus'"></i>
+                    <span x-text="showFeeCreator ? 'Close fee creator' : 'Create a new fee'"></span>
+                </button>
+            </div>
+
+            <div x-show="showFeeCreator" x-cloak class="mt-6">
+                <livewire:fees.manage-fees mode="create" :embedded="true" />
+            </div>
+        </div>
+    @endcan
 
     <form wire:submit.prevent="createFeeInvoice" class="space-y-6">
         <!-- Invoice Settings -->
@@ -225,6 +246,9 @@
                                                class="w-24 rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-right"
                                                min="0"
                                                step="0.01">
+                                        @error("selectedFees.{$index}.waiver")
+                                            <p class="mt-1 w-40 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
                                     </td>
                                     <td class="px-4 py-3 text-sm">
                                         <input type="number" 
@@ -262,7 +286,7 @@
         <!-- Actions -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-end gap-3">
-                <a href="{{ route('fee-invoices.index') }}" 
+                <a href="{{ route('fees.index') }}"
                    wire:navigate
                    class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                     Cancel

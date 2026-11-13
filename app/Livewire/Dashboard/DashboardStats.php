@@ -23,6 +23,7 @@ use App\Models\Timetable;
 use App\Models\User;
 use App\Models\Weekday;
 use App\Services\Dashboard\DashboardMetrics;
+use App\Services\Fees\FeeOutstandingBalanceService;
 use App\Support\ResultPublicationStatus;
 use App\Support\TeacherResponsibilityBuilder;
 use App\Traits\RestrictsTeacherPortalAccess;
@@ -1008,6 +1009,8 @@ class DashboardStats extends Component
                 'children' => [],
                 'active_support_count' => 0,
                 'parent_actions_due' => 0,
+                'outstanding_minor' => 0,
+                'outstanding_invoice_count' => 0,
             ];
 
             return;
@@ -1033,11 +1036,15 @@ class DashboardStats extends Component
             ? collect()
             : Section::whereIn('id', $sectionIds)->pluck('name', 'id');
 
+        $feeBalances = app(FeeOutstandingBalanceService::class)
+            ->balancesByStudentIds($children->pluck('id'), (int) $user->school_id);
+
         $limit = 6;
         $displayChildren = $children
             ->take($limit)
-            ->map(function (User $child) use ($classNames, $sectionNames): array {
+            ->map(function (User $child) use ($classNames, $sectionNames, $feeBalances): array {
                 $record = $child->studentRecord;
+                $feeBalance = $feeBalances->get($child->id, ['outstanding_minor' => 0, 'invoice_count' => 0]);
 
                 $className = $record?->my_class_id ? ($classNames[$record->my_class_id] ?? 'Not assigned') : 'Not assigned';
                 $sectionName = $record?->section_id ? ($sectionNames[$record->section_id] ?? 'Not assigned') : 'Not assigned';
@@ -1047,6 +1054,8 @@ class DashboardStats extends Component
                     'class_name' => $className,
                     'section_name' => $sectionName,
                     'admission_number' => $record?->admission_number ?: 'N/A',
+                    'outstanding_minor' => $feeBalance['outstanding_minor'],
+                    'outstanding_invoice_count' => $feeBalance['invoice_count'],
                 ];
             })
             ->values()
@@ -1058,6 +1067,8 @@ class DashboardStats extends Component
             'children' => $displayChildren,
             'active_support_count' => DB::table('student_support_cases')->where('parent_id', $user->id)->where('status', '!=', 'completed')->count(),
             'parent_actions_due' => DB::table('student_support_actions as action')->join('student_support_cases as support_case', 'support_case.id', '=', 'action.student_support_case_id')->where('support_case.parent_id', $user->id)->where('action.owner_id', $user->id)->where('action.status', 'pending')->count(),
+            'outstanding_minor' => $feeBalances->sum('outstanding_minor'),
+            'outstanding_invoice_count' => $feeBalances->sum('invoice_count'),
         ];
     }
 
@@ -1291,6 +1302,11 @@ class DashboardStats extends Component
             ->count();
 
         $teacherPanel['teacher_tools'] = $teacherToolCount;
+        $teacherPanel['fee_arrears'] = app(FeeOutstandingBalanceService::class)->classTeacherArrears(
+            $user,
+            collect($teacherPanel['managed_classes'] ?? [])->pluck('id'),
+            $user->school?->academic_year_id,
+        );
         $teacherPanel['focus_items'] = $this->loadTeacherFocusItems(
             $user,
             (int) ($teacherPanel['class_teacher_classes'] ?? 0),

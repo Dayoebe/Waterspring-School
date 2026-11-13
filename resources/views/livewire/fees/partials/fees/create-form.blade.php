@@ -1,18 +1,20 @@
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900">Create Fee</h2>
-                <p class="text-gray-600 mt-1">Add a new fee item to your school</p>
+    @unless($embedded)
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Create Fee</h2>
+                    <p class="text-gray-600 mt-1">Add a new fee item to your school</p>
+                </div>
+                <a href="{{ route('fees.index', ['tab' => 'catalog']) }}"
+                   wire:navigate
+                   class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to List
+                </a>
             </div>
-            <a href="{{ route('fees.index') }}" 
-               wire:navigate
-               class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
-                <i class="fas fa-arrow-left mr-2"></i>Back to List
-            </a>
         </div>
-    </div>
+    @endunless
 
     <!-- Form Card -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -25,7 +27,7 @@
                     </label>
                     <input type="text" 
                            id="name"
-                           wire:model="name"
+                           wire:model.live.debounce.300ms="name"
                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('name') border-red-500 @enderror"
                            placeholder="e.g., Monthly Tuition, Admission Fee">
                     @error('name')
@@ -93,17 +95,7 @@
                     @endif
                 </div>
 
-                <!-- Default Amount -->
-                <div>
-                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
-                        Default Amount ({{ strtoupper(config('app.currency')) }}) <span class="text-red-500">*</span>
-                    </label>
-                    <input type="number" id="amount" wire:model="amount" min="0.01" max="21474836.47" step="0.01"
-                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('amount') border-red-500 @enderror"
-                           placeholder="0.00">
-                    <p class="mt-1 text-sm text-gray-500">This amount will prefill new invoices and can still be adjusted before an invoice is issued.</p>
-                    @error('amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
+                @include('livewire.fees.partials.fees.pricing-fields', ['editing' => false])
 
                 <!-- Description -->
                 <div>
@@ -121,17 +113,38 @@
                 </div>
 
                 <!-- Actions -->
-                <div class="flex items-center justify-end gap-3 pt-4 border-t">
-                    <a href="{{ route('fees.index') }}" 
-                       wire:navigate
-                       class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                            @if($feeCategories->isEmpty()) disabled @endif>
-                        <i class="fas fa-save mr-2"></i>Create Fee
-                    </button>
+                <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t">
+                    @if($embedded)
+                        <button type="submit"
+                                wire:loading.attr="disabled"
+                                wire:target="createFee,createAndApproveFee"
+                                class="rounded-lg bg-gray-100 px-6 py-2 font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-60"
+                                @if($feeCategories->isEmpty()) disabled @endif>
+                            <i class="fas fa-file-alt mr-2"></i>Save as Draft
+                        </button>
+                        @can('approve fee')
+                            <button type="button"
+                                    wire:click="createAndApproveFee"
+                                    wire:loading.attr="disabled"
+                                    wire:target="createFee,createAndApproveFee"
+                                    class="rounded-lg bg-indigo-700 px-6 py-2 font-semibold text-white hover:bg-indigo-800 disabled:opacity-60"
+                                    @if($feeCategories->isEmpty()) disabled @endif>
+                                <span wire:loading.remove wire:target="createAndApproveFee"><i class="fas fa-check-circle mr-2"></i>Create, Approve & Add</span>
+                                <span wire:loading wire:target="createAndApproveFee">Approving…</span>
+                            </button>
+                        @endcan
+                    @else
+                        <a href="{{ route('fees.index') }}"
+                           wire:navigate
+                           class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                                @if($feeCategories->isEmpty()) disabled @endif>
+                            <i class="fas fa-save mr-2"></i>Create Fee
+                        </button>
+                    @endif
                 </div>
             </div>
         </form>

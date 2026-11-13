@@ -431,11 +431,11 @@ Route::middleware($schoolContextMiddleware)->prefix('fees')->group(function () {
         ->name('fee-categories.edit');
 
     // Fees
-    Route::get('/', ManageFees::class)
-        ->middleware('permission:read fee')
+    Route::get('/', ManageFeeInvoices::class)
+        ->middleware('permission:read fee|read fee invoice')
         ->name('fees.index');
-    Route::get('/create', ManageFees::class)
-        ->middleware('permission:create fee')
+    Route::get('/create', ManageFeeInvoices::class)
+        ->middleware(['permission:create fee', 'permission:create fee invoice'])
         ->name('fees.create');
     Route::get('/{fee}/edit', ManageFees::class)
         ->middleware('permission:update fee')
