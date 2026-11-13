@@ -7,13 +7,14 @@ WaterSpring initializes Paystack transactions on the server and records money on
 Set these values in the deployment environment, never in source control:
 
 ```dotenv
+APP_URL=https://school.example
 PAYSTACK_ENABLED=true
-PAYSTACK_PUBLIC_KEY=pk_live_or_test_value
 PAYSTACK_SECRET_KEY=sk_live_or_test_value
-PAYSTACK_WEBHOOK_SECRET=dedicated_webhook_signing_secret
-PAYSTACK_BASE_URL=https://api.paystack.co
+# Optional. Leave blank to use APP_URL/payments/paystack/callback.
 PAYSTACK_CALLBACK_URL=https://school.example/payments/paystack/callback
 ```
+
+WaterSpring uses Paystack's hosted checkout and initializes transactions from the server, so the browser never needs a Paystack public key. Start with an `sk_test_...` secret key. Store it only in `.env` or the production secret manager; never paste it into a Blade view, JavaScript, a support ticket, or Git.
 
 Configure this webhook URL in the Paystack dashboard:
 
@@ -21,7 +22,18 @@ Configure this webhook URL in the Paystack dashboard:
 https://school.example/api/payments/paystack/webhook
 ```
 
-The application accepts Paystack's timestamped `Paystack-Signature` format when a dedicated webhook secret is configured. It also supports the legacy `x-paystack-signature` HMAC that uses the secret API key.
+Paystack signs webhook bodies in the `x-paystack-signature` header using HMAC SHA-512 and the account's secret API key. WaterSpring validates that signature before reading the event, then independently verifies the transaction with Paystack before recording money.
+
+After changing `.env`, clear cached configuration and run the secret-safe readiness check:
+
+```bash
+php artisan config:clear
+php artisan payments:paystack-status
+```
+
+The check reports whether the key and public HTTPS URLs are ready, but never displays the secret key.
+
+For local testing, expose the application through a trusted HTTPS development tunnel and use that temporary HTTPS origin for `APP_URL` and the Paystack dashboard URLs. Paystack cannot deliver a server-to-server webhook to `localhost`. Keep `PAYSTACK_ENABLED=false` whenever the tunnel is not running.
 
 ## Required services
 
@@ -34,13 +46,14 @@ php artisan schedule:work
 
 ## Go-live checklist
 
-1. Use Paystack test keys first and keep `PAYSTACK_ENABLED=false` until the callback and webhook URLs are publicly reachable over HTTPS.
-2. Clear cached configuration after setting keys: `php artisan config:clear` (or rebuild the production config cache).
-3. Make a small successful test payment and confirm one payment attempt, one immutable ledger transaction, one receipt, and one queued notification.
-4. Replay the webhook and confirm the paid balance and transaction count do not change.
-5. Test a declined payment and an amount mismatch; neither may alter the fee balance.
-6. Switch to live keys, make another small payment, and reconcile it against the Paystack dashboard/settlement report.
-7. Restrict access to secret keys, rotate any exposed value immediately, and monitor failed jobs and `review_required` payment attempts.
+1. Put an `sk_test_...` key in `.env`, keep `PAYSTACK_ENABLED=false`, and configure `APP_URL` with the real public HTTPS domain.
+2. Set the callback and webhook URLs above in the Paystack dashboard, then run `php artisan config:clear` and `php artisan payments:paystack-status`.
+3. Set `PAYSTACK_ENABLED=true` only after the readiness check passes.
+4. Make a small successful test payment and confirm one payment attempt, one immutable ledger transaction, one receipt, and one queued notification.
+5. Replay the webhook and confirm the paid balance and transaction count do not change.
+6. Test a declined payment and an amount mismatch; neither may alter the fee balance.
+7. Switch to an `sk_live_...` key, repeat a small payment, and reconcile it against the Paystack dashboard and settlement report.
+8. Restrict access to secret keys, rotate any exposed value immediately, and monitor failed jobs and `review_required` payment attempts.
 
 ## Operational statuses
 
