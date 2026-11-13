@@ -84,20 +84,22 @@
             </div>
         </div>
 
-        <!-- Select Students -->
+        <!-- Billing recipients -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Select Students</h3>
+            <h3 class="text-lg font-bold text-gray-900">Who should be billed?</h3>
+            <p class="mb-4 mt-1 text-sm text-gray-600">Class billing creates a separate invoice obligation for every active student currently in the selected class or section.</p>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Class <span class="text-red-500">*</span></label>
                     <select wire:model.live="selectedClass" 
-                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @error('selectedClass') border-red-500 @enderror">
                         <option value="">Select Class</option>
                         @foreach($classes as $class)
                             <option value="{{ $class->id }}">{{ $class->name }}</option>
                         @endforeach
                     </select>
+                    @error('selectedClass') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -110,31 +112,42 @@
                             <option value="{{ $section->id }}">{{ $section->name }}</option>
                         @endforeach
                     </select>
+                    @error('selectedSection') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Billing scope</label>
+                    <select wire:model.live="recipientScope"
+                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                            @if(!$selectedClass) disabled @endif>
+                        <option value="class">Entire class / section</option>
+                        <option value="individual">One student only</option>
+                    </select>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Student</label>
-                    <select wire:model="selectedStudent" 
+                    <select wire:model.live="selectedStudent"
                             class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                            @if(!$selectedClass) disabled @endif>
-                        <option value="">All Students</option>
+                            @if(!$selectedClass || $recipientScope !== 'individual') disabled @endif>
+                        <option value="">Select Student</option>
                         @foreach($students as $student)
                             <option value="{{ $student->id }}">{{ $student->name }}</option>
                         @endforeach
                     </select>
-                </div>
-
-                <div class="flex items-end">
-                    <button type="button" 
-                            wire:click="addStudent"
-                            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                            @if(!$selectedClass) disabled @endif>
-                        <i class="fas fa-plus mr-2"></i>Add Student(s)
-                    </button>
+                    @error('selectedStudent') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
             </div>
 
             @if(!empty($selectedStudents))
+                <div class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                    <i class="fas fa-users mr-2" aria-hidden="true"></i>
+                    @if($recipientScope === 'class')
+                        All <strong>{{ count($selectedStudents) }}</strong> active student(s) shown below will be bound to pay the selected fee(s).
+                    @else
+                        The selected student will receive the invoice.
+                    @endif
+                </div>
                 <div class="overflow-x-auto border rounded-lg">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -142,7 +155,6 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -151,13 +163,6 @@
                                     <td class="px-4 py-3 text-sm">{{ $loop->iteration }}</td>
                                     <td class="px-4 py-3 text-sm font-medium">{{ $student['name'] }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600">{{ $student['email'] }}</td>
-                                    <td class="px-4 py-3 text-sm text-right">
-                                        <button type="button" 
-                                                wire:click="removeStudent({{ $student['id'] }})"
-                                                class="text-red-600 hover:text-red-900">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -170,8 +175,8 @@
             @else
                 <div class="text-center py-8 bg-gray-50 rounded-lg">
                     <i class="fas fa-user-plus text-gray-300 text-4xl mb-2"></i>
-                    <p class="text-gray-500">No students selected</p>
-                    <p class="text-gray-400 text-sm">Use the filters above to add students</p>
+                    <p class="text-gray-500">No billing recipients selected</p>
+                    <p class="text-gray-400 text-sm">Choose a class, then bill the whole class or select one student.</p>
                 </div>
             @endif
         </div>
@@ -291,8 +296,10 @@
                    class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                     Cancel
                 </a>
-                <button type="submit" 
-                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                <button type="submit"
+                        wire:loading.attr="disabled"
+                        wire:target="createFeeInvoice"
+                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                         @if(empty($selectedStudents) || empty($selectedFees)) disabled @endif>
                     <i class="fas fa-save mr-2"></i>Create Invoices
                 </button>

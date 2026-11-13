@@ -23,7 +23,7 @@
     <!-- Filters Card -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
         <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <!-- Search -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -31,6 +31,18 @@
                            wire:model.live.debounce.300ms="search" 
                            placeholder="Search invoices or students..."
                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <!-- Class Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                    <select wire:model.live="classFilter"
+                            class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">All Classes</option>
+                        @foreach($classes as $class)
+                            <option value="{{ $class->id }}">{{ $class->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <!-- Status Filter -->
@@ -85,8 +97,16 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Student
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Class
+                        <th wire:click="sortBy('class')"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                            <div class="flex items-center gap-2">
+                                Class
+                                @if($sortField === 'class')
+                                    <i class="fas fa-sort-{{ $sortDirection === 'asc' ? 'up' : 'down' }}"></i>
+                                @else
+                                    <i class="fas fa-sort text-gray-300"></i>
+                                @endif
+                            </div>
                         </th>
                         <th wire:click="sortBy('due_date')" 
                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
@@ -118,6 +138,10 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($feeInvoices as $invoice)
+                        @php
+                            $invoiceClass = $invoice->billingClass ?? $invoice->user->studentRecord?->myClass;
+                            $invoiceSection = $invoice->billingSection ?? $invoice->user->studentRecord?->section;
+                        @endphp
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="font-medium text-gray-900">{{ $invoice->name }}</div>
@@ -130,9 +154,9 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-600">
-                                    {{ $invoice->user->studentRecord?->myClass?->name ?? 'N/A' }}
-                                    @if($invoice->user->studentRecord?->section?->name)
-                                        - {{ $invoice->user->studentRecord->section->name }}
+                                    {{ $invoiceClass?->name ?? 'N/A' }}
+                                    @if($invoiceSection?->name)
+                                        - {{ $invoiceSection->name }}
                                     @endif
                                 </div>
                             </td>

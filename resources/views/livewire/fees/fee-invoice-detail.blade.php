@@ -1,6 +1,8 @@
 <div x-data="{ activeTab: @entangle('activeTab') }" class="space-y-6">
     @php
         $studentRecord = $feeInvoice->user->studentRecord;
+        $billingClass = $feeInvoice->billingClass ?? $studentRecord?->myClass;
+        $billingSection = $feeInvoice->billingSection ?? $studentRecord?->section;
     @endphp
     
     <!-- Header Card -->
@@ -17,9 +19,9 @@
                         <div>
                             <p class="opacity-75">Class</p>
                             <p class="font-semibold">
-                                {{ $studentRecord?->myClass?->name ?? 'N/A' }}
-                                @if($studentRecord?->section?->name)
-                                    - {{ $studentRecord->section->name }}
+                                {{ $billingClass?->name ?? 'N/A' }}
+                                @if($billingSection?->name)
+                                    - {{ $billingSection->name }}
                                 @endif
                             </p>
                         </div>

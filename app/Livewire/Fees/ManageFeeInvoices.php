@@ -7,7 +7,7 @@ use App\Models\FeeCategory;
 use App\Models\FeeInvoice;
 use App\Models\MyClass;
 use App\Models\Section;
-use App\Models\User;
+use App\Models\StudentRecord;
 use App\Traits\ResolvesAccessibleStudents;
 use Brick\Money\Money;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +33,8 @@ class ManageFeeInvoices extends Component
     public $statusFilter = 'all';
 
     public $yearFilter = '';
+
+    public $classFilter = '';
 
     // Sorting & Pagination
     public $sortField = 'due_date';
@@ -71,6 +73,8 @@ class ManageFeeInvoices extends Component
 
     public $selectedStudent = '';
 
+    public string $recipientScope = 'class';
+
     public $selectedFeeCategory = '';
 
     public $selectedFee = '';
@@ -82,6 +86,7 @@ class ManageFeeInvoices extends Component
         'tab' => ['except' => 'invoices'],
         'search' => ['except' => ''],
         'statusFilter' => ['except' => 'all'],
+        'classFilter' => ['except' => ''],
     ];
 
     public function mount()
@@ -110,15 +115,20 @@ class ManageFeeInvoices extends Component
         }
 
         if ($this->mode === 'list') {
+            $this->loadClasses();
             $this->normaliseWorkspaceTab();
         }
     }
 
     public function showTab(string $tab): void
     {
-        abort_unless(in_array($tab, ['invoices', 'catalog'], true), 404);
+        abort_unless(in_array($tab, ['invoices', 'catalog', 'collections'], true), 404);
 
-        $permission = $tab === 'catalog' ? 'read fee' : 'read fee invoice';
+        $permission = match ($tab) {
+            'catalog' => 'read fee',
+            'collections' => 'update fee invoice',
+            default => 'read fee invoice',
+        };
         $this->ensurePermission($permission);
         $this->tab = $tab;
         $this->resetPage();
@@ -134,6 +144,11 @@ class ManageFeeInvoices extends Component
     {
         $canReadInvoices = auth()->user()?->can('read fee invoice') ?? false;
         $canReadCatalog = auth()->user()?->can('read fee') ?? false;
+        $canManageCollections = auth()->user()?->can('update fee invoice') ?? false;
+
+        if ($this->tab === 'collections' && $canManageCollections) {
+            return;
+        }
 
         if ($this->tab === 'catalog' && $canReadCatalog) {
             return;
@@ -180,15 +195,7 @@ class ManageFeeInvoices extends Component
     {
         $this->ensurePermission('create fee invoice');
 
-        $classesQuery = MyClass::whereHas('classGroup', function ($q) {
-            $q->where('school_id', auth()->user()->school_id);
-        });
-
-        if ($this->isRestrictedStudentPortalViewer()) {
-            $classesQuery->whereIn('id', $this->accessibleClassIdsForStudentPortal());
-        }
-
-        $this->classes = $classesQuery->orderBy('name')->get();
+        $this->loadClasses();
 
         $this->feeCategories = FeeCategory::query()
             ->where('school_id', auth()->user()->school_id)
@@ -201,21 +208,49 @@ class ManageFeeInvoices extends Component
 
     public function updatedSelectedClass()
     {
-        if ($this->selectedClass) {
-            $class = $this->getClassForCurrentSchool($this->selectedClass);
-            $this->sections = $class
-                ? $class->sections()->orderBy('name')->get()
-                : collect();
+        if (! $this->selectedClass) {
+            $this->sections = collect();
+            $this->students = collect();
             $this->selectedSection = '';
             $this->selectedStudent = '';
-            $this->updateStudentsList();
+            $this->selectedStudents = [];
+
+            return;
         }
+
+        $class = $this->getClassForCurrentSchool($this->selectedClass);
+        $this->sections = $class
+            ? $class->sections()->orderBy('name')->get()
+            : collect();
+        $this->selectedSection = '';
+        $this->selectedStudent = '';
+        $this->updateStudentsList();
+        $this->syncSelectedStudentsForBilling();
     }
 
     public function updatedSelectedSection()
     {
         $this->selectedStudent = '';
         $this->updateStudentsList();
+        $this->syncSelectedStudentsForBilling();
+    }
+
+    public function updatedRecipientScope(): void
+    {
+        if (! in_array($this->recipientScope, ['class', 'individual'], true)) {
+            $this->recipientScope = 'class';
+        }
+
+        if ($this->recipientScope === 'class') {
+            $this->selectedStudent = '';
+        }
+
+        $this->syncSelectedStudentsForBilling();
+    }
+
+    public function updatedSelectedStudent(): void
+    {
+        $this->syncSelectedStudentsForBilling();
     }
 
     public function updateStudentsList()
@@ -229,33 +264,29 @@ class ManageFeeInvoices extends Component
         $this->students = $this->studentSelectionQuery()->get();
     }
 
-    public function addStudent()
+    protected function syncSelectedStudentsForBilling(): void
     {
-        $this->ensurePermission('create fee invoice');
+        $this->selectedStudents = [];
 
-        $students = collect();
+        if (! $this->selectedClass) {
+            return;
+        }
 
-        if ($this->selectedStudent) {
-            $student = $this->getStudentForCurrentSchool($this->selectedStudent);
-            $students = $student ? collect([$student]) : collect();
-        } elseif ($this->selectedClass) {
-            $students = $this->studentSelectionQuery()->get();
+        $students = collect($this->students);
+
+        if ($this->recipientScope === 'individual') {
+            $students = $this->selectedStudent
+                ? $students->where('id', (int) $this->selectedStudent)
+                : collect();
         }
 
         foreach ($students as $student) {
-            if (! isset($this->selectedStudents[$student->id])) {
-                $this->selectedStudents[$student->id] = [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'email' => $student->email,
-                ];
-            }
+            $this->selectedStudents[$student->id] = [
+                'id' => $student->id,
+                'name' => $student->name,
+                'email' => $student->email,
+            ];
         }
-    }
-
-    public function removeStudent($studentId)
-    {
-        unset($this->selectedStudents[$studentId]);
     }
 
     public function updatedSelectedFeeCategory()
@@ -377,6 +408,28 @@ class ManageFeeInvoices extends Component
     {
         $this->ensurePermission('create fee invoice');
 
+        $class = $this->getClassForCurrentSchool($this->selectedClass);
+        if (! $class) {
+            $this->addError('selectedClass', 'Select a class from your current school.');
+
+            return;
+        }
+
+        if ($this->selectedSection && ! $this->getSectionForCurrentSchool($this->selectedSection, $class->id)) {
+            $this->addError('selectedSection', 'Select a section that belongs to the chosen class.');
+
+            return;
+        }
+
+        if ($this->recipientScope === 'individual' && ! $this->selectedStudent) {
+            $this->addError('selectedStudent', 'Select the student who should receive this invoice.');
+
+            return;
+        }
+
+        $this->updateStudentsList();
+        $this->syncSelectedStudentsForBilling();
+
         $this->validate([
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
@@ -387,7 +440,7 @@ class ManageFeeInvoices extends Component
         ]);
 
         if (empty($this->selectedStudents)) {
-            session()->flash('error', 'Please select at least one student');
+            session()->flash('error', 'No active students were found for the selected billing scope.');
 
             return;
         }
@@ -434,7 +487,9 @@ class ManageFeeInvoices extends Component
             return;
         }
 
-        DB::transaction(function () use ($students, $fees, $selectedFeesById) {
+        $recipientCount = $students->count();
+
+        DB::transaction(function () use ($students, $fees, $selectedFeesById, $class) {
             foreach ($students as $student) {
                 $invoiceName = $this->generateInvoiceNumber();
 
@@ -444,6 +499,8 @@ class ManageFeeInvoices extends Component
                     'due_date' => $this->due_date,
                     'note' => $this->note ?: null,
                     'user_id' => $student->id,
+                    'my_class_id' => $class->id,
+                    'section_id' => $this->selectedSection ?: null,
                 ]);
 
                 foreach ($fees as $fee) {
@@ -458,7 +515,7 @@ class ManageFeeInvoices extends Component
             }
         });
 
-        session()->flash('success', 'Fee invoices created successfully');
+        session()->flash('success', "Fee invoices created for {$recipientCount} student(s).");
         $this->switchMode('list');
     }
 
@@ -538,13 +595,17 @@ class ManageFeeInvoices extends Component
 
     public function clearFilters()
     {
-        $this->reset(['search', 'statusFilter']);
+        $this->reset(['search', 'statusFilter', 'classFilter']);
         $this->yearFilter = date('Y');
         $this->resetPage();
     }
 
     public function sortBy($field)
     {
+        if (! in_array($field, ['name', 'class', 'due_date'], true)) {
+            return;
+        }
+
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
@@ -559,8 +620,10 @@ class ManageFeeInvoices extends Component
             'feeInvoiceId', 'issue_date', 'due_date', 'note',
             'selectedStudents', 'selectedFees', 'selectedClass',
             'selectedSection', 'selectedStudent', 'selectedFeeCategory',
-            'selectedFee', 'feeAmounts',
+            'selectedFee', 'feeAmounts', 'recipientScope',
         ]);
+
+        $this->recipientScope = 'class';
     }
 
     protected function getFeeInvoicesQuery()
@@ -568,7 +631,14 @@ class ManageFeeInvoices extends Component
         $query = FeeInvoice::whereHas('user', function ($q) {
             $q->where('school_id', auth()->user()->school_id);
         })
-            ->with(['user', 'user.studentRecord.myClass', 'user.studentRecord.section', 'feeInvoiceRecords'])
+            ->with([
+                'user',
+                'user.studentRecord.myClass',
+                'user.studentRecord.section',
+                'billingClass',
+                'billingSection',
+                'feeInvoiceRecords',
+            ])
             ->when($this->search, function ($q) {
                 $q->where(function ($query) {
                     $query->where('name', 'like', '%'.$this->search.'%')
@@ -579,6 +649,16 @@ class ManageFeeInvoices extends Component
             })
             ->when($this->yearFilter, function ($q) {
                 $q->whereYear('due_date', $this->yearFilter);
+            })
+            ->when($this->classFilter, function ($q) {
+                $q->where(function ($query) {
+                    $query->where('fee_invoices.my_class_id', $this->classFilter)
+                        ->orWhere(function ($legacyQuery) {
+                            $legacyQuery->whereNull('fee_invoices.my_class_id')
+                                ->whereHas('user.studentRecord', fn ($studentQuery) => $studentQuery
+                                    ->where('my_class_id', $this->classFilter));
+                        });
+                });
             });
 
         if ($this->isRestrictedStudentPortalViewer()) {
@@ -602,7 +682,33 @@ class ManageFeeInvoices extends Component
             });
         }
 
+        if ($this->sortField === 'class') {
+            return $query
+                ->orderBy(
+                    MyClass::query()
+                        ->select('name')
+                        ->whereColumn('my_classes.id', 'fee_invoices.my_class_id'),
+                    $this->sortDirection
+                )
+                ->orderBy('name');
+        }
+
         return $query->orderBy($this->sortField, $this->sortDirection);
+    }
+
+    protected function loadClasses(): void
+    {
+        $classesQuery = MyClass::query()
+            ->whereHas('classGroup', function ($query) {
+                $query->where('school_id', auth()->user()->school_id);
+            })
+            ->instructional();
+
+        if ($this->isRestrictedStudentPortalViewer()) {
+            $classesQuery->whereIn('id', $this->accessibleClassIdsForStudentPortal());
+        }
+
+        $this->classes = $classesQuery->orderBy('name')->get();
     }
 
     protected function getClassForCurrentSchool($classId): ?MyClass
@@ -641,17 +747,6 @@ class ManageFeeInvoices extends Component
         }
 
         return $query->first();
-    }
-
-    protected function getStudentForCurrentSchool($studentId): ?User
-    {
-        if (! $studentId) {
-            return null;
-        }
-
-        return $this->portalAccessibleStudentsQuery()
-            ->with('studentRecord')
-            ->find($studentId);
     }
 
     protected function getFeeCategoryForCurrentSchool($feeCategoryId): ?FeeCategory
@@ -711,18 +806,16 @@ class ManageFeeInvoices extends Component
 
     protected function studentSelectionQuery()
     {
+        $activeStudentRecordIds = StudentRecord::activeStudentRecordIdsForSchoolAcademicYear(
+            auth()->user()?->school_id,
+            auth()->user()?->school?->academic_year_id,
+            $this->selectedClass ? (int) $this->selectedClass : null,
+            $this->selectedSection ? (int) $this->selectedSection : null,
+        );
+
         return $this->portalAccessibleStudentsQuery()
             ->with(['studentRecord.myClass', 'studentRecord.section'])
-            ->when($this->selectedClass, function ($query) {
-                $query->whereHas('studentRecord', function ($studentQuery) {
-                    $studentQuery->where('my_class_id', $this->selectedClass);
-                });
-            })
-            ->when($this->selectedSection, function ($query) {
-                $query->whereHas('studentRecord', function ($studentQuery) {
-                    $studentQuery->where('section_id', $this->selectedSection);
-                });
-            })
+            ->whereHas('studentRecord', fn ($query) => $query->whereIn('id', $activeStudentRecordIds))
             ->orderBy('name');
     }
 

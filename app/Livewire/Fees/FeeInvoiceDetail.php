@@ -93,6 +93,8 @@ class FeeInvoiceDetail extends Component
         $this->feeInvoice = $query->with([
             'user.studentRecord.myClass',
             'user.studentRecord.section',
+            'billingClass',
+            'billingSection',
             'feeInvoiceRecords.fee',
             'feeInvoiceRecords.paymentTransactions.cashier',
             'feeInvoiceRecords.paymentTransactions.reversal',
@@ -472,6 +474,8 @@ class FeeInvoiceDetail extends Component
         $this->feeInvoice->refresh()->load([
             'user.studentRecord.myClass',
             'user.studentRecord.section',
+            'billingClass',
+            'billingSection',
             'feeInvoiceRecords.fee',
             'feeInvoiceRecords.paymentTransactions.cashier',
             'feeInvoiceRecords.paymentTransactions.reversal',

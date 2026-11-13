@@ -31,6 +31,8 @@ class FeeInvoiceController extends Controller
         $feeInvoice = $query->with([
             'user.studentRecord.myClass',
             'user.studentRecord.section',
+            'billingClass',
+            'billingSection',
             'feeInvoiceRecords.fee',
         ])->firstOrFail();
 

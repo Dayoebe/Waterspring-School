@@ -17,7 +17,15 @@ class FeeInvoice extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['name', 'note', 'issue_date', 'due_date', 'user_id'];
+    protected $fillable = [
+        'name',
+        'note',
+        'issue_date',
+        'due_date',
+        'user_id',
+        'my_class_id',
+        'section_id',
+    ];
 
     protected $casts = [
         'issue_date' => 'datetime:Y-m-d',
@@ -64,6 +72,16 @@ class FeeInvoice extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function billingClass(): BelongsTo
+    {
+        return $this->belongsTo(MyClass::class, 'my_class_id');
+    }
+
+    public function billingSection(): BelongsTo
+    {
+        return $this->belongsTo(Section::class, 'section_id');
     }
 
     /**
