@@ -93,6 +93,7 @@ class ManageFeeInvoices extends Component
         if ($this->mode === 'create') {
             if ($this->modeIsAllowed('create')) {
                 $this->loadDataForCreate();
+                $this->prefillApprovedFeeFromRequest();
             } else {
                 $this->mode = 'list';
             }
@@ -299,6 +300,30 @@ class ManageFeeInvoices extends Component
             return;
         }
 
+        $this->selectApprovedFee($fee);
+    }
+
+    protected function prefillApprovedFeeFromRequest(): void
+    {
+        $feeId = request()->integer('fee');
+
+        if ($feeId <= 0) {
+            return;
+        }
+
+        $fee = $this->getFeeForCurrentSchool($feeId);
+
+        if (! $fee) {
+            session()->flash('error', 'That fee is unavailable or has not been approved for this school.');
+
+            return;
+        }
+
+        $this->selectApprovedFee($fee);
+    }
+
+    protected function selectApprovedFee(Fee $fee): void
+    {
         $this->feeCategories = FeeCategory::query()
             ->where('school_id', auth()->user()->school_id)
             ->orderBy('name')

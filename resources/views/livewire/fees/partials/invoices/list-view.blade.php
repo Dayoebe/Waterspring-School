@@ -212,12 +212,15 @@
                                 <div class="flex flex-col items-center justify-center">
                                     <i class="fas fa-file-invoice-dollar text-gray-300 text-5xl mb-4"></i>
                                     <p class="text-gray-500 text-lg">No fee invoices found</p>
-                                    <p class="text-gray-400 text-sm mt-1">Create your first invoice to get started</p>
+                                    <p class="mt-1 max-w-xl text-sm text-gray-500">
+                                        Catalogue fees appear here only after you assign them to one or more students.
+                                        Approval makes a fee available for invoicing; it does not automatically charge every student.
+                                    </p>
                                     @can('create fee invoice')
-                                        <a href="{{ route('fee-invoices.create') }}" 
+                                        <a href="{{ route('fee-invoices.create') }}"
                                            wire:navigate
                                            class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                                            <i class="fas fa-plus mr-2"></i>Create Fee / Invoice
+                                            <i class="fas fa-user-plus mr-2"></i>Assign Fees to Students
                                         </a>
                                     @endcan
                                 </div>
