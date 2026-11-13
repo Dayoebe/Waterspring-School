@@ -13,6 +13,7 @@ use Brick\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -109,7 +110,7 @@ class ManageFeeInvoices extends Component
     {
         $routeName = request()->route()?->getName();
 
-        if ($routeName === 'fee-invoices.create') {
+        if (in_array($routeName, ['fee-invoices.create', 'fees.create'], true)) {
             $this->mode = 'create';
             $this->feeInvoiceId = null;
 
@@ -245,6 +246,28 @@ class ManageFeeInvoices extends Component
                 }
             }
         }
+    }
+
+    #[On('fee-approved-for-invoice')]
+    public function addApprovedFeeFromCreator(int $feeId): void
+    {
+        $this->ensurePermission('create fee invoice');
+        $fee = $this->getFeeForCurrentSchool($feeId);
+
+        if (! $fee) {
+            session()->flash('error', 'The new fee could not be added because it is not approved for this school.');
+
+            return;
+        }
+
+        $this->feeCategories = FeeCategory::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->orderBy('name')
+            ->get();
+        $this->selectedFeeCategory = $fee->fee_category_id;
+        $this->fees = $fee->feeCategory->fees()->approved()->orderBy('name')->get();
+        $this->selectedFee = $fee->id;
+        $this->selectedFees[$fee->id] = $fee->invoiceDefaults();
     }
 
     public function removeFee($feeId)
@@ -669,13 +692,16 @@ class ManageFeeInvoices extends Component
             $feeInvoices = $this->getFeeInvoicesQuery()->paginate($this->perPage);
         }
 
+        $pageTitle = $this->mode === 'create' ? 'Create Fee / Invoice' : 'Manage Fee Invoices';
+
         return view('livewire.fees.manage-fee-invoices', compact('feeInvoices'))
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices', 'active' => true],
+                    ['href' => route('fee-invoices.index'), 'text' => 'Fee Invoices'],
+                    ['href' => request()->url(), 'text' => $pageTitle, 'active' => true],
                 ],
             ])
-            ->title('Manage Fee Invoices');
+            ->title($pageTitle);
     }
 }

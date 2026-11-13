@@ -20,6 +20,8 @@ class ManageFees extends Component
 
     public $mode = 'list';
 
+    public bool $embedded = false;
+
     // Filters
     public $search = '';
 
@@ -202,13 +204,53 @@ class ManageFees extends Component
     {
         $this->ensurePermission('create fee');
 
+        $this->createDraftFee();
+
+        if ($this->embedded) {
+            session()->flash('success', 'Fee saved as a draft. It must be approved before it can be added to an invoice.');
+            $this->resetForm();
+
+            return;
+        }
+
+        session()->flash('success', 'Fee created as a draft. Approve it when the amount and explanation are ready for parents.');
+        $this->switchMode('list');
+    }
+
+    public function createAndApproveFee(FeeApprovalService $approvals): void
+    {
+        abort_unless($this->embedded, 404);
+        $this->ensurePermission('create fee');
+        $this->ensurePermission('approve fee');
+
+        $fee = $this->createDraftFee();
+
+        try {
+            $result = $approvals->approve($fee, auth()->user());
+        } catch (DomainException $exception) {
+            session()->flash('error', $exception->getMessage());
+
+            return;
+        }
+
+        $notifications = $result['notifications'];
+        $this->dispatch('fee-approved-for-invoice', feeId: $fee->id);
+        $this->resetForm();
+        session()->flash(
+            'success',
+            "Fee created, approved, and added to this invoice. {$notifications['queued']} parent email(s) queued"
+            .($notifications['failed'] > 0 ? "; {$notifications['failed']} could not be queued." : '.')
+        );
+    }
+
+    protected function createDraftFee(): Fee
+    {
         $this->validate($this->feeRules());
 
-        // Verify category belongs to school
         $this->getFeeCategoryForCurrentSchool($this->fee_category_id);
 
-        DB::transaction(function () {
-            Fee::create([
+        return DB::transaction(function (): Fee {
+            return Fee::create([
                 'name' => $this->name,
                 'description' => $this->description ?: null,
                 'fee_category_id' => $this->fee_category_id,
@@ -217,9 +259,6 @@ class ManageFees extends Component
                 'approval_version' => 0,
             ]);
         });
-
-        session()->flash('success', 'Fee created as a draft. Approve it when the amount and explanation are ready for parents.');
-        $this->switchMode('list');
     }
 
     public function updateFee()

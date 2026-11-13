@@ -222,6 +222,60 @@ class FeeCatalogWorkflowTest extends TestCase
         $this->assertDatabaseMissing('fees', ['name' => 'Invalid waiver fee']);
     }
 
+    public function test_both_create_urls_render_the_same_unified_fee_and_invoice_workspace(): void
+    {
+        Mail::fake();
+        $school = $this->school('MERGED');
+        $manager = $this->user($school, 'finance-manager');
+        $manager->givePermissionTo([
+            Permission::findOrCreate('create fee', 'web'),
+            Permission::findOrCreate('create fee category', 'web'),
+            Permission::findOrCreate('approve fee', 'web'),
+            Permission::findOrCreate('create fee invoice', 'web'),
+        ]);
+        $category = FeeCategory::query()->create([
+            'school_id' => $school->id,
+            'name' => 'Unified workspace category',
+        ]);
+
+        $this->actingAs($manager);
+        $this->get(route('fees.create'))
+            ->assertOk()
+            ->assertSee('Create Fee / Invoice')
+            ->assertSee('Save as Draft');
+        $this->get(route('fee-invoices.create'))
+            ->assertOk()
+            ->assertSee('Create Fee / Invoice')
+            ->assertSee('Save as Draft');
+
+        $creator = Livewire::actingAs($manager)
+            ->test(ManageFees::class)
+            ->set('embedded', true)
+            ->call('switchMode', 'create')
+            ->set('name', 'Unified term fee')
+            ->set('fee_category_id', $category->id)
+            ->set('amount', '20000')
+            ->set('waiverType', Fee::WAIVER_PERCENTAGE)
+            ->set('waiverPercentage', '10')
+            ->set('fine', '500')
+            ->set('description', 'Created and approved inside the unified invoice workspace.')
+            ->call('createAndApproveFee')
+            ->assertHasNoErrors();
+
+        $fee = Fee::query()->where('name', 'Unified term fee')->firstOrFail();
+        $creator->assertDispatched('fee-approved-for-invoice', feeId: $fee->id);
+        $this->assertSame('approved', $fee->status);
+
+        Livewire::actingAs($manager)
+            ->test(ManageFeeInvoices::class)
+            ->call('switchMode', 'create')
+            ->call('addApprovedFeeFromCreator', $fee->id)
+            ->assertSet('selectedFeeCategory', $category->id)
+            ->assertSet("selectedFees.{$fee->id}.amount", '20000.00')
+            ->assertSet("selectedFees.{$fee->id}.waiver", '2000.00')
+            ->assertSet("selectedFees.{$fee->id}.fine", '500.00');
+    }
+
     private function fee(School $school, string $name, int|float $amount, string $description): Fee
     {
         $category = FeeCategory::query()->create([

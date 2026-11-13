@@ -11,7 +11,7 @@
                     <a href="{{ route('fees.create') }}" 
                        wire:navigate
                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                        <i class="fas fa-plus mr-2"></i>Create Fee
+                        <i class="fas fa-plus mr-2"></i>Create Fee / Invoice
                     </a>
                 @endcan
             </div>
@@ -190,7 +190,7 @@
                                         <a href="{{ route('fees.create') }}" 
                                            wire:navigate
                                            class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                                            <i class="fas fa-plus mr-2"></i>Create Fee
+                                            <i class="fas fa-plus mr-2"></i>Create Fee / Invoice
                                         </a>
                                     @endcan
                                 </div>

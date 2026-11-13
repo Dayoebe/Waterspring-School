@@ -640,7 +640,7 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Create Fee Invoice',
+                        'text' => 'Create Fee / Invoice',
                         'route' => 'fee-invoices.create',
                         'permissions' => ['create fee invoice'],
                     ],
@@ -652,21 +652,9 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
-                        'text' => 'Create Fee',
-                        'route' => 'fees.create',
-                        'permissions' => ['create fee'],
-                    ],
-                    [
-                        'type' => 'menu-item',
                         'text' => 'Fee Categories',
                         'route' => 'fee-categories.index',
                         'permissions' => ['read fee category'],
-                    ],
-                    [
-                        'type' => 'menu-item',
-                        'text' => 'Create Fee Category',
-                        'route' => 'fee-categories.create',
-                        'permissions' => ['create fee category'],
                     ],
                 ])),
             ],
