@@ -25,6 +25,7 @@ class AttemptSession extends Model
         'expires_at',
         'completed_at',
         'last_activity_at',
+        'state_revision',
         'question_order',
         'answers_snapshot',
         'flagged_question_ids',
@@ -42,6 +43,7 @@ class AttemptSession extends Model
         'answers_snapshot' => 'array',
         'flagged_question_ids' => 'array',
         'security_violations' => 'array',
+        'state_revision' => 'integer',
     ];
 
     public function assessment(): BelongsTo
@@ -64,4 +66,3 @@ class AttemptSession extends Model
         return $this->expires_at !== null && now()->greaterThanOrEqualTo($this->expires_at);
     }
 }
-

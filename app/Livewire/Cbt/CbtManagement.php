@@ -10,6 +10,7 @@ use App\Models\MyClass;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\Cbt\AssessmentLibraryQuery;
+use App\Services\AuditTrail;
 use App\Services\CbtResultImporter;
 use App\Traits\RestrictsTeacherCbtManagement;
 use Illuminate\Database\Eloquent\Builder;
@@ -350,6 +351,13 @@ class CbtManagement extends Component
             return;
         }
 
+        if ($this->editingAssessment->is_locked || $this->editingAssessment->exam_published_at) {
+            $this->editingAssessment = null;
+            session()->flash('error', 'Withdraw and unlock this CBT paper before changing its settings.');
+
+            return;
+        }
+
         $this->title = $this->editingAssessment->title;
         $this->description = $this->editingAssessment->description;
         $this->pass_percentage = $this->editingAssessment->pass_percentage;
@@ -410,6 +418,12 @@ class CbtManagement extends Component
             return;
         }
 
+        if ($assessment->is_locked || $assessment->exam_published_at) {
+            session()->flash('error', 'Withdraw and unlock this CBT paper before changing its settings.');
+
+            return;
+        }
+
         $assessment->update([
             'title' => $this->title,
             'description' => $this->description,
@@ -462,6 +476,13 @@ class CbtManagement extends Component
             'results_published_at' => now(),
             'results_published_by' => auth()->id(),
         ]);
+        $this->recordCbtAudit(
+            $assessment,
+            'cbt.results_published',
+            'CBT results were published.',
+            ['results_published_at' => null],
+            ['results_published_at' => $assessment->results_published_at?->toIso8601String()]
+        );
 
         session()->flash('message', 'CBT results published for students.');
     }
@@ -485,6 +506,11 @@ class CbtManagement extends Component
             'results_published_at' => null,
             'results_published_by' => null,
         ]);
+        $this->recordCbtAudit(
+            $assessment,
+            'cbt.results_unpublished',
+            'CBT results were hidden from students.'
+        );
 
         session()->flash('message', 'CBT results unpublished.');
     }
@@ -588,6 +614,11 @@ class CbtManagement extends Component
             'exam_published_at' => now(),
             'exam_published_by' => auth()->id(),
         ]);
+        $this->recordCbtAudit(
+            $assessment,
+            'cbt.exam_published',
+            'A locked CBT paper was published to students.'
+        );
 
         session()->flash('message', 'CBT paper published. It is now available to students.');
     }
@@ -611,6 +642,11 @@ class CbtManagement extends Component
             'exam_published_at' => null,
             'exam_published_by' => null,
         ]);
+        $this->recordCbtAudit(
+            $assessment,
+            'cbt.exam_unpublished',
+            'A CBT paper was withdrawn from students.'
+        );
 
         session()->flash('message', 'CBT paper withdrawn from students.');
     }
@@ -1140,6 +1176,16 @@ class CbtManagement extends Component
             ->delete();
 
         if ($deleted > 0) {
+            $this->recordCbtAudit(
+                $assessment,
+                'cbt.attempt_cleared',
+                'A student CBT attempt was cleared by an administrator.',
+                metadata: [
+                    'student_user_id' => (int) $userId,
+                    'attempt_number' => (int) $attemptNumber,
+                    'deleted_answer_rows' => $deleted,
+                ]
+            );
             $this->selectedAssessment = $this->assessmentParticipantsQuery()
                 ->find($assessment->id);
             session()->flash('message', "Attempt #{$attemptNumber} cleared for {$user->name}");
@@ -1187,6 +1233,15 @@ class CbtManagement extends Component
             ->delete();
 
         if ($deleted > 0) {
+            $this->recordCbtAudit(
+                $assessment,
+                'cbt.all_attempts_cleared',
+                'All CBT answer attempts for a student were cleared by an administrator.',
+                metadata: [
+                    'student_user_id' => (int) $userId,
+                    'deleted_answer_rows' => $deleted,
+                ]
+            );
             $this->selectedAssessment = $this->assessmentParticipantsQuery()
                 ->find($assessment->id);
             session()->flash('message', "All attempts cleared for {$user->name} ({$deleted} answer(s) removed)");
@@ -1487,6 +1542,27 @@ class CbtManagement extends Component
     protected function currentUserCanDeleteAssessments(): bool
     {
         return auth()->user()?->hasAnyRole(['super-admin', 'super_admin', 'principal']) === true;
+    }
+
+    protected function recordCbtAudit(
+        Assessment $assessment,
+        string $event,
+        string $description,
+        ?array $oldValues = null,
+        ?array $newValues = null,
+        ?array $metadata = null
+    ): void {
+        app(AuditTrail::class)->record(
+            $this->currentSchoolId(),
+            'cbt',
+            $event,
+            $description,
+            $assessment,
+            $oldValues,
+            $newValues,
+            $metadata,
+            subjectLabel: $assessment->title,
+        );
     }
 
     protected function currentUserCanAccessQuestionBank(Assessment $assessment): bool
