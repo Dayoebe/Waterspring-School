@@ -19,6 +19,8 @@ use App\Http\Controllers\MyClassController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\OperationalHealthController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PaystackCallbackController;
+use App\Http\Controllers\PaystackPaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ResultController;
@@ -179,6 +181,9 @@ Route::get('/prospectus', [PageController::class, 'prospectus'])->name('prospect
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
 Route::get('/team', [PageController::class, 'team'])->name('team');
 Route::get('/team/{staffProfile}', [PageController::class, 'staffProfile'])->whereNumber('staffProfile')->name('team.show');
+Route::get('/payments/paystack/callback', PaystackCallbackController::class)
+    ->middleware([PreventBrowserCaching::class, 'throttle:30,1'])
+    ->name('fee-payments.paystack.callback');
 
 /*
 |--------------------------------------------------------------------------
@@ -457,6 +462,9 @@ Route::middleware($schoolContextMiddleware)->prefix('fees')->group(function () {
     Route::get('/fee-payments/{transaction}/receipt', [FeePaymentReceiptController::class, 'show'])
         ->middleware('permission:read fee invoice')
         ->name('fee-payments.receipt');
+    Route::post('/fee-invoices/{feeInvoice}/items/{record}/paystack', [PaystackPaymentController::class, 'initialize'])
+        ->middleware(['permission:read fee invoice', 'throttle:10,1'])
+        ->name('fee-payments.paystack.initialize');
 });
 
 /*

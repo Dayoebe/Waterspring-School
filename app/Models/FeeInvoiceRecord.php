@@ -54,6 +54,9 @@ class FeeInvoiceRecord extends Model
             if ($record->paymentTransactions()->exists()) {
                 throw new LogicException('Fee items with payment history cannot be deleted.');
             }
+            if ($record->paymentAttempts()->exists()) {
+                throw new LogicException('Fee items with online payment attempts cannot be deleted.');
+            }
         });
     }
 
@@ -86,5 +89,10 @@ class FeeInvoiceRecord extends Model
     public function paymentTransactions(): HasMany
     {
         return $this->hasMany(FeePaymentTransaction::class)->orderByDesc('occurred_at')->orderByDesc('id');
+    }
+
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(FeePaymentAttempt::class);
     }
 }

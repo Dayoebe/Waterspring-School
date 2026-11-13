@@ -89,6 +89,11 @@ class FeePaymentTransaction extends Model
         return $this->hasMany(FeePaymentReconciliation::class)->latest('id');
     }
 
+    public function paymentAttempt(): HasOne
+    {
+        return $this->hasOne(FeePaymentAttempt::class);
+    }
+
     public function isReversal(): bool
     {
         return $this->type === 'reversal';

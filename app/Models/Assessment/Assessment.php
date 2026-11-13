@@ -315,7 +315,9 @@ class Assessment extends Model
             }
 
             $totalQuestions = $questionCollection?->count() ?? $this->questions()->count();
-            $answeredQuestions = $answers->count();
+            $answeredQuestions = $answers->filter(
+                fn (StudentAnswer $answer): bool => $answer->answer !== null && $answer->answer !== ''
+            )->count();
             $correctAnswers = $answers->where('is_correct', true)->count();
             $incorrectAnswers = max(0, $answeredQuestions - $correctAnswers);
             $unansweredQuestions = max(0, $totalQuestions - $answeredQuestions);
@@ -364,7 +366,9 @@ class Assessment extends Model
         }
 
         $totalQuestions = $this->questions()->count();
-        $answeredQuestions = $answers->count();
+        $answeredQuestions = $answers->filter(
+            fn (StudentAnswer $answer): bool => $answer->answer !== null && $answer->answer !== ''
+        )->count();
         $correctAnswers = $answers->where('is_correct', true)->count();
         $incorrectAnswers = max(0, $answeredQuestions - $correctAnswers);
         $unansweredQuestions = max(0, $totalQuestions - $answeredQuestions);

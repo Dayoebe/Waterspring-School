@@ -4,6 +4,7 @@ namespace App\Models\Assessment;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
 
 class StudentAnswer extends Model
@@ -11,6 +12,7 @@ class StudentAnswer extends Model
     use HasFactory;
 
     protected $fillable = [
+        'attempt_session_id',
         'user_id',
         'assessment_id',
         'question_id',
@@ -27,7 +29,7 @@ class StudentAnswer extends Model
     protected $casts = [
         'exam_data' => 'array',
         'submitted_at' => 'datetime',
-        'question_order' => 'array'
+        'question_order' => 'array',
     ];
 
     /**
@@ -81,7 +83,7 @@ class StudentAnswer extends Model
             return true;
 
         } catch (\Exception $e) {
-            \Log::error('Auto-grade failed', [
+            Log::error('Auto-grade failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -126,6 +128,11 @@ class StudentAnswer extends Model
     public function question()
     {
         return $this->belongsTo(Question::class);
+    }
+
+    public function attemptSession()
+    {
+        return $this->belongsTo(AttemptSession::class, 'attempt_session_id');
     }
 
     /**

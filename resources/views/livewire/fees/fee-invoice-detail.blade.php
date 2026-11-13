@@ -136,6 +136,9 @@
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Fine</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Paid</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
+                                @if($paystackEnabled)
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Online payment</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -155,6 +158,24 @@
                                             {{ $balance->formatTo(app()->getLocale()) }}
                                         </span>
                                     </td>
+                                    @if($paystackEnabled)
+                                        <td class="px-6 py-4 text-right">
+                                            @if($balance->isGreaterThan(0))
+                                                <form method="POST" action="{{ route('fee-payments.paystack.initialize', [$feeInvoice, $record]) }}" class="inline-flex items-center gap-2">
+                                                    @csrf
+                                                    <label class="sr-only" for="paystack-amount-{{ $record->id }}">Amount to pay</label>
+                                                    <input id="paystack-amount-{{ $record->id }}" name="amount" type="number" step="0.01" min="0.01"
+                                                           max="{{ $balance->getAmount() }}" value="{{ $balance->getAmount() }}"
+                                                           class="w-32 rounded-lg border-gray-300 text-right text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    <button type="submit" class="whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                                                        Pay with Paystack
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="text-sm font-semibold text-green-700">Paid</span>
+                                            @endif
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>
@@ -449,7 +470,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Fee</label>
-                                    <select wire:model="selectedFee" 
+                                    <select wire:model.live="selectedFee"
                                             class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                                             @if(!$selectedFeeCategory) disabled @endif>
                                         <option value="">Select Fee</option>

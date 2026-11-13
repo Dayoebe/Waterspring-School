@@ -59,7 +59,7 @@
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                     <div class="flex items-start gap-4">
                         <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-xl text-sky-800"><i class="fas fa-compass" aria-hidden="true"></i></span>
-                        <div><p class="text-xs font-black uppercase tracking-[0.18em] text-sky-700">Choose your learning path</p><h2 class="mt-2 text-2xl font-black sm:text-3xl">What would you like to understand today?</h2><p class="mt-2 text-slate-600">Only curriculum that Watersprings staff have published is available here.</p></div>
+                        <div><p class="text-xs font-black uppercase tracking-[0.18em] text-sky-700">Choose your learning path</p><h2 class="mt-2 text-2xl font-black sm:text-3xl">What would you like to learn today?</h2><p class="mt-2 text-slate-600">Only curriculum that Watersprings staff have published is available here.</p></div>
                     </div>
 
                     @if(!$school)
