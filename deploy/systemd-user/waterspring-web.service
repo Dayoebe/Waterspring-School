@@ -1,0 +1,15 @@
+[Unit]
+Description=WaterSpring Laravel development server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lampp/htdocs/WaterSpring
+Environment=APP_ENV=local
+Environment=PHP_CLI_SERVER_WORKERS=4
+ExecStart=/opt/lampp/bin/php artisan serve --host=127.0.0.1 --port=8000 --no-reload
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
