@@ -5,6 +5,7 @@ namespace App\Livewire\Fees;
 use App\Models\Fee;
 use App\Models\FeeCategory;
 use App\Services\FeeApprovalService;
+use Brick\Math\BigDecimal;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -41,6 +42,14 @@ class ManageFees extends Component
     public $fee_category_id = '';
 
     public $amount = '';
+
+    public $waiverType = Fee::WAIVER_NONE;
+
+    public $waiverAmount = 0;
+
+    public $waiverPercentage = 0;
+
+    public $fine = 0;
 
     public bool $showCategoryCreator = false;
 
@@ -149,6 +158,10 @@ class ManageFees extends Component
             'description' => $fee->description ?? '',
             'fee_category_id' => $fee->fee_category_id,
             'amount' => (string) $fee->default_amount->getAmount(),
+            'waiverType' => $fee->default_waiver_type,
+            'waiverAmount' => (string) $fee->default_waiver_amount->getAmount(),
+            'waiverPercentage' => $fee->waiverPercentage(),
+            'fine' => (string) $fee->default_fine->getAmount(),
         ]);
     }
 
@@ -189,18 +202,7 @@ class ManageFees extends Component
     {
         $this->ensurePermission('create fee');
 
-        $this->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string|min:10|max:1000',
-            'amount' => 'required|numeric|min:0.01|max:21474836.47|decimal:0,2',
-            'fee_category_id' => [
-                'required',
-                Rule::exists('fee_categories', 'id')
-                    ->where(fn ($query) => $query
-                        ->where('school_id', auth()->user()->school_id)
-                        ->whereNull('deleted_at')),
-            ],
-        ]);
+        $this->validate($this->feeRules());
 
         // Verify category belongs to school
         $this->getFeeCategoryForCurrentSchool($this->fee_category_id);
@@ -210,7 +212,7 @@ class ManageFees extends Component
                 'name' => $this->name,
                 'description' => $this->description ?: null,
                 'fee_category_id' => $this->fee_category_id,
-                'default_amount' => $this->amount,
+                ...$this->pricingAttributes(),
                 'status' => 'draft',
                 'approval_version' => 0,
             ]);
@@ -226,18 +228,7 @@ class ManageFees extends Component
 
         $fee = $this->getFeeForCurrentSchool($this->feeId);
 
-        $this->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string|min:10|max:1000',
-            'amount' => 'required|numeric|min:0.01|max:21474836.47|decimal:0,2',
-            'fee_category_id' => [
-                'required',
-                Rule::exists('fee_categories', 'id')
-                    ->where(fn ($query) => $query
-                        ->where('school_id', auth()->user()->school_id)
-                        ->whereNull('deleted_at')),
-            ],
-        ]);
+        $this->validate($this->feeRules());
 
         // Verify new category belongs to school
         $this->getFeeCategoryForCurrentSchool($this->fee_category_id);
@@ -247,7 +238,7 @@ class ManageFees extends Component
                 'name' => $this->name,
                 'description' => $this->description ?: null,
                 'fee_category_id' => $this->fee_category_id,
-                'default_amount' => $this->amount,
+                ...$this->pricingAttributes(),
                 'status' => 'draft',
                 'approved_by' => null,
                 'approved_at' => null,
@@ -312,8 +303,14 @@ class ManageFees extends Component
     {
         $this->reset([
             'feeId', 'name', 'description', 'fee_category_id', 'amount',
+            'waiverType', 'waiverAmount', 'waiverPercentage', 'fine',
             'showCategoryCreator', 'newCategoryName', 'newCategoryDescription',
         ]);
+
+        $this->waiverType = Fee::WAIVER_NONE;
+        $this->waiverAmount = 0;
+        $this->waiverPercentage = 0;
+        $this->fine = 0;
 
         if ($this->feeCategories->isNotEmpty()) {
             $this->fee_category_id = $this->feeCategories->first()->id;
@@ -339,6 +336,41 @@ class ManageFees extends Component
                 });
             })
             ->orderBy($this->sortField, $this->sortDirection);
+    }
+
+    /** @return array<string, mixed> */
+    protected function feeRules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'description' => 'required|string|min:10|max:1000',
+            'amount' => 'required|numeric|min:0.01|max:21474836.47|decimal:0,2',
+            'waiverType' => ['required', Rule::in(array_keys(Fee::waiverTypes()))],
+            'waiverAmount' => 'nullable|required_if:waiverType,fixed|numeric|min:0|max:21474836.47|decimal:0,2|lte:amount',
+            'waiverPercentage' => 'nullable|required_if:waiverType,percentage|numeric|min:0|max:100|decimal:0,2',
+            'fine' => 'required|numeric|min:0|max:21474836.47|decimal:0,2',
+            'fee_category_id' => [
+                'required',
+                Rule::exists('fee_categories', 'id')
+                    ->where(fn ($query) => $query
+                        ->where('school_id', auth()->user()->school_id)
+                        ->whereNull('deleted_at')),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected function pricingAttributes(): array
+    {
+        return [
+            'default_amount' => $this->amount,
+            'default_waiver_type' => $this->waiverType,
+            'default_waiver_amount' => $this->waiverType === Fee::WAIVER_FIXED ? $this->waiverAmount : 0,
+            'default_waiver_basis_points' => $this->waiverType === Fee::WAIVER_PERCENTAGE
+                ? BigDecimal::of((string) $this->waiverPercentage)->multipliedBy(100)->toInt()
+                : 0,
+            'default_fine' => $this->fine,
+        ];
     }
 
     protected function getFeeCategoryForCurrentSchool($feeCategoryId): FeeCategory

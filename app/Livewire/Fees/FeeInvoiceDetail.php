@@ -139,7 +139,10 @@ class FeeInvoiceDetail extends Component
     public function updatedSelectedFee(): void
     {
         $fee = $this->fees->firstWhere('id', (int) $this->selectedFee);
-        $this->newFeeAmount = $fee ? (string) $fee->default_amount->getAmount() : 0;
+        $defaults = $fee?->invoiceDefaults();
+        $this->newFeeAmount = $defaults['amount'] ?? 0;
+        $this->newFeeWaiver = $defaults['waiver'] ?? 0;
+        $this->newFeeFine = $defaults['fine'] ?? 0;
     }
 
     public function changeTab($tab)
@@ -232,6 +235,15 @@ class FeeInvoiceDetail extends Component
             ->exists();
         if ($alreadyExists) {
             session()->flash('error', 'Selected fee is already attached to this invoice.');
+
+            return;
+        }
+
+        $total = Money::of((string) $this->newFeeAmount, config('app.currency'))
+            ->plus(Money::of((string) ($this->newFeeFine ?? 0), config('app.currency')))
+            ->minus(Money::of((string) ($this->newFeeWaiver ?? 0), config('app.currency')));
+        if ($total->isLessThan(0)) {
+            $this->addError('newFeeWaiver', 'The waiver cannot make the fee total negative.');
 
             return;
         }

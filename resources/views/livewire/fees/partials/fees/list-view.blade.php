@@ -90,7 +90,16 @@
                             Category
                         </th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Default Amount
+                            Amount
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Waiver
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fine
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total
                         </th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Approval
@@ -119,6 +128,18 @@
                             <td class="px-6 py-4 whitespace-nowrap text-right font-semibold text-gray-900">
                                 {{ $fee->default_amount->formatTo(app()->getLocale()) }}
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-orange-700">
+                                {{ $fee->defaultWaiver()->formatTo(app()->getLocale()) }}
+                                @if($fee->default_waiver_type === \App\Models\Fee::WAIVER_PERCENTAGE)
+                                    <span class="block text-xs text-gray-500">{{ $fee->waiverPercentage() }}%</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-red-700">
+                                {{ $fee->default_fine->formatTo(app()->getLocale()) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right font-semibold text-gray-900">
+                                {{ $fee->defaultTotal()->formatTo(app()->getLocale()) }}
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 @if($fee->status === 'approved')
                                     <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
@@ -135,7 +156,7 @@
                                     @if($fee->status !== 'approved')
                                         @can('approve fee')
                                             <button wire:click="approveFee({{ $fee->id }})"
-                                                    wire:confirm="Approve this fee and email its amount and explanation to parents?"
+                                                    wire:confirm="Approve this fee and email its amount, waiver, fine, total, and explanation to parents?"
                                                     class="text-green-700 hover:text-green-900" title="Approve and notify parents">
                                                 <i class="fas fa-check-circle"></i>
                                             </button>
@@ -160,7 +181,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="9" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center justify-center">
                                     <i class="fas fa-receipt text-gray-300 text-5xl mb-4"></i>
                                     <p class="text-gray-500 text-lg">No fees found</p>

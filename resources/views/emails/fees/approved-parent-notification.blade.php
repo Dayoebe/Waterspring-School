@@ -10,7 +10,13 @@ Fee: **{{ $fee->name }}**
 
 Category: **{{ $fee->feeCategory->name }}**
 
-Default amount: **{{ $fee->default_amount->formatTo(app()->getLocale()) }}**
+Amount: **{{ $fee->default_amount->formatTo(app()->getLocale()) }}**
+
+Waiver: **{{ $fee->defaultWaiver()->formatTo(app()->getLocale()) }}**@if($fee->default_waiver_type === \App\Models\Fee::WAIVER_PERCENTAGE) ({{ $fee->waiverPercentage() }}%)@endif
+
+Fine: **{{ $fee->default_fine->formatTo(app()->getLocale()) }}**
+
+Expected total: **{{ $fee->defaultTotal()->formatTo(app()->getLocale()) }}**
 
 Explanation: {{ $fee->description }}
 </x-mail::panel>

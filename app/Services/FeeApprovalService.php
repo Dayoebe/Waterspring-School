@@ -33,6 +33,17 @@ class FeeApprovalService
             if ((int) $lockedFee->getRawOriginal('default_amount') <= 0) {
                 throw new DomainException('Add an amount greater than zero before approving this fee.');
             }
+            if (! array_key_exists($lockedFee->default_waiver_type, Fee::waiverTypes())) {
+                throw new DomainException('Select a valid waiver type before approving this fee.');
+            }
+            if ($lockedFee->default_waiver_type === Fee::WAIVER_FIXED
+                && (int) $lockedFee->getRawOriginal('default_waiver_amount') > (int) $lockedFee->getRawOriginal('default_amount')) {
+                throw new DomainException('The fixed waiver cannot be greater than the fee amount.');
+            }
+            if ($lockedFee->default_waiver_type === Fee::WAIVER_PERCENTAGE
+                && ((int) $lockedFee->default_waiver_basis_points < 0 || (int) $lockedFee->default_waiver_basis_points > 10000)) {
+                throw new DomainException('The percentage waiver must be between 0% and 100%.');
+            }
             if (mb_strlen(trim((string) $lockedFee->description)) < 10) {
                 throw new DomainException('Add a clear explanation of at least 10 characters before approving this fee.');
             }
@@ -54,6 +65,10 @@ class FeeApprovalService
                 [
                     'status' => 'approved',
                     'amount' => (string) $lockedFee->default_amount,
+                    'waiver_type' => $lockedFee->default_waiver_type,
+                    'waiver' => (string) $lockedFee->defaultWaiver(),
+                    'fine' => (string) $lockedFee->default_fine,
+                    'total' => (string) $lockedFee->defaultTotal(),
                     'approval_version' => $lockedFee->approval_version,
                 ],
                 actor: $approver,

@@ -225,6 +225,9 @@
                                                class="w-24 rounded border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-right"
                                                min="0"
                                                step="0.01">
+                                        @error("selectedFees.{$index}.waiver")
+                                            <p class="mt-1 w-40 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
                                     </td>
                                     <td class="px-4 py-3 text-sm">
                                         <input type="number" 

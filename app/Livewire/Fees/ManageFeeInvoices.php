@@ -9,6 +9,7 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\User;
 use App\Traits\ResolvesAccessibleStudents;
+use Brick\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
@@ -232,26 +233,14 @@ class ManageFeeInvoices extends Component
         if ($this->selectedFee) {
             $fee = $this->getFeeForCurrentSchool($this->selectedFee);
             if ($fee && ! isset($this->selectedFees[$fee->id])) {
-                $this->selectedFees[$fee->id] = [
-                    'id' => $fee->id,
-                    'name' => $fee->name,
-                    'amount' => (string) $fee->default_amount->getAmount(),
-                    'waiver' => 0,
-                    'fine' => 0,
-                ];
+                $this->selectedFees[$fee->id] = $fee->invoiceDefaults();
             }
         } elseif ($this->selectedFeeCategory) {
             $category = $this->getFeeCategoryForCurrentSchool($this->selectedFeeCategory);
             if ($category) {
                 foreach ($category->fees()->approved()->orderBy('name')->get() as $fee) {
                     if (! isset($this->selectedFees[$fee->id])) {
-                        $this->selectedFees[$fee->id] = [
-                            'id' => $fee->id,
-                            'name' => $fee->name,
-                            'amount' => (string) $fee->default_amount->getAmount(),
-                            'waiver' => 0,
-                            'fine' => 0,
-                        ];
+                        $this->selectedFees[$fee->id] = $fee->invoiceDefaults();
                     }
                 }
             }
@@ -319,6 +308,10 @@ class ManageFeeInvoices extends Component
         if (empty($this->selectedFees)) {
             session()->flash('error', 'Please select at least one fee');
 
+            return;
+        }
+
+        if (! $this->selectedFeeTotalsAreValid()) {
             return;
         }
 
@@ -404,6 +397,24 @@ class ManageFeeInvoices extends Component
 
         session()->flash('success', 'Fee invoice updated successfully');
         $this->switchMode('list');
+    }
+
+    protected function selectedFeeTotalsAreValid(): bool
+    {
+        $valid = true;
+
+        foreach ($this->selectedFees as $index => $fee) {
+            $total = Money::of((string) ($fee['amount'] ?? 0), config('app.currency'))
+                ->plus(Money::of((string) ($fee['fine'] ?? 0), config('app.currency')))
+                ->minus(Money::of((string) ($fee['waiver'] ?? 0), config('app.currency')));
+
+            if ($total->isLessThan(0)) {
+                $this->addError("selectedFees.{$index}.waiver", 'The waiver cannot make the fee total negative.');
+                $valid = false;
+            }
+        }
+
+        return $valid;
     }
 
     public function deleteFeeInvoice($feeInvoiceId)
