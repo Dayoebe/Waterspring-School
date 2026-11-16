@@ -8,6 +8,7 @@ use App\Models\FeeInvoice;
 use App\Models\FeeInvoiceRecord;
 use App\Models\FeePaymentTransaction;
 use App\Services\FeePaymentLedger;
+use App\Support\FlutterwaveConfiguration;
 use App\Support\PaystackConfiguration;
 use App\Traits\ResolvesAccessibleStudents;
 use Brick\Money\Money;
@@ -491,11 +492,16 @@ class FeeInvoiceDetail extends Component
 
     public function render()
     {
+        $paystackEnabled = app(PaystackConfiguration::class)->checkoutReady();
+        $flutterwaveEnabled = app(FlutterwaveConfiguration::class)->checkoutReady();
+
         return view('livewire.fees.fee-invoice-detail', [
             'feeInvoice' => $this->feeInvoice,
             'paymentMethods' => FeePaymentLedger::PAYMENT_METHODS,
             'reconciliationStatuses' => FeePaymentLedger::RECONCILIATION_STATUSES,
-            'paystackEnabled' => app(PaystackConfiguration::class)->checkoutReady(),
+            'paystackEnabled' => $paystackEnabled,
+            'flutterwaveEnabled' => $flutterwaveEnabled,
+            'onlinePaymentEnabled' => $paystackEnabled || $flutterwaveEnabled,
         ])
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [

@@ -47,13 +47,14 @@ php artisan schedule:work
 ## Go-live checklist
 
 1. Put an `sk_test_...` key in `.env`, keep `PAYSTACK_ENABLED=false`, and configure `APP_URL` with the real public HTTPS domain.
-2. Set the callback and webhook URLs above in the Paystack dashboard, then run `php artisan config:clear` and `php artisan payments:paystack-status`.
-3. Set `PAYSTACK_ENABLED=true` only after the readiness check passes.
-4. Make a small successful test payment and confirm one payment attempt, one immutable ledger transaction, one receipt, and one queued notification.
-5. Replay the webhook and confirm the paid balance and transaction count do not change.
-6. Test a declined payment and an amount mismatch; neither may alter the fee balance.
-7. Switch to an `sk_live_...` key, repeat a small payment, and reconcile it against the Paystack dashboard and settlement report.
-8. Restrict access to secret keys, rotate any exposed value immediately, and monitor failed jobs and `review_required` payment attempts.
+2. Set the callback and webhook URLs above in the Paystack dashboard.
+3. Set `PAYSTACK_ENABLED=true`, run `php artisan config:clear`, then run `php artisan payments:paystack-status`.
+4. If any readiness check fails, set `PAYSTACK_ENABLED=false` again until the configuration is corrected.
+5. Make a small successful test payment and confirm one payment attempt, one immutable ledger transaction, one receipt, and one queued notification.
+6. Replay the webhook and confirm the paid balance and transaction count do not change.
+7. Test a declined payment and an amount mismatch; neither may alter the fee balance.
+8. Switch to an `sk_live_...` key, repeat a small payment, and reconcile it against the Paystack dashboard and settlement report.
+9. Restrict access to secret keys, rotate any exposed value immediately, and monitor failed jobs and `review_required` payment attempts.
 
 ## Operational statuses
 

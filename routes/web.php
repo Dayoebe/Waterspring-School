@@ -13,6 +13,8 @@ use App\Http\Controllers\ExamPaperPortalController;
 use App\Http\Controllers\ExamSlotController;
 use App\Http\Controllers\FeeInvoiceController;
 use App\Http\Controllers\FeePaymentReceiptController;
+use App\Http\Controllers\FlutterwaveCallbackController;
+use App\Http\Controllers\FlutterwavePaymentController;
 use App\Http\Controllers\GradeSystemController;
 use App\Http\Controllers\LockUserAccountController;
 use App\Http\Controllers\MyClassController;
@@ -184,6 +186,9 @@ Route::get('/team/{staffProfile}', [PageController::class, 'staffProfile'])->whe
 Route::get('/payments/paystack/callback', PaystackCallbackController::class)
     ->middleware([PreventBrowserCaching::class, 'throttle:30,1'])
     ->name('fee-payments.paystack.callback');
+Route::get('/payments/flutterwave/callback', FlutterwaveCallbackController::class)
+    ->middleware([PreventBrowserCaching::class, 'throttle:30,1'])
+    ->name('fee-payments.flutterwave.callback');
 
 /*
 |--------------------------------------------------------------------------
@@ -465,6 +470,9 @@ Route::middleware($schoolContextMiddleware)->prefix('fees')->group(function () {
     Route::post('/fee-invoices/{feeInvoice}/items/{record}/paystack', [PaystackPaymentController::class, 'initialize'])
         ->middleware(['permission:read fee invoice', 'throttle:10,1'])
         ->name('fee-payments.paystack.initialize');
+    Route::post('/fee-invoices/{feeInvoice}/items/{record}/flutterwave', [FlutterwavePaymentController::class, 'initialize'])
+        ->middleware(['permission:read fee invoice', 'throttle:10,1'])
+        ->name('fee-payments.flutterwave.initialize');
 });
 
 /*

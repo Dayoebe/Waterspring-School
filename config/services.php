@@ -50,4 +50,13 @@ return [
         'timeout' => env('PAYSTACK_TIMEOUT', 15),
     ],
 
+    'flutterwave' => [
+        'enabled' => env('FLUTTERWAVE_ENABLED', false),
+        'secret_key' => env('FLUTTERWAVE_SECRET_KEY'),
+        'secret_hash' => env('FLUTTERWAVE_SECRET_HASH'),
+        'base_url' => 'https://api.flutterwave.com/v3',
+        'callback_url' => env('FLUTTERWAVE_CALLBACK_URL'),
+        'timeout' => env('FLUTTERWAVE_TIMEOUT', 15),
+    ],
+
 ];

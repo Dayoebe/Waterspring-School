@@ -57,7 +57,7 @@ The permission matrix defines super-admin, principal, admin, teacher, student, p
 
 Fee collections are recorded as append-only payment transactions with receipt numbers, cashier and payer snapshots, payment methods, external references and reconciliation history. Corrections create linked reversal transactions; payment and reconciliation rows cannot be edited or deleted. The historical `fee_invoice_records.paid` value is retained only as a derived compatibility projection, and existing non-zero balances are imported into the ledger during migration.
 
-Paystack hosted checkout is integrated with server-side initialization and verification, signed webhook handling, idempotent fulfillment, amount/currency checks, immutable receipts, and tenant-scoped access. It remains disabled until a deployment supplies its own secret key and public HTTPS URLs. See [Paystack fee payments](docs/paystack-fee-payments.md) for the readiness command and provider acceptance checklist.
+Paystack and Flutterwave hosted checkout are integrated with server-side initialization and verification, signed webhook handling, idempotent fulfillment, amount/currency checks, immutable receipts, and tenant-scoped access. Each gateway is enabled independently only after a deployment supplies its own secrets and public HTTPS URLs. See [Paystack fee payments](docs/paystack-fee-payments.md) and [Flutterwave fee payments](docs/flutterwave-fee-payments.md) for readiness commands and provider acceptance checklists.
 
 Dashboard layouts, forms, tables, and navigation share a responsive light/dark design system. See [Dashboard design](docs/dashboard-design.md) for conventions and validation coverage.
 

@@ -23,7 +23,7 @@ Date: **{{ $transaction->occurred_at->format('d M Y, H:i') }}**
 Review payment receipt
 </x-mail::button>
 
-This alert is sent once for each recorded payment. Repeated Paystack callbacks do not create another alert.
+This alert is sent once for each recorded payment. Repeated gateway callbacks do not create another alert.
 
 Thanks,<br>
 {{ $transaction->school->name }}

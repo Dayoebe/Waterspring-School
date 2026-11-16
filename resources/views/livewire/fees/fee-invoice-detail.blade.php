@@ -138,7 +138,7 @@
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Fine</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Paid</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
-                                @if($paystackEnabled)
+                                @if($onlinePaymentEnabled)
                                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Online payment</th>
                                 @endif
                             </tr>
@@ -160,19 +160,35 @@
                                             {{ $balance->formatTo(app()->getLocale()) }}
                                         </span>
                                     </td>
-                                    @if($paystackEnabled)
+                                    @if($onlinePaymentEnabled)
                                         <td class="px-6 py-4 text-right">
                                             @if($balance->isGreaterThan(0))
-                                                <form method="POST" action="{{ route('fee-payments.paystack.initialize', [$feeInvoice, $record]) }}" class="inline-flex items-center gap-2">
-                                                    @csrf
-                                                    <label class="sr-only" for="paystack-amount-{{ $record->id }}">Amount to pay</label>
-                                                    <input id="paystack-amount-{{ $record->id }}" name="amount" type="number" step="0.01" min="0.01"
-                                                           max="{{ $balance->getAmount() }}" value="{{ $balance->getAmount() }}"
-                                                           class="w-32 rounded-lg border-gray-300 text-right text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                                    <button type="submit" class="whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
-                                                        Pay with Paystack
-                                                    </button>
-                                                </form>
+                                                <div x-data="{ amount: @js((string) $balance->getAmount()) }" class="inline-flex flex-col items-end gap-2">
+                                                    <label class="sr-only" for="online-payment-amount-{{ $record->id }}">Amount to pay</label>
+                                                    <input id="online-payment-amount-{{ $record->id }}" x-model="amount" type="number" step="0.01" min="0.01"
+                                                           max="{{ $balance->getAmount() }}"
+                                                           class="w-36 rounded-lg border-gray-300 text-right text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    <div class="flex flex-wrap justify-end gap-2">
+                                                        @if($paystackEnabled)
+                                                            <form method="POST" action="{{ route('fee-payments.paystack.initialize', [$feeInvoice, $record]) }}">
+                                                                @csrf
+                                                                <input type="hidden" name="amount" :value="amount">
+                                                                <button type="submit" class="whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                                                                    Paystack
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                        @if($flutterwaveEnabled)
+                                                            <form method="POST" action="{{ route('fee-payments.flutterwave.initialize', [$feeInvoice, $record]) }}">
+                                                                @csrf
+                                                                <input type="hidden" name="amount" :value="amount">
+                                                                <button type="submit" class="whitespace-nowrap rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                                                                    Flutterwave
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    </div>
+                                                </div>
                                             @else
                                                 <span class="text-sm font-semibold text-green-700">Paid</span>
                                             @endif

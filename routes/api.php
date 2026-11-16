@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
 use App\Http\Middleware\PreventBrowserCaching;
@@ -33,3 +34,6 @@ Route::middleware([
 Route::post('/payments/paystack/webhook', PaystackWebhookController::class)
     ->middleware('throttle:120,1')
     ->name('api.fee-payments.paystack.webhook');
+Route::post('/payments/flutterwave/webhook', FlutterwaveWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('api.fee-payments.flutterwave.webhook');
