@@ -66,6 +66,8 @@ class RouteServiceProvider extends ServiceProvider
 
     protected function rateLimitKey(Request $request): string
     {
-        return Str::lower((string) $request->input('email')) . '|' . $request->ip();
+        $identity = (string) $request->input('login', $request->input('email'));
+
+        return Str::lower(trim($identity)).'|'.$request->ip();
     }
 }

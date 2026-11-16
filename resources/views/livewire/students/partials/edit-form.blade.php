@@ -20,6 +20,12 @@
                     @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                    <input type="text" wire:model="username" minlength="3" maxlength="50" class="w-full px-4 py-3 border-2 @error('username') border-red-300 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-amber-500" placeholder="e.g. ade.student">
+                    <p class="mt-1 text-xs text-gray-500">Optional; can be used instead of email to sign in.</p>
+                    @error('username') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                </div>
+                <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
                     <input type="email" wire:model="email" class="w-full px-4 py-3 border-2 @error('email') border-red-300 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-amber-500">
                     @error('email') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror

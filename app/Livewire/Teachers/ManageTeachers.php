@@ -4,6 +4,7 @@ namespace App\Livewire\Teachers;
 
 use App\Models\StaffDepartment;
 use App\Models\User;
+use App\Support\Username;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,8 @@ class ManageTeachers extends Component
     public $teacherId = null;
 
     public $name = '';
+
+    public $username = '';
 
     public $email = '';
 
@@ -95,6 +98,7 @@ class ManageTeachers extends Component
 
         $this->fill([
             'name' => $teacher->name,
+            'username' => $teacher->username ?? '',
             'email' => $teacher->email,
             'gender' => $teacher->gender ?? '',
             'birthday' => $teacher->birthday ?
@@ -112,9 +116,11 @@ class ManageTeachers extends Component
     public function createTeacher()
     {
         $this->authorize('create', [User::class, 'teacher']);
+        $this->username = Username::normalize($this->username) ?? '';
 
         $validated = $this->validate([
             'name' => 'required|string|max:255',
+            'username' => Username::rules(),
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
             'gender' => 'required|in:male,female',
@@ -125,6 +131,7 @@ class ManageTeachers extends Component
         DB::transaction(function () {
             $user = User::create([
                 'name' => $this->name,
+                'username' => $this->username,
                 'email' => $this->email,
                 'password' => bcrypt($this->password),
                 'gender' => $this->gender,
@@ -155,9 +162,11 @@ class ManageTeachers extends Component
             ->findOrFail($this->teacherId);
 
         $this->authorize('update', [$teacher, 'teacher']);
+        $this->username = Username::normalize($this->username) ?? '';
 
         $this->validate([
             'name' => 'required|string|max:255',
+            'username' => Username::rules((int) $this->teacherId),
             'email' => 'required|email|unique:users,email,'.$this->teacherId,
             'gender' => 'required|in:male,female',
             'birthday' => 'nullable|date|before:today',
@@ -167,6 +176,7 @@ class ManageTeachers extends Component
         DB::transaction(function () use ($teacher) {
             $teacher->update([
                 'name' => $this->name,
+                'username' => $this->username,
                 'email' => $this->email,
                 'gender' => $this->gender,
                 'birthday' => $this->birthday ?: null,
@@ -223,7 +233,7 @@ class ManageTeachers extends Component
     public function resetForm()
     {
         $this->reset([
-            'teacherId', 'name', 'email', 'password', 'gender', 'birthday',
+            'teacherId', 'name', 'username', 'email', 'password', 'gender', 'birthday',
             'phone', 'address', 'blood_group', 'religion', 'nationality',
             'state', 'city',
         ]);
@@ -236,6 +246,7 @@ class ManageTeachers extends Component
             ->when($this->search, function ($q) {
                 $q->where(function ($query) {
                     $query->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('username', 'like', '%'.$this->search.'%')
                         ->orWhere('email', 'like', '%'.$this->search.'%')
                         ->orWhere('phone', 'like', '%'.$this->search.'%');
                 });

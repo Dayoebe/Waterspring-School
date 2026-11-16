@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\SchoolContext;
+use App\Support\Username;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,6 +18,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'email_is_placeholder',
         'password',
@@ -50,6 +52,11 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     protected $appends = ['profile_photo_url'];
+
+    public function setUsernameAttribute(?string $value): void
+    {
+        $this->attributes['username'] = Username::normalize($value);
+    }
 
     // Scopes
     public function scopeStudents($query)

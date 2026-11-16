@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\AccountApplication;
 use App\Models\User;
+use App\Support\Username;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
@@ -39,45 +40,56 @@ class AuthController extends Controller
     {
         return view('auth.reset-password', [
             'token' => $token,
-            'email' => $request->email
+            'email' => $request->email,
         ]);
     }
 
     public function login(Request $request)
     {
+        $login = trim((string) $request->input('login', $request->input('email')));
+        $request->merge(['login' => $login]);
+
         $request->validate([
-            'email' => 'required|email',
+            'login' => ['required', 'string', 'max:255'],
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        $isEmail = filter_var($login, FILTER_VALIDATE_EMAIL) !== false;
+        $credentials = [
+            $isEmail ? 'email' : 'username' => $isEmail ? strtolower($login) : Username::normalize($login),
+            'password' => $request->password,
+        ];
 
         if (Auth::attempt($credentials, $request->remember)) {
             $request->session()->regenerate();
-            
+
             // Check if using default password
             if (Hash::check('12345678', Auth::user()->password)) {
                 session()->flash('password_warning', true);
             }
-            
+
             return $this->redirectToDashboard();
         }
 
         throw ValidationException::withMessages([
-            'email' => __('auth.failed'),
+            'login' => __('auth.failed'),
         ]);
     }
 
     protected function redirectToDashboard()
     {
         $user = Auth::user();
+
         return redirect()->route($user->getHomeRoute());
     }
 
     public function register(Request $request)
     {
+        $request->merge(['username' => Username::normalize($request->input('username'))]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'username' => Username::rules(required: true),
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
             'school' => ['required', 'integer', 'exists:schools,id'],
@@ -90,7 +102,7 @@ class AuthController extends Controller
                 ->where('name', $validated['role'])
                 ->first();
 
-            if (!$requestedRole) {
+            if (! $requestedRole) {
                 throw ValidationException::withMessages([
                     'role' => 'The selected role is not available for registration.',
                 ]);
@@ -103,6 +115,7 @@ class AuthController extends Controller
 
             $user = User::create([
                 'name' => $validated['name'],
+                'username' => $validated['username'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'school_id' => $validated['school'],
@@ -165,7 +178,7 @@ class AuthController extends Controller
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
-                    'password' => Hash::make($password)
+                    'password' => Hash::make($password),
                 ])->setRememberToken(Str::random(60));
 
                 $user->save();
@@ -183,6 +196,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }

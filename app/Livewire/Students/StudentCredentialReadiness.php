@@ -3,6 +3,7 @@
 namespace App\Livewire\Students;
 
 use App\Models\User;
+use App\Support\Username;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -12,9 +13,15 @@ class StudentCredentialReadiness extends Component
     use WithPagination;
 
     public string $search = '';
+
     public ?int $editingStudentId = null;
+
     public string $email = '';
+
+    public string $username = '';
+
     public string $password = '';
+
     public string $passwordConfirmation = '';
 
     public function mount(): void
@@ -32,6 +39,7 @@ class StudentCredentialReadiness extends Component
         $student = $this->studentsNeedingAttention()->findOrFail($studentId);
         $this->editingStudentId = $student->id;
         $this->email = $student->email_is_placeholder ? '' : (string) $student->email;
+        $this->username = (string) $student->username;
         $this->reset(['password', 'passwordConfirmation']);
         $this->resetValidation();
     }
@@ -40,8 +48,10 @@ class StudentCredentialReadiness extends Component
     {
         $student = $this->studentsNeedingAttention()->findOrFail($this->editingStudentId);
         $passwordRequired = $student->requires_password_change || blank($student->password);
+        $this->username = Username::normalize($this->username) ?? '';
 
         $this->validate([
+            'username' => Username::rules($student->id),
             'email' => ['required', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($student->id)],
             'password' => [$passwordRequired ? 'required' : 'nullable', 'string', 'min:8', 'same:passwordConfirmation'],
             'passwordConfirmation' => [$passwordRequired ? 'required' : 'nullable', 'string'],
@@ -50,6 +60,7 @@ class StudentCredentialReadiness extends Component
         ]);
 
         $payload = [
+            'username' => $this->username,
             'email' => strtolower(trim($this->email)),
             'email_is_placeholder' => false,
             'email_verified_at' => now(),
@@ -67,7 +78,7 @@ class StudentCredentialReadiness extends Component
 
     public function cancel(): void
     {
-        $this->reset(['editingStudentId', 'email', 'password', 'passwordConfirmation']);
+        $this->reset(['editingStudentId', 'username', 'email', 'password', 'passwordConfirmation']);
         $this->resetValidation();
     }
 
@@ -94,6 +105,7 @@ class StudentCredentialReadiness extends Component
             ->when($this->search !== '', function ($query): void {
                 $query->where(function ($query): void {
                     $query->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('username', 'like', '%'.$this->search.'%')
                         ->orWhere('email', 'like', '%'.$this->search.'%')
                         ->orWhereHas('studentRecord', fn ($record) => $record->where('admission_number', 'like', '%'.$this->search.'%'));
                 });

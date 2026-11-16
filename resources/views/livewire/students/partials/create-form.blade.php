@@ -20,6 +20,12 @@
                     @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                    <input type="text" wire:model="username" minlength="3" maxlength="50" class="w-full px-4 py-3 border-2 @error('username') border-red-300 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="e.g. ade.student">
+                    <p class="mt-1 text-xs text-gray-500">Optional; can be used instead of email to sign in.</p>
+                    @error('username') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                </div>
+                <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
                     <input type="email" wire:model="email" class="w-full px-4 py-3 border-2 @error('email') border-red-300 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-indigo-500">
                     @error('email') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
@@ -128,6 +134,7 @@
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                 <div class="grid gap-4 md:grid-cols-2">
                                     <div><label class="mb-1 block text-sm font-semibold text-slate-700">Full name *</label><input type="text" wire:model="newParentName" class="w-full rounded-xl border-slate-300 px-4 py-3">@error('newParentName')<span class="mt-1 block text-sm text-red-600">{{ $message }}</span>@enderror</div>
+                                    <div><label class="mb-1 block text-sm font-semibold text-slate-700">Username</label><input type="text" wire:model="newParentUsername" minlength="3" maxlength="50" class="w-full rounded-xl border-slate-300 px-4 py-3" placeholder="Optional">@error('newParentUsername')<span class="mt-1 block text-sm text-red-600">{{ $message }}</span>@enderror</div>
                                     <div><label class="mb-1 block text-sm font-semibold text-slate-700">Email *</label><input type="email" wire:model="newParentEmail" class="w-full rounded-xl border-slate-300 px-4 py-3">@error('newParentEmail')<span class="mt-1 block text-sm text-red-600">{{ $message }}</span>@enderror</div>
                                     <div><label class="mb-1 block text-sm font-semibold text-slate-700">Gender *</label><select wire:model="newParentGender" class="w-full rounded-xl border-slate-300 px-4 py-3"><option value="">Select gender</option><option value="male">Male</option><option value="female">Female</option></select>@error('newParentGender')<span class="mt-1 block text-sm text-red-600">{{ $message }}</span>@enderror</div>
                                     <div><label class="mb-1 block text-sm font-semibold text-slate-700">Phone</label><input type="tel" wire:model="newParentPhone" class="w-full rounded-xl border-slate-300 px-4 py-3">@error('newParentPhone')<span class="mt-1 block text-sm text-red-600">{{ $message }}</span>@enderror</div>

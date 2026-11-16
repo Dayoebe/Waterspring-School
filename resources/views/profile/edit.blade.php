@@ -30,6 +30,9 @@
                     <div>
                         <h2 class="text-xl font-bold text-slate-900">{{ $user->name }}</h2>
                         <p class="text-sm text-slate-600">{{ $user->email }}</p>
+                        @if ($user->username)
+                            <p class="text-xs font-semibold text-slate-500">&#64;{{ $user->username }}</p>
+                        @endif
                         <div class="mt-2 flex flex-wrap gap-2">
                             @forelse ($roleLabels as $roleLabel)
                                 <span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase text-slate-700">
@@ -79,6 +82,15 @@
                         <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
                         @error('name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="username" class="mb-1 block text-sm font-semibold text-slate-700">Username</label>
+                        <input id="username" name="username" type="text" value="{{ old('username', $user->username) }}"
+                            minlength="3" maxlength="50" autocomplete="username"
+                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                        <p class="mt-1 text-xs text-slate-500">You can use this username instead of your email when signing in.</p>
+                        @error('username') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>

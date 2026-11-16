@@ -5,6 +5,7 @@ namespace App\Livewire\Users;
 use App\Models\School;
 use App\Models\User;
 use App\Services\AuditTrail;
+use App\Support\Username;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -25,6 +26,9 @@ class ManageUserRoles extends Component
 
     /** @var array<int, string> */
     public array $selectedRoles = [];
+
+    /** @var array<int, string> */
+    public array $usernames = [];
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -58,15 +62,15 @@ class ManageUserRoles extends Component
 
         $user = User::query()->with('roles:id,name')->findOrFail($userId);
 
-        if (!$this->canManageAcrossSchools() && (int) $user->school_id !== (int) auth()->user()?->school_id) {
-            $this->addError('selectedRoles.' . $userId, 'You can only manage users in your school.');
+        if (! $this->canManageAcrossSchools() && (int) $user->school_id !== (int) auth()->user()?->school_id) {
+            $this->addError('selectedRoles.'.$userId, 'You can only manage users in your school.');
 
             return;
         }
 
         $newRole = $this->normalizeRole((string) ($this->selectedRoles[$userId] ?? ''));
         if ($newRole === '') {
-            $this->addError('selectedRoles.' . $userId, 'Select a role before updating.');
+            $this->addError('selectedRoles.'.$userId, 'Select a role before updating.');
 
             return;
         }
@@ -76,8 +80,8 @@ class ManageUserRoles extends Component
             ->whereIn('name', $newRole === 'super-admin' ? ['super-admin', 'super_admin'] : [$newRole])
             ->exists();
 
-        if (!$roleExists) {
-            $this->addError('selectedRoles.' . $userId, 'Selected role is not available. Run permissions sync.');
+        if (! $roleExists) {
+            $this->addError('selectedRoles.'.$userId, 'Selected role is not available. Run permissions sync.');
 
             return;
         }
@@ -86,20 +90,20 @@ class ManageUserRoles extends Component
         $isActorSuperAdmin = $actor?->hasAnyRole(['super-admin', 'super_admin']) === true;
         $isTargetSuperAdmin = $user->hasAnyRole(['super-admin', 'super_admin']);
 
-        if ($newRole === 'super-admin' && !$isActorSuperAdmin) {
-            $this->addError('selectedRoles.' . $userId, 'Only super-admin can assign super-admin role.');
+        if ($newRole === 'super-admin' && ! $isActorSuperAdmin) {
+            $this->addError('selectedRoles.'.$userId, 'Only super-admin can assign super-admin role.');
 
             return;
         }
 
-        if ($isTargetSuperAdmin && !$isActorSuperAdmin) {
-            $this->addError('selectedRoles.' . $userId, 'Only super-admin can modify another super-admin account.');
+        if ($isTargetSuperAdmin && ! $isActorSuperAdmin) {
+            $this->addError('selectedRoles.'.$userId, 'Only super-admin can modify another super-admin account.');
 
             return;
         }
 
         if ($isActorSuperAdmin && (int) $user->id === (int) $actor->id && $newRole !== 'super-admin') {
-            $this->addError('selectedRoles.' . $userId, 'You cannot remove your own super-admin access.');
+            $this->addError('selectedRoles.'.$userId, 'You cannot remove your own super-admin access.');
 
             return;
         }
@@ -120,7 +124,51 @@ class ManageUserRoles extends Component
 
         $this->selectedRoles[$userId] = $newRole;
 
-        session()->flash('success', "{$user->name}'s role updated to " . $this->roleLabel($newRole) . '.');
+        session()->flash('success', "{$user->name}'s role updated to ".$this->roleLabel($newRole).'.');
+    }
+
+    public function updateUsername(int $userId): void
+    {
+        abort_unless(auth()->user()?->can('manage user roles'), 403);
+
+        $user = User::query()->findOrFail($userId);
+
+        if (! $this->canManageAcrossSchools() && (int) $user->school_id !== (int) auth()->user()?->school_id) {
+            $this->addError('usernames.'.$userId, 'You can only manage users in your school.');
+
+            return;
+        }
+
+        if ($user->hasAnyRole(['super-admin', 'super_admin']) && ! auth()->user()?->hasAnyRole(['super-admin', 'super_admin'])) {
+            $this->addError('usernames.'.$userId, 'Only super-admin can modify another super-admin account.');
+
+            return;
+        }
+
+        $this->usernames[$userId] = Username::normalize($this->usernames[$userId] ?? '') ?? '';
+        $this->validate([
+            'usernames.'.$userId => Username::rules($user->id),
+        ], [
+            'usernames.'.$userId.'.regex' => 'The username may contain only letters, numbers, dots, underscores, and hyphens.',
+        ]);
+
+        $oldUsername = $user->username;
+        $user->update(['username' => $this->usernames[$userId]]);
+
+        app(AuditTrail::class)->record(
+            $user->school_id,
+            'access',
+            'access.username_changed',
+            'A user login username was changed.',
+            $user,
+            ['username' => $oldUsername],
+            ['username' => $user->username],
+            actor: auth()->user(),
+            subjectLabel: $user->name,
+        );
+
+        $this->usernames[$userId] = (string) $user->username;
+        session()->flash('success', "{$user->name}'s username was updated.");
     }
 
     protected function canManageAcrossSchools(): bool
@@ -211,16 +259,17 @@ class ManageUserRoles extends Component
                 'school:id,name,code',
             ]);
 
-        if (!$this->canManageAcrossSchools()) {
+        if (! $this->canManageAcrossSchools()) {
             $query->where('school_id', auth()->user()?->school_id);
         } elseif ($this->schoolFilter !== 'all' && ctype_digit($this->schoolFilter)) {
             $query->where('school_id', (int) $this->schoolFilter);
         }
 
         if (trim($this->search) !== '') {
-            $search = '%' . trim($this->search) . '%';
+            $search = '%'.trim($this->search).'%';
             $query->where(function ($inner) use ($search): void {
                 $inner->where('name', 'like', $search)
+                    ->orWhere('username', 'like', $search)
                     ->orWhere('email', 'like', $search)
                     ->orWhere('phone', 'like', $search);
             });
@@ -245,7 +294,11 @@ class ManageUserRoles extends Component
             ->paginate($this->perPage);
 
         foreach ($users as $user) {
-            if (!array_key_exists($user->id, $this->selectedRoles)) {
+            if (! array_key_exists($user->id, $this->usernames)) {
+                $this->usernames[$user->id] = (string) $user->username;
+            }
+
+            if (! array_key_exists($user->id, $this->selectedRoles)) {
                 $currentRole = (string) ($user->roles->pluck('name')->first() ?? '');
                 $this->selectedRoles[$user->id] = $this->normalizeRole($currentRole);
             }

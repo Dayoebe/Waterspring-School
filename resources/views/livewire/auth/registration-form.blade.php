@@ -71,6 +71,30 @@
         </div>
 
         <div>
+            <label for="username" class="mb-2 block text-sm font-bold text-slate-700">Username</label>
+            <input
+                id="username"
+                name="username"
+                type="text"
+                value="{{ old('username') }}"
+                required
+                minlength="3"
+                maxlength="50"
+                autocomplete="username"
+                @class([
+                    'w-full rounded-xl border px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:outline-none focus:ring-4',
+                    'border-red-300 focus:border-red-500 focus:ring-red-100' => $errors->has('username'),
+                    'border-slate-300 focus:border-red-400 focus:ring-red-100' => !$errors->has('username'),
+                ])
+                placeholder="e.g. adewale.ola"
+            >
+            <p class="mt-1 text-xs text-slate-500">Use 3–50 letters, numbers, dots, underscores, or hyphens.</p>
+            @error('username')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div>
             <label for="email" class="mb-2 block text-sm font-bold text-slate-700">Email Address</label>
             <input
                 id="email"
