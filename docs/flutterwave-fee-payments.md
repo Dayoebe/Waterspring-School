@@ -2,6 +2,8 @@
 
 WaterSpring uses Flutterwave Checkout to create a hosted payment page on the server. A fee balance changes only after WaterSpring re-queries Flutterwave and confirms the transaction ID, WaterSpring reference, exact amount, currency, provider reference, and successful status.
 
+Flutterwave is one optional collection method within the [fee catalogue, invoicing, collections, and immutable ledger workflow](fees-and-payments.md). Enabling it does not create fees or invoices automatically.
+
 ## Configuration
 
 Set these values in the deployment environment and never commit real secret values:
@@ -34,7 +36,7 @@ The command never prints the secret key or webhook secret hash. For local testin
 
 ## Required services
 
-Receipts and payment notifications are queued. Keep the queue worker and scheduler supervised in production:
+Receipt email and the primary school super-administrator payment alert are queued. Keep the queue worker and scheduler supervised in production:
 
 ```bash
 php artisan queue:work --queue=default --tries=3 --backoff=60 --timeout=120

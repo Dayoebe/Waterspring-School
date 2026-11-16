@@ -2,6 +2,8 @@
 
 WaterSpring initializes Paystack transactions on the server and records money only after a second server-to-server verification. The Paystack callback and webhook share the same idempotent fulfillment path, so retries cannot create a second receipt or increase the paid balance twice.
 
+Paystack is one optional collection method within the [fee catalogue, invoicing, collections, and immutable ledger workflow](fees-and-payments.md). Enabling it does not create fees or invoices automatically.
+
 ## Configuration
 
 Set these values in the deployment environment, never in source control:
@@ -37,7 +39,7 @@ For local testing, expose the application through a trusted HTTPS development tu
 
 ## Required services
 
-Receipt email is queued. Keep both of these processes supervised in production:
+Receipt email and the primary school super-administrator payment alert are queued. Keep both of these processes supervised in production:
 
 ```bash
 php artisan queue:work --queue=default --tries=3 --backoff=60 --timeout=120

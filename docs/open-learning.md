@@ -1,6 +1,6 @@
 # Open Learning
 
-Open Learning is the public, curriculum-grounded learning experience at `/open-learning`. It uses the existing public website shell and existing ClassPilot AI provider binding. No account is required to select published curriculum, learn, ask questions, explore applications, complete assessments, or review results.
+Open Learning is the public, curriculum-grounded learning experience at `/open-learning`. It uses the public website shell and the ClassPilot AI provider binding. No account is required to select published curriculum, learn, ask questions, explore applications, complete assessments, or review the result generated for that guest session.
 
 ## Curriculum source and publication
 
@@ -33,7 +33,7 @@ Lessons are generated one section at a time. Beginner, Detailed, Practical, and 
 
 Guest activity is stored in Laravel's server-side session under `open_learning.active` and expires after the configured lifetime. It includes selection, lesson sections, conversation, Beyond the Classroom content, and assessment state. It is not inserted into permanent Open Learning tables.
 
-Students, parents, and staff roles listed in `config/open-learning.php` can explicitly save a sanitized snapshot to `open_learning_records`. Every read/update is constrained to the authenticated `user_id` and protected by `OpenLearningRecordPolicy`. A claimed session is discarded if a different authenticated account later uses the same browser session.
+Students, parents, teachers, principals, administrators, and both super-administrator role names can explicitly save a sanitized snapshot to `open_learning_records`. Applicants and basic users are not eligible. Every read/update is constrained to the authenticated `user_id` and protected by `OpenLearningRecordPolicy`. A claimed session is discarded if a different authenticated account later uses the same browser session.
 
 ## Assessments
 
@@ -68,7 +68,7 @@ If `OPEN_LEARNING_SCHOOL_ID` is absent, the resolver selects the first Waterspri
 
 ## Deployment
 
-1. Configure the public school and Groq variables.
+1. Configure the public school and one supported ClassPilot provider. Groq is the documented production example, not a hard requirement in code.
 2. Run `php artisan migrate --force`.
 3. Clear cached configuration with `php artisan optimize:clear` (or rebuild deployment caches).
 4. Build frontend assets with `npm run build`.

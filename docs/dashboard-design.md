@@ -30,3 +30,7 @@ Use the menu search to find a page by its name or task. Matching groups open aut
 Unavailable feature placeholders and duplicate result-entry links were removed from navigation. Implemented reports now appear under Reports & Analytics. Student and teacher creation links open their forms directly.
 
 Menu visibility was checked with both super-administrator role names, administrator, principal, teacher, student, and parent fixtures. Active links were checked on directory, create, and detail URLs. Browser checks exercise grouping, search, clearing/no-result states, and navigation to the student form on desktop and mobile.
+
+The current navigation also includes assignments, curriculum/schemes, clubs, ClassPilot, parent-teacher appointments, transport and authorized pickup, admissions workflow, audit history, and the consolidated fee catalogue/invoices/collections workspace. Visibility remains permission-driven; documentation of a module does not mean every role should see its menu item.
+
+The verification paragraphs above describe the browser audit performed when the shared shell was introduced. They are historical evidence, not a guarantee that every later page or current deployment has been browser-tested. Run role-specific authenticated checks after changing navigation, permissions, or shared styles.
