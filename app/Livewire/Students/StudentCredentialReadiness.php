@@ -63,7 +63,6 @@ class StudentCredentialReadiness extends Component
             'username' => $this->username,
             'email' => strtolower(trim($this->email)),
             'email_is_placeholder' => false,
-            'email_verified_at' => now(),
         ];
 
         if ($this->password !== '') {

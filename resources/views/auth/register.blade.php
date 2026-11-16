@@ -58,7 +58,7 @@
                             </p>
                             <p class="flex items-start gap-2">
                                 <i class="fas fa-circle-check mt-0.5 text-emerald-600"></i>
-                                <span>Your account will be secured with your password.</span>
+                                <span>Portal access begins only after administrator approval.</span>
                             </p>
                         </div>
                     </div>

@@ -23,7 +23,6 @@ class EnsureDefaultPasswordIsChanged
             'password.change.update',
             'profile.edit',
             'profile.update',
-            'verification.*',
             'logout'
         )) {
             return $next($request);

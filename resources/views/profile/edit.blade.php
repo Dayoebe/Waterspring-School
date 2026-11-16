@@ -57,8 +57,8 @@
                         <p class="mt-1 text-slate-800">{{ $user->school?->code ?? 'N/A' }}</p>
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <p class="font-semibold uppercase tracking-wide text-slate-500">Email Status</p>
-                        <p class="mt-1 text-slate-800">{{ $user->email_verified_at ? 'Verified' : 'Unverified' }}</p>
+                        <p class="font-semibold uppercase tracking-wide text-slate-500">Login Username</p>
+                        <p class="mt-1 text-slate-800">{{ $user->username ?: 'Use email' }}</p>
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <p class="font-semibold uppercase tracking-wide text-slate-500">Account Since</p>

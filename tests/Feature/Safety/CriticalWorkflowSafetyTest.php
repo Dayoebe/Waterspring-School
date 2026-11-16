@@ -62,9 +62,14 @@ class CriticalWorkflowSafetyTest extends TestCase
 
             $response = $this->actingAs($user)->get(route('dashboard'));
 
-            $shouldAccessDashboard
-                ? $response->assertOk()
-                : $response->assertForbidden();
+            if ($roleName === 'applicant') {
+                $response->assertRedirect(route('login'));
+                $this->assertGuest();
+            } elseif ($shouldAccessDashboard) {
+                $response->assertOk();
+            } else {
+                $response->assertForbidden();
+            }
         }
     }
 
@@ -288,7 +293,7 @@ class CriticalWorkflowSafetyTest extends TestCase
         return User::query()->forceCreate([
             'name' => ucfirst(str_replace('-', ' ', $label)),
             'email' => "{$label}-{$this->sequence}@example.test",
-            'email_verified_at' => now(),
+            'email_verified_at' => null,
             'password' => bcrypt('Password1!'),
             'school_id' => $school->id,
             'locked' => false,

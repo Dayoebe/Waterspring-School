@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
 use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\PreventGraduatedStudent;
 use App\Http\Middleware\PreventLockAccountAccess;
+use App\Http\Middleware\PreventPendingAccountAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,10 +24,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware([
     PreventBrowserCaching::class,
     'auth:sanctum',
+    PreventPendingAccountAccess::class,
     PreventLockAccountAccess::class,
     EnsureDefaultPasswordIsChanged::class,
     PreventGraduatedStudent::class,
-    'verified',
 ])->get('/user', function (Request $request) {
     return $request->user();
 });

@@ -6,7 +6,6 @@ use App\Models\AccountApplication;
 use App\Models\User;
 use App\Support\Username;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -132,8 +131,6 @@ class AuthController extends Controller
 
             return $user;
         });
-
-        event(new Registered($user));
 
         return redirect()
             ->route('login')

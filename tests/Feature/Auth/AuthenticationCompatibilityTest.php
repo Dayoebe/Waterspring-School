@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -74,6 +75,7 @@ class AuthenticationCompatibilityTest extends TestCase
 
     public function test_public_registration_requires_and_stores_a_unique_username(): void
     {
+        Notification::fake();
         $school = School::query()->create(['name' => 'Registration School', 'code' => 'REGISTER']);
         Role::findOrCreate('student', 'web');
 
@@ -91,6 +93,19 @@ class AuthenticationCompatibilityTest extends TestCase
             'email' => 'new.student@example.test',
             'username' => 'new.student',
         ]);
+
+        $applicant = User::query()->where('email', 'new.student@example.test')->firstOrFail();
+        $this->assertTrue($applicant->hasRole('applicant'));
+        Notification::assertNothingSent();
+
+        $this->post('/login', [
+            'login' => $applicant->username,
+            'password' => 'Password1!',
+        ])->assertRedirect(route('dashboard'));
+        $this->get('/dashboard')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status');
+        $this->assertGuest();
     }
 
     public function test_profile_can_set_a_unique_normalized_username(): void
