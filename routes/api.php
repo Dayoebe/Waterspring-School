@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
 use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\PreventGraduatedStudent;
 use App\Http\Middleware\PreventLockAccountAccess;
+use App\Http\Middleware\PreventPendingAccountAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,10 +24,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware([
     PreventBrowserCaching::class,
     'auth:sanctum',
+    PreventPendingAccountAccess::class,
     PreventLockAccountAccess::class,
     EnsureDefaultPasswordIsChanged::class,
     PreventGraduatedStudent::class,
-    'verified',
 ])->get('/user', function (Request $request) {
     return $request->user();
 });
@@ -33,3 +35,6 @@ Route::middleware([
 Route::post('/payments/paystack/webhook', PaystackWebhookController::class)
     ->middleware('throttle:120,1')
     ->name('api.fee-payments.paystack.webhook');
+Route::post('/payments/flutterwave/webhook', FlutterwaveWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('api.fee-payments.flutterwave.webhook');

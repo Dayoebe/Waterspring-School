@@ -5,6 +5,7 @@ namespace App\Livewire\Staff;
 use App\Models\StaffDepartment;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Support\Username;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -21,6 +22,8 @@ class ManageStaffDirectory extends Component
     public ?int $profileId = null;
 
     public string $name = '';
+
+    public string $username = '';
 
     public string $email = '';
 
@@ -56,6 +59,7 @@ class ManageStaffDirectory extends Component
         $profile = StaffProfile::with('user')->where('school_id', auth()->user()->school_id)->findOrFail($id);
         $this->profileId = $profile->id;
         $this->name = $profile->user->name;
+        $this->username = (string) $profile->user->username;
         $this->email = $profile->user->email;
         $this->departmentId = (string) $profile->staff_department_id;
         $this->jobTitle = $profile->job_title;
@@ -72,20 +76,22 @@ class ManageStaffDirectory extends Component
     public function save(): void
     {
         $schoolId = auth()->user()->school_id;
-        $this->validate(['name' => 'required|string|max:255', 'email' => ['required', 'email', Rule::unique('users')->ignore($this->profileId ? StaffProfile::find($this->profileId)?->user_id : null)],
+        $this->username = Username::normalize($this->username) ?? '';
+        $userId = $this->profileId ? StaffProfile::find($this->profileId)?->user_id : null;
+        $this->validate(['name' => 'required|string|max:255', 'username' => Username::rules($userId), 'email' => ['required', 'email', Rule::unique('users')->ignore($userId)],
             'password' => [$this->profileId ? 'nullable' : 'required', 'string', 'min:8'], 'departmentId' => ['required', Rule::exists('staff_departments', 'id')->where('school_id', $schoolId)],
             'jobTitle' => 'required|string|max:255', 'bio' => 'nullable|string|max:5000', 'qualifications' => 'nullable|string|max:3000',
             'responsibilities' => 'nullable|string|max:3000', 'joinedOn' => 'nullable|date', 'displayOrder' => 'integer|min:0']);
         DB::transaction(function () use ($schoolId): void {
             if ($this->profileId) {
                 $profile = StaffProfile::where('school_id', $schoolId)->findOrFail($this->profileId);
-                $data = ['name' => $this->name, 'email' => $this->email];
+                $data = ['name' => $this->name, 'username' => $this->username, 'email' => $this->email];
                 if ($this->password !== '') {
                     $data['password'] = $this->password;
                 }
                 $profile->user->update($data);
             } else {
-                $user = User::create(['name' => $this->name, 'email' => $this->email, 'password' => $this->password, 'school_id' => $schoolId]);
+                $user = User::create(['name' => $this->name, 'username' => $this->username, 'email' => $this->email, 'password' => $this->password, 'school_id' => $schoolId]);
                 $user->assignRole('user');
                 $profile = new StaffProfile(['school_id' => $schoolId, 'user_id' => $user->id]);
             }
@@ -107,14 +113,14 @@ class ManageStaffDirectory extends Component
 
     public function resetForm(): void
     {
-        $this->reset(['showForm', 'profileId', 'name', 'email', 'password', 'departmentId', 'jobTitle', 'bio', 'qualifications', 'responsibilities', 'joinedOn', 'displayOrder']);
+        $this->reset(['showForm', 'profileId', 'name', 'username', 'email', 'password', 'departmentId', 'jobTitle', 'bio', 'qualifications', 'responsibilities', 'joinedOn', 'displayOrder']);
         $this->isPublic = true;
     }
 
     public function render()
     {
         $profiles = StaffProfile::with(['user', 'department'])->where('school_id', auth()->user()->school_id)
-            ->when($this->search, fn ($q) => $q->where(fn ($inner) => $inner->where('job_title', 'like', '%'.$this->search.'%')->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$this->search.'%'))))
+            ->when($this->search, fn ($q) => $q->where(fn ($inner) => $inner->where('job_title', 'like', '%'.$this->search.'%')->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$this->search.'%')->orWhere('username', 'like', '%'.$this->search.'%'))))
             ->orderBy('display_order')->paginate(15);
         $departments = StaffDepartment::where('school_id', auth()->user()->school_id)->orderBy('display_order')->get();
 

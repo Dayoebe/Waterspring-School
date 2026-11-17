@@ -24,7 +24,7 @@
         @else
             <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl text-amber-700">!</div>
             <h1 class="text-2xl font-bold">Payment not confirmed</h1>
-            <p class="mt-3 text-slate-600">{{ $message ?? 'Paystack has not confirmed a successful payment. No fee balance was changed.' }}</p>
+            <p class="mt-3 text-slate-600">{{ $message ?? (($providerName ?? 'The payment provider').' has not confirmed a successful payment. No fee balance was changed.') }}</p>
             <a href="{{ route('login') }}" class="mt-6 inline-flex rounded-lg bg-slate-800 px-5 py-3 font-semibold text-white hover:bg-slate-900">Return to the portal</a>
         @endif
     </main>

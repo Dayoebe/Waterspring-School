@@ -96,7 +96,20 @@ class AuditTrailTest extends TestCase
         Role::findOrCreate('teacher', 'web');
         Livewire::actingAs($principal)->test(ManageUserRoles::class)
             ->set("selectedRoles.{$target->id}", 'teacher')
-            ->call('updateUserRole', $target->id);
+            ->call('updateUserRole', $target->id)
+            ->set("usernames.{$target->id}", 'Target.Student')
+            ->call('updateUsername', $target->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('target.student', $target->fresh()->username);
+
+        $otherSchool = School::query()->create(['name' => 'Other Audit School', 'code' => 'OTHER-AUDIT']);
+        $otherTarget = $this->user($otherSchool, 'other-target');
+        Livewire::actingAs($principal)->test(ManageUserRoles::class)
+            ->set("usernames.{$otherTarget->id}", 'cross.school')
+            ->call('updateUsername', $otherTarget->id)
+            ->assertHasErrors("usernames.{$otherTarget->id}");
+        $this->assertNull($otherTarget->fresh()->username);
 
         $material = Material::query()->create([
             'school_id' => $school->id,
@@ -134,6 +147,7 @@ class AuditTrailTest extends TestCase
             ->call('selectCase', $case->id);
 
         $this->assertDatabaseHas('audit_events', ['event' => 'access.user_role_changed', 'subject_id' => $target->id]);
+        $this->assertDatabaseHas('audit_events', ['event' => 'access.username_changed', 'subject_id' => $target->id]);
         $this->assertDatabaseHas('audit_events', ['event' => 'classpilot.material_approved', 'subject_id' => $material->id]);
         $this->assertDatabaseHas('audit_events', ['event' => 'support.case_accessed', 'subject_id' => $case->id]);
     }

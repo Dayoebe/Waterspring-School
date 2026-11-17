@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Support\PaystackConfiguration;
 use DomainException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 class PaystackClient
 {
+    public function __construct(private readonly PaystackConfiguration $configuration) {}
+
     public function initialize(array $payload): array
     {
         $response = $this->request()->post('/transaction/initialize', $payload);
@@ -36,12 +39,9 @@ class PaystackClient
 
     private function request(): PendingRequest
     {
-        $secret = trim((string) config('services.paystack.secret_key'));
-        if (! config('services.paystack.enabled') || $secret === '') {
-            throw new DomainException('Online payment is not configured yet.');
-        }
+        $secret = $this->configuration->secretKeyOrFail();
 
-        return Http::baseUrl(rtrim((string) config('services.paystack.base_url'), '/'))
+        return Http::baseUrl($this->configuration->baseUrl())
             ->acceptJson()
             ->asJson()
             ->withToken($secret)

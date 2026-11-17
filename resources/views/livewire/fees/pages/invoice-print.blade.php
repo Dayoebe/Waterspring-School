@@ -5,12 +5,14 @@
 @section('content')
     @php
         $studentRecord = $feeInvoice->user->studentRecord;
+        $billingClass = $feeInvoice->billingClass ?? $studentRecord?->myClass;
+        $billingSection = $feeInvoice->billingSection ?? $studentRecord?->section;
     @endphp
     <h2>Fee Invoice</h2>
     <p><strong>Invoice:</strong> {{ $feeInvoice->name }}</p>
     <p><strong>Student:</strong> {{ $feeInvoice->user->name }}</p>
-    <p><strong>Class:</strong> {{ $studentRecord?->myClass?->name ?? 'N/A' }}</p>
-    <p><strong>Section:</strong> {{ $studentRecord?->section?->name ?? 'N/A' }}</p>
+    <p><strong>Class:</strong> {{ $billingClass?->name ?? 'N/A' }}</p>
+    <p><strong>Section:</strong> {{ $billingSection?->name ?? 'N/A' }}</p>
     <p><strong>Issue Date:</strong> {{ $feeInvoice->issue_date?->format('Y-m-d') }}</p>
     <p><strong>Due Date:</strong> {{ $feeInvoice->due_date?->format('Y-m-d') }}</p>
 

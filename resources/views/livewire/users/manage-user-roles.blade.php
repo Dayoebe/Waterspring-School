@@ -17,7 +17,7 @@
                 <input
                     type="text"
                     wire:model.live.debounce.300ms="search"
-                    placeholder="Name, email, or phone"
+                    placeholder="Name, username, email, or phone"
                     class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
             </div>
@@ -51,10 +51,11 @@
 
     <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[920px] text-sm">
+            <table class="w-full min-w-[1120px] text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-4 py-3">User</th>
+                        <th class="px-4 py-3">Username</th>
                         <th class="px-4 py-3">School</th>
                         <th class="px-4 py-3">Current Role</th>
                         <th class="px-4 py-3">Status</th>
@@ -78,6 +79,28 @@
                                 @if ($user->phone)
                                     <p class="text-xs text-slate-500">{{ $user->phone }}</p>
                                 @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex min-w-52 gap-2">
+                                    <input
+                                        type="text"
+                                        wire:model.defer="usernames.{{ $user->id }}"
+                                        minlength="3"
+                                        maxlength="50"
+                                        placeholder="Set username"
+                                        class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    />
+                                    <button
+                                        type="button"
+                                        wire:click="updateUsername({{ $user->id }})"
+                                        class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                                @error('usernames.' . $user->id)
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
                             </td>
                             <td class="px-4 py-3">
                                 <p class="text-slate-700">{{ $user->school?->name ?? 'N/A' }}</p>
@@ -138,7 +161,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">
+                            <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">
                                 No users found for the current filters.
                             </td>
                         </tr>
@@ -154,4 +177,3 @@
         @endif
     </div>
 </div>
-

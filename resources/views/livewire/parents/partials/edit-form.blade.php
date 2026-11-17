@@ -31,6 +31,15 @@
                     </div>
 
                     <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                        <input wire:model="username" type="text" minlength="3" maxlength="50"
+                               class="w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-purple-500"
+                               placeholder="e.g. parent.adewale">
+                        <p class="mt-1 text-xs text-gray-500">Optional; can be used instead of email to sign in.</p>
+                        @error('username') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
                         <input wire:model="email" type="email" 
                                class="w-full rounded-lg border-2 border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-purple-500"

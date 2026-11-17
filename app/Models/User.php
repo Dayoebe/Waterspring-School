@@ -3,20 +3,22 @@
 namespace App\Models;
 
 use App\Support\SchoolContext;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Username;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'email_is_placeholder',
         'password',
@@ -50,6 +52,11 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     protected $appends = ['profile_photo_url'];
+
+    public function setUsernameAttribute(?string $value): void
+    {
+        $this->attributes['username'] = Username::normalize($value);
+    }
 
     // Scopes
     public function scopeStudents($query)
@@ -233,7 +240,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getProfilePhotoUrlAttribute()
     {
         return $this->profile_photo_path
-            ? asset('storage/'.$this->profile_photo_path)
+            ? Storage::disk('public')->url($this->profile_photo_path)
             : asset('images/default-avatar.png');
     }
 

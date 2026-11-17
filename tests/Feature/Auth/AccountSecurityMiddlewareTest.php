@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureDefaultPasswordIsChanged;
 use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\PreventGraduatedStudent;
 use App\Http\Middleware\PreventLockAccountAccess;
+use App\Http\Middleware\PreventPendingAccountAccess;
 use App\Models\ClassGroup;
 use App\Models\MyClass;
 use App\Models\School;
@@ -13,8 +14,6 @@ use App\Models\StudentRecord;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
@@ -29,18 +28,13 @@ class AccountSecurityMiddlewareTest extends TestCase
 
     public function test_every_portal_route_uses_the_account_security_stack(): void
     {
-        $exemptRouteNames = [
-            'logout',
-            'verification.notice',
-            'verification.verify',
-            'verification.send',
-        ];
+        $exemptRouteNames = ['logout'];
         $requiredMiddleware = [
             PreventBrowserCaching::class,
+            PreventPendingAccountAccess::class,
             PreventLockAccountAccess::class,
             EnsureDefaultPasswordIsChanged::class,
             PreventGraduatedStudent::class,
-            'verified',
         ];
 
         foreach (app('router')->getRoutes() as $route) {
@@ -93,24 +87,32 @@ class AccountSecurityMiddlewareTest extends TestCase
             ->assertJsonPath('message', "This account is locked. If this is an error, contact your school's administrator.");
     }
 
-    public function test_unverified_accounts_can_complete_the_verification_flow(): void
+    public function test_email_verification_is_not_required_for_approved_portal_users(): void
     {
-        Notification::fake();
         $user = $this->portalUser(verified: false);
 
         $this->actingAs($user)
             ->get('/dashboard')
-            ->assertRedirect(route('verification.notice'));
-        $this->get(route('verification.notice'))->assertOk()->assertSee('Verify your email address');
-        $this->post(route('verification.send'))->assertSessionHas('status', 'verification-link-sent');
+            ->assertOk();
 
-        $verificationUrl = URL::temporarySignedRoute('verification.verify', now()->addMinutes(10), [
-            'id' => $user->id,
-            'hash' => sha1($user->email),
-        ]);
+        $this->assertNull($user->fresh()->email_verified_at);
+        $this->get('/email/verify')->assertNotFound();
+    }
 
-        $this->get($verificationUrl)->assertRedirect(route('dashboard'));
-        $this->assertNotNull($user->fresh()->email_verified_at);
+    public function test_pending_applicants_are_logged_out_and_denied_web_and_api_access(): void
+    {
+        $user = $this->portalUser(verified: false, role: 'applicant');
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status', 'Your account application is awaiting administrator approval. Portal access has not been granted yet.');
+        $this->assertGuest();
+
+        Sanctum::actingAs($user);
+        $this->getJson('/api/user')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Your account application is awaiting administrator approval. Portal access has not been granted yet.');
     }
 
     public function test_forced_password_change_allows_only_the_password_flow_until_completed(): void

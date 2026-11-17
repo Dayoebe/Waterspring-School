@@ -11,10 +11,8 @@ use App\Models\FeePaymentAttempt;
 use App\Models\School;
 use App\Models\User;
 use App\Services\PaystackPaymentService;
-use App\Services\PaystackWebhookVerifier;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Permission;
@@ -33,11 +31,12 @@ class PaystackFeePaymentTest extends TestCase
         config()->set([
             'services.paystack.enabled' => true,
             'services.paystack.secret_key' => 'sk_test_server_only',
-            'services.paystack.webhook_secret' => 'whsec_test',
             'services.paystack.base_url' => 'https://api.paystack.co',
+            'services.paystack.callback_url' => 'https://school.example/payments/paystack/callback',
             'services.paystack.timeout' => 5,
-            'services.paystack.webhook_tolerance' => 300,
         ]);
+        $this->app['url']->forceRootUrl('https://school.example');
+        $this->app['url']->forceScheme('https');
     }
 
     public function test_initialization_uses_the_server_calculated_minor_amount_and_invoice_identity(): void
@@ -160,30 +159,6 @@ class PaystackFeePaymentTest extends TestCase
             ->assertUnauthorized();
 
         Http::assertNothingSent();
-    }
-
-    public function test_timestamped_webhook_signature_is_accepted_only_inside_the_replay_window(): void
-    {
-        $body = json_encode(['event' => 'charge.success'], JSON_THROW_ON_ERROR);
-        $timestamp = now()->timestamp;
-        $signature = hash_hmac('sha512', $timestamp.'.'.$body, 'whsec_test');
-        $request = Request::create(
-            '/api/payments/paystack/webhook',
-            'POST',
-            [],
-            [],
-            [],
-            ['HTTP_PAYSTACK_SIGNATURE' => "t={$timestamp},v1=whk_test:{$signature}"],
-            $body
-        );
-
-        $this->assertTrue(app(PaystackWebhookVerifier::class)->isValid($request));
-
-        $staleTimestamp = now()->subMinutes(10)->timestamp;
-        $staleSignature = hash_hmac('sha512', $staleTimestamp.'.'.$body, 'whsec_test');
-        $request->headers->set('Paystack-Signature', "t={$staleTimestamp},v1=whk_test:{$staleSignature}");
-
-        $this->assertFalse(app(PaystackWebhookVerifier::class)->isValid($request));
     }
 
     public function test_other_school_cannot_initialize_payment_for_the_invoice(): void

@@ -155,6 +155,17 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end gap-2">
+                                    @if($fee->status === 'approved')
+                                        @can('create fee invoice')
+                                            <a href="{{ route('fee-invoices.create', ['fee' => $fee->id]) }}"
+                                               wire:navigate
+                                               class="text-blue-600 hover:text-blue-900"
+                                               title="Assign this fee to students">
+                                                <i class="fas fa-user-plus" aria-hidden="true"></i>
+                                                <span class="sr-only">Assign {{ $fee->name }} to students</span>
+                                            </a>
+                                        @endcan
+                                    @endif
                                     @if($fee->status !== 'approved')
                                         @can('approve fee')
                                             <button wire:click="approveFee({{ $fee->id }})"

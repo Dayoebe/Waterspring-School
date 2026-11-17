@@ -22,7 +22,7 @@ class PaystackPaymentController extends Controller
         PaystackPaymentService $payments,
     ): RedirectResponse {
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:21474836.47', 'decimal:0,2'],
         ]);
 
         $this->ensureInvoiceAccess($feeInvoice, $record);

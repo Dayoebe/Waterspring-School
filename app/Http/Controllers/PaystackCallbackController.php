@@ -21,11 +21,12 @@ class PaystackCallbackController extends Controller
             $attempt = $payments->verifyAndFulfill($validated['reference']);
             $successful = $attempt->status === 'paid' && $attempt->transaction !== null;
 
-            return view('fees.payment-result', compact('attempt', 'successful'));
+            return view('fees.payment-result', compact('attempt', 'successful') + ['providerName' => 'Paystack']);
         } catch (DomainException $exception) {
             return view('fees.payment-result', [
                 'attempt' => null,
                 'successful' => false,
+                'providerName' => 'Paystack',
                 'message' => $exception->getMessage(),
             ]);
         } catch (ModelNotFoundException) {
@@ -36,6 +37,7 @@ class PaystackCallbackController extends Controller
             return view('fees.payment-result', [
                 'attempt' => null,
                 'successful' => false,
+                'providerName' => 'Paystack',
                 'message' => 'We could not confirm the payment yet. Please check again shortly or contact the school.',
             ]);
         }

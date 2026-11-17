@@ -13,6 +13,8 @@ use App\Http\Controllers\ExamPaperPortalController;
 use App\Http\Controllers\ExamSlotController;
 use App\Http\Controllers\FeeInvoiceController;
 use App\Http\Controllers\FeePaymentReceiptController;
+use App\Http\Controllers\FlutterwaveCallbackController;
+use App\Http\Controllers\FlutterwavePaymentController;
 use App\Http\Controllers\GradeSystemController;
 use App\Http\Controllers\LockUserAccountController;
 use App\Http\Controllers\MyClassController;
@@ -25,10 +27,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\SeoController;
-use App\Http\Controllers\VerificationController;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnsureAcademicPeriodIsSet;
 use App\Http\Middleware\PreventBrowserCaching;
+use App\Http\Middleware\PreventPendingAccountAccess;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Livewire\AcademicYears\ManageAcademicYears;
 use App\Livewire\AcademicYears\ManageSemesters;
@@ -118,10 +120,10 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 $accountSecurityMiddleware = [
     PreventBrowserCaching::class,
     'auth',
+    PreventPendingAccountAccess::class,
     'App\Http\Middleware\PreventLockAccountAccess',
     'App\Http\Middleware\EnsureDefaultPasswordIsChanged',
     'App\Http\Middleware\PreventGraduatedStudent',
-    'verified',
     'restrict.teacher.portal',
 ];
 
@@ -184,6 +186,9 @@ Route::get('/team/{staffProfile}', [PageController::class, 'staffProfile'])->whe
 Route::get('/payments/paystack/callback', PaystackCallbackController::class)
     ->middleware([PreventBrowserCaching::class, 'throttle:30,1'])
     ->name('fee-payments.paystack.callback');
+Route::get('/payments/flutterwave/callback', FlutterwaveCallbackController::class)
+    ->middleware([PreventBrowserCaching::class, 'throttle:30,1'])
+    ->name('fee-payments.flutterwave.callback');
 
 /*
 |--------------------------------------------------------------------------
@@ -202,17 +207,6 @@ Route::middleware([PreventBrowserCaching::class, 'guest'])->group(function () {
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset')->name('password.email');
     Route::get('reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset')->name('password.update');
-});
-
-Route::middleware([PreventBrowserCaching::class, 'auth'])->group(function () {
-    Route::get('email/verify', [VerificationController::class, 'notice'])
-        ->name('verification.notice');
-    Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
-    Route::post('email/verification-notification', [VerificationController::class, 'send'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
 });
 
 // Account Applications (Full Livewire)
@@ -465,6 +459,9 @@ Route::middleware($schoolContextMiddleware)->prefix('fees')->group(function () {
     Route::post('/fee-invoices/{feeInvoice}/items/{record}/paystack', [PaystackPaymentController::class, 'initialize'])
         ->middleware(['permission:read fee invoice', 'throttle:10,1'])
         ->name('fee-payments.paystack.initialize');
+    Route::post('/fee-invoices/{feeInvoice}/items/{record}/flutterwave', [FlutterwavePaymentController::class, 'initialize'])
+        ->middleware(['permission:read fee invoice', 'throttle:10,1'])
+        ->name('fee-payments.flutterwave.initialize');
 });
 
 /*

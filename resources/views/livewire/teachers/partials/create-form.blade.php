@@ -26,6 +26,15 @@
             </div>
 
             <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                <input type="text" wire:model="username" minlength="3" maxlength="50"
+                       class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-indigo-500"
+                       placeholder="e.g. mrs.adewale">
+                <p class="mt-1 text-xs text-gray-500">Optional; can be used instead of email to sign in.</p>
+                @error('username') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            </div>
+
+            <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
                 <input type="email" wire:model="email" 
                        class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-indigo-500"

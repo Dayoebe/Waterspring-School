@@ -45,10 +45,21 @@
                         <i class="fas fa-list-check mr-2" aria-hidden="true"></i>Fee Catalogue
                     </button>
                 @endcan
+                @can('update fee invoice')
+                    <button type="button"
+                            wire:click="showTab('collections')"
+                            role="tab"
+                            aria-selected="{{ $tab === 'collections' ? 'true' : 'false' }}"
+                            class="rounded-t-lg border-b-2 px-4 py-3 text-sm font-semibold transition {{ $tab === 'collections' ? 'border-indigo-600 bg-white text-indigo-700' : 'border-transparent text-gray-600 hover:text-gray-900' }}">
+                        <i class="fas fa-cash-register mr-2" aria-hidden="true"></i>Payment Management
+                    </button>
+                @endcan
             </div>
         </section>
 
-        @if($tab === 'catalog' && auth()->user()?->can('read fee'))
+        @if($tab === 'collections' && auth()->user()?->can('update fee invoice'))
+            <livewire:fees.manage-fee-payments :key="'fees-payment-management'" />
+        @elseif($tab === 'catalog' && auth()->user()?->can('read fee'))
             <livewire:fees.manage-fees mode="list" :embedded="true" :key="'fees-payments-catalogue'" />
         @else
             @include('livewire.fees.partials.invoices.list-view', ['embedded' => true])

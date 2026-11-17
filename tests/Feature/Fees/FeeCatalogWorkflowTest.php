@@ -292,7 +292,8 @@ class FeeCatalogWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Fees &amp; Payments', false)
             ->assertSee('Student Invoices')
-            ->assertSee('Fee Catalogue');
+            ->assertSee('Fee Catalogue')
+            ->assertSee('Approval makes a fee available for invoicing');
         $this->get(route('fee-invoices.index'))
             ->assertOk()
             ->assertSee('Fees &amp; Payments', false)
@@ -334,6 +335,45 @@ class FeeCatalogWorkflowTest extends TestCase
         $this->assertCount(1, $financeEntries);
         $this->assertSame('fees.index', $financeEntries->first()['route']);
         $this->assertArrayNotHasKey('submenu', $financeEntries->first());
+    }
+
+    public function test_approved_catalogue_fee_can_prefill_student_invoice_creation(): void
+    {
+        $school = $this->school('ASSIGN');
+        $manager = $this->user($school, 'assignment-manager');
+        $manager->givePermissionTo(Permission::findOrCreate('create fee invoice', 'web'));
+        $fee = $this->fee($school, 'Approved activity fee', 17500, 'Approved activity fee ready for student assignment.');
+        $fee->update([
+            'status' => 'approved',
+            'approval_version' => 1,
+            'approved_at' => now(),
+        ]);
+
+        Livewire::actingAs($manager)
+            ->withQueryParams(['fee' => $fee->id])
+            ->test(ManageFeeInvoices::class, ['mode' => 'create'])
+            ->assertSet('selectedFeeCategory', $fee->fee_category_id)
+            ->assertSet('selectedFee', $fee->id)
+            ->assertSet("selectedFees.{$fee->id}.id", $fee->id)
+            ->assertSet("selectedFees.{$fee->id}.amount", '17500.00');
+
+        Livewire::actingAs($manager)
+            ->test(ManageFees::class)
+            ->assertSee("Assign {$fee->name} to students");
+
+        $otherSchool = $this->school('ASSIGN-OTHER');
+        $otherFee = $this->fee($otherSchool, 'Other school fee', 8000, 'Approved fee belonging to another school.');
+        $otherFee->update([
+            'status' => 'approved',
+            'approval_version' => 1,
+            'approved_at' => now(),
+        ]);
+
+        Livewire::actingAs($manager)
+            ->withQueryParams(['fee' => $otherFee->id])
+            ->test(ManageFeeInvoices::class, ['mode' => 'create'])
+            ->assertSet('selectedFees', [])
+            ->assertSet('selectedFee', '');
     }
 
     private function fee(School $school, string $name, int|float $amount, string $description): Fee

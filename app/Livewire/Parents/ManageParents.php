@@ -6,63 +6,100 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\User;
-use Livewire\Component;
-use Livewire\WithPagination;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Support\Username;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class ManageParents extends Component
 {
-    use WithPagination, AuthorizesRequests, WithFileUploads;
+    use AuthorizesRequests, WithFileUploads, WithPagination;
 
     public $mode = 'list';
-    
+
     // Filters
     public $search = '';
+
     public $selectedStatus = '';
-    
+
     // Sorting & Pagination
     public $sortField = 'name';
+
     public $sortDirection = 'asc';
+
     public $perPage = 15;
-    
+
     // Bulk actions
     public $selectedParents = [];
+
     public $selectAll = false;
-    
+
     // Parent form
     public $parentId = null;
+
     public $name = '';
+
+    public $username = '';
+
     public $email = '';
+
     public $password = '';
+
     public $password_confirmation = '';
+
     public $gender = '';
+
     public $birthday = '';
+
     public $phone = '';
+
     public $address = '';
+
     public $blood_group = '';
+
     public $religion = '';
+
     public $nationality = '';
+
     public $state = '';
+
     public $city = '';
+
     public $profile_photo = null;
 
     public bool $showChildrenPanel = false;
+
     public string $childEntryMode = 'existing';
+
     public string $studentSearch = '';
+
     public array $selectedStudentIds = [];
+
     public string $newStudentName = '';
+
+    public string $newStudentUsername = '';
+
     public string $newStudentEmail = '';
+
     public string $newStudentPassword = '';
+
     public string $newStudentGender = '';
+
     public string $newStudentBirthday = '';
+
     public string $newStudentPhone = '';
+
     public string $newStudentClassId = '';
+
     public string $newStudentSectionId = '';
+
     public string $newStudentAdmissionNumber = '';
+
     public string $newStudentAdmissionDate = '';
+
     public $newStudentSections;
 
     protected $queryString = [
@@ -115,7 +152,7 @@ class ManageParents extends Component
         $this->mode = $mode;
         $this->parentId = $parentId;
         $this->resetValidation();
-        
+
         if ($mode === 'edit' && $parentId) {
             $this->loadParentForEdit();
         } elseif ($mode === 'create') {
@@ -128,17 +165,18 @@ class ManageParents extends Component
         $parent = User::role('parent')
             ->where('school_id', auth()->user()->school_id)
             ->findOrFail($this->parentId);
-        
+
         // Check if user is actually a parent
-        if (!$parent->hasRole('parent')) {
+        if (! $parent->hasRole('parent')) {
             abort(404);
         }
-        
+
         $this->fill([
             'name' => $parent->name,
+            'username' => $parent->username ?? '',
             'email' => $parent->email,
             'gender' => $parent->gender ?? '',
-            'birthday' => $parent->birthday ? 
+            'birthday' => $parent->birthday ?
                 ($parent->birthday instanceof Carbon ? $parent->birthday->format('Y-m-d') : $parent->birthday) : '',
             'phone' => $parent->phone ?? '',
             'address' => $parent->address ?? '',
@@ -152,8 +190,11 @@ class ManageParents extends Component
 
     public function createParent()
     {
+        $this->username = Username::normalize($this->username) ?? '';
+
         $validated = $this->validate([
             'name' => 'required|string|max:255',
+            'username' => Username::rules(),
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'gender' => 'required|in:male,female,Male,Female',
@@ -174,6 +215,7 @@ class ManageParents extends Component
         DB::transaction(function () {
             $user = User::create([
                 'name' => $this->name,
+                'username' => $this->username,
                 'email' => $this->email,
                 'password' => bcrypt($this->password),
                 'gender' => $this->gender,
@@ -202,14 +244,17 @@ class ManageParents extends Component
         $parent = User::role('parent')
             ->where('school_id', auth()->user()->school_id)
             ->findOrFail($this->parentId);
-        
-        if (!$parent->hasRole('parent')) {
+
+        if (! $parent->hasRole('parent')) {
             abort(404);
         }
-        
+
+        $this->username = Username::normalize($this->username) ?? '';
+
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $this->parentId,
+            'username' => Username::rules((int) $this->parentId),
+            'email' => 'required|email|unique:users,email,'.$this->parentId,
             'gender' => 'required|in:male,female,Male,Female',
             'birthday' => 'nullable|date|before:today',
             'phone' => 'nullable|string|max:20',
@@ -223,6 +268,7 @@ class ManageParents extends Component
         DB::transaction(function () use ($parent) {
             $parent->update([
                 'name' => $this->name,
+                'username' => $this->username,
                 'email' => $this->email,
                 'gender' => $this->gender,
                 'birthday' => $this->birthday ?: null,
@@ -251,17 +297,17 @@ class ManageParents extends Component
         $parent = User::role('parent')
             ->where('school_id', auth()->user()->school_id)
             ->findOrFail($parentId);
-        
-        if (!$parent->hasRole('parent')) {
+
+        if (! $parent->hasRole('parent')) {
             abort(404);
         }
-        
+
         DB::transaction(function () use ($parent) {
             // Remove parent-student relationships
             $parent->children()->detach();
             $parent->delete();
         });
-        
+
         session()->flash('success', 'Parent deleted successfully');
     }
 
@@ -270,14 +316,14 @@ class ManageParents extends Component
         $parent = User::role('parent')
             ->where('school_id', auth()->user()->school_id)
             ->findOrFail($parentId);
-        
-        if (!$parent->hasRole('parent')) {
+
+        if (! $parent->hasRole('parent')) {
             abort(404);
         }
-        
-        $parent->locked = !$parent->locked;
+
+        $parent->locked = ! $parent->locked;
         $parent->save();
-        
+
         session()->flash('success', $parent->locked ? 'Parent account locked' : 'Parent account unlocked');
     }
 
@@ -305,11 +351,11 @@ class ManageParents extends Component
     public function resetForm()
     {
         $this->reset([
-            'parentId', 'name', 'email', 'password', 'password_confirmation', 
-            'gender', 'birthday', 'phone', 'address', 'blood_group', 
+            'parentId', 'name', 'username', 'email', 'password', 'password_confirmation',
+            'gender', 'birthday', 'phone', 'address', 'blood_group',
             'religion', 'nationality', 'state', 'city', 'profile_photo',
             'showChildrenPanel', 'childEntryMode', 'studentSearch', 'selectedStudentIds',
-            'newStudentName', 'newStudentEmail', 'newStudentPassword', 'newStudentGender',
+            'newStudentName', 'newStudentUsername', 'newStudentEmail', 'newStudentPassword', 'newStudentGender',
             'newStudentBirthday', 'newStudentPhone', 'newStudentClassId', 'newStudentSectionId',
             'newStudentAdmissionNumber', 'newStudentAdmissionDate',
         ]);
@@ -333,6 +379,7 @@ class ManageParents extends Component
 
             if ($validCount !== $selectedIds->count()) {
                 $this->addError('selectedStudentIds', 'One or more selected students already have a parent or do not belong to this school.');
+
                 return false;
             }
 
@@ -341,12 +388,15 @@ class ManageParents extends Component
 
         if ($this->childEntryMode !== 'new') {
             $this->addError('childEntryMode', 'Choose how you want to add a student.');
+
             return false;
         }
 
         abort_unless(auth()->user()->can('create student'), 403);
+        $this->newStudentUsername = Username::normalize($this->newStudentUsername) ?? '';
         $this->validate([
             'newStudentName' => ['required', 'string', 'max:255'],
+            'newStudentUsername' => Username::rules(),
             'newStudentEmail' => ['required', 'email', 'max:255', 'unique:users,email'],
             'newStudentPassword' => ['required', 'string', 'min:8'],
             'newStudentGender' => ['required', 'in:male,female'],
@@ -362,12 +412,14 @@ class ManageParents extends Component
             ->whereHas('classGroup', fn ($query) => $query->where('school_id', auth()->user()->school_id))->exists();
         if (! $classIsValid) {
             $this->addError('newStudentClassId', 'Select a class from the current school.');
+
             return false;
         }
 
         if ($this->newStudentSectionId && ! Section::query()->whereKey($this->newStudentSectionId)
             ->where('my_class_id', $this->newStudentClassId)->exists()) {
             $this->addError('newStudentSectionId', 'Select a section belonging to the chosen class.');
+
             return false;
         }
 
@@ -389,11 +441,13 @@ class ManageParents extends Component
                     'updated_at' => now(),
                 ]);
             }
+
             return;
         }
 
         $student = User::create([
             'name' => trim($this->newStudentName),
+            'username' => $this->newStudentUsername,
             'email' => strtolower(trim($this->newStudentEmail)),
             'password' => bcrypt($this->newStudentPassword),
             'gender' => $this->newStudentGender,
@@ -440,21 +494,22 @@ class ManageParents extends Component
     {
         return User::role('parent')
             ->where('school_id', auth()->user()->school_id)
-            ->when($this->search, function($q) {
-                $q->where(function($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
-                          ->orWhere('email', 'like', '%' . $this->search . '%')
-                          ->orWhere('phone', 'like', '%' . $this->search . '%');
+            ->when($this->search, function ($q) {
+                $q->where(function ($query) {
+                    $query->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('username', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%')
+                        ->orWhere('phone', 'like', '%'.$this->search.'%');
                 });
             })
-            ->when($this->selectedStatus !== '', fn($q) => $q->where('locked', $this->selectedStatus))
+            ->when($this->selectedStatus !== '', fn ($q) => $q->where('locked', $this->selectedStatus))
             ->orderBy($this->sortField, $this->sortDirection);
     }
 
     public function render()
     {
         $parents = collect();
-        
+
         if ($this->mode === 'list') {
             $parents = $this->getParentsQuery()
                 ->withCount('children')
@@ -485,8 +540,8 @@ class ManageParents extends Component
             ->layout('layouts.dashboard', [
                 'breadcrumbs' => [
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
-                    ['href' => route('parents.index'), 'text' => 'Parents', 'active' => true]
-                ]
+                    ['href' => route('parents.index'), 'text' => 'Parents', 'active' => true],
+                ],
             ])
             ->title('Manage Parents');
     }

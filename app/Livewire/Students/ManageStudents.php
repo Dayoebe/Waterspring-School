@@ -6,6 +6,7 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\User;
+use App\Support\Username;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,8 @@ class ManageStudents extends Component
 
     public $name = '';
 
+    public $username = '';
+
     public $email = '';
 
     public $password = '';
@@ -105,6 +108,8 @@ class ManageStudents extends Component
     public string $parentEntryMode = 'select';
 
     public string $newParentName = '';
+
+    public string $newParentUsername = '';
 
     public string $newParentEmail = '';
 
@@ -215,6 +220,7 @@ class ManageStudents extends Component
 
         $this->fill([
             'name' => $student->name,
+            'username' => $student->username ?? '',
             'email' => $student->email,
             'gender' => $student->gender ?? '',
             'birthday' => $student->birthday ?
@@ -243,9 +249,11 @@ class ManageStudents extends Component
     public function createStudent()
     {
         $this->authorize('create', [User::class, 'student']);
+        $this->username = Username::normalize($this->username) ?? '';
 
         $validated = $this->validate([
             'name' => 'required|string|max:255',
+            'username' => Username::rules(),
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
             'gender' => 'required|in:male,female',
@@ -296,6 +304,7 @@ class ManageStudents extends Component
         DB::transaction(function () {
             $user = User::create([
                 'name' => $this->name,
+                'username' => $this->username,
                 'email' => $this->email,
                 'password' => bcrypt($this->password),
                 'gender' => $this->gender,
@@ -350,7 +359,7 @@ class ManageStudents extends Component
     {
         $this->showParentPanel = ! $this->showParentPanel;
         $this->resetValidation([
-            'parent_id', 'newParentName', 'newParentEmail', 'newParentPassword',
+            'parent_id', 'newParentName', 'newParentUsername', 'newParentEmail', 'newParentPassword',
             'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',
         ]);
     }
@@ -358,9 +367,11 @@ class ManageStudents extends Component
     public function createInlineParent(): void
     {
         abort_unless(auth()->user()->can('create parent'), 403);
+        $this->newParentUsername = Username::normalize($this->newParentUsername) ?? '';
 
         $validated = $this->validate([
             'newParentName' => ['required', 'string', 'max:255'],
+            'newParentUsername' => Username::rules(),
             'newParentEmail' => ['required', 'email', 'max:255', 'unique:users,email'],
             'newParentPassword' => ['required', 'string', 'min:8', 'same:newParentPasswordConfirmation'],
             'newParentPasswordConfirmation' => ['required', 'string', 'min:8'],
@@ -373,6 +384,7 @@ class ManageStudents extends Component
         $parent = DB::transaction(function () use ($validated): User {
             $parent = User::create([
                 'name' => trim($validated['newParentName']),
+                'username' => $validated['newParentUsername'],
                 'email' => strtolower(trim($validated['newParentEmail'])),
                 'password' => bcrypt($validated['newParentPassword']),
                 'gender' => $validated['newParentGender'],
@@ -387,7 +399,7 @@ class ManageStudents extends Component
         $this->parent_id = (string) $parent->id;
         $this->parentEntryMode = 'select';
         $this->reset([
-            'newParentName', 'newParentEmail', 'newParentPassword',
+            'newParentName', 'newParentUsername', 'newParentEmail', 'newParentPassword',
             'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',
         ]);
         session()->flash('parent_created', 'Parent account created and selected for this student.');
@@ -400,9 +412,11 @@ class ManageStudents extends Component
             ->findOrFail($this->studentId);
 
         $this->authorize('update', [$student, 'student']);
+        $this->username = Username::normalize($this->username) ?? '';
 
         $this->validate([
             'name' => 'required|string|max:255',
+            'username' => Username::rules((int) $this->studentId),
             'email' => 'required|email|unique:users,email,'.$this->studentId,
             'password' => 'nullable|string|min:8',
             'my_class_id' => 'required|exists:my_classes,id',
@@ -463,6 +477,7 @@ class ManageStudents extends Component
         DB::transaction(function () use ($student) {
             $studentData = [
                 'name' => $this->name,
+                'username' => $this->username,
                 'email' => $this->email,
                 'email_is_placeholder' => str_ends_with(strtolower(trim($this->email)), '.admission.local'),
                 'gender' => $this->gender,
@@ -741,11 +756,11 @@ class ManageStudents extends Component
     public function resetForm()
     {
         $this->reset([
-            'studentId', 'name', 'email', 'password', 'gender', 'birthday',
+            'studentId', 'name', 'username', 'email', 'password', 'gender', 'birthday',
             'phone', 'address', 'blood_group', 'religion', 'nationality',
             'state', 'city', 'my_class_id', 'section_id', 'admission_number', 'admission_date',
             'parent_id', 'assignedParent',
-            'showParentPanel', 'parentEntryMode', 'newParentName', 'newParentEmail',
+            'showParentPanel', 'parentEntryMode', 'newParentName', 'newParentUsername', 'newParentEmail',
             'newParentPassword', 'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',
         ]);
 
@@ -821,6 +836,7 @@ class ManageStudents extends Component
             ->when($this->search, function ($q) {
                 $q->where(function ($query) {
                     $query->where('users.name', 'like', '%'.$this->search.'%')
+                        ->orWhere('users.username', 'like', '%'.$this->search.'%')
                         ->orWhere('users.email', 'like', '%'.$this->search.'%')
                         ->orWhere('student_records.admission_number', 'like', '%'.$this->search.'%');
                 });

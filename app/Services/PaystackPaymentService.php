@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FeeInvoiceRecord;
 use App\Models\FeePaymentAttempt;
 use App\Models\User;
+use App\Support\PaystackConfiguration;
 use Brick\Money\Money;
 use Carbon\Carbon;
 use DomainException;
@@ -18,10 +19,12 @@ class PaystackPaymentService
         private readonly PaystackClient $client,
         private readonly FeePaymentLedger $ledger,
         private readonly FeePaymentNotificationService $notifications,
+        private readonly PaystackConfiguration $configuration,
     ) {}
 
     public function initialize(FeeInvoiceRecord $record, User $payer, int|float|string $amount): FeePaymentAttempt
     {
+        $this->configuration->assertCheckoutReady();
         $record->loadMissing('feeInvoice.user');
         $student = $record->feeInvoice->user;
 

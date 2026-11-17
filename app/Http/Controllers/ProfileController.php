@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Username;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -69,9 +70,11 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = auth()->user();
+        $request->merge(['username' => Username::normalize($request->input('username'))]);
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'username' => Username::rules($user->id),
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
@@ -91,6 +94,7 @@ class ProfileController extends Controller
 
         $payload = [
             'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
             'email_is_placeholder' => false,
             'phone' => $request->phone,

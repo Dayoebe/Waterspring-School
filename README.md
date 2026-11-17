@@ -1,8 +1,8 @@
 # Watersprings School
 
-Public website and school management application for **Watersprings International School Akure**, built with Laravel, Livewire and Blade.
+Public website, teaching and school-operations platform for **Watersprings International School Akure**, built with Laravel, Livewire and Blade.
 
-The public website has been adapted using the school's published information and photographs. The repository also contains an existing multi-school administration platform. Watersprings-specific dashboard configuration and data setup are the next stage of work.
+The repository combines a verified public school website with a multi-school, role-scoped management portal. It includes academic administration, teaching and curriculum tools, results and CBT, admissions, finance and online payments, family services, communications, audit history, operational monitoring, ClassPilot AI, and public Open Learning. Each installation still requires its own school records, academic structure, users, mail, payment credentials, and production infrastructure.
 
 ## Public website
 
@@ -10,14 +10,16 @@ The public website has been adapted using the school's published information and
 | --- | --- | --- |
 | Home | `/` | School introduction, learning stages, values and family FAQs |
 | About | `/about` | History, mission, vision, Christian ethos and leadership |
-| Academics | `/academics` | Early Years & Foundation Stage, Key Stages 1 and 2, clubs and the archived college announcement |
+| Team | `/team` | Public profiles for staff marked visible by the school |
+| Academics | `/academics` | Early Years, primary Key Stages, College Years 7–9, practical learning and clubs |
+| Open Learning | `/open-learning` | Public lessons and assessments grounded in published school curriculum |
 | Why Watersprings | `/why-watersprings` | Learning environment, individual care and school values |
 | Admission | `/admission` | Application guidance, fee categories and prospectus access |
 | Prospectus | `/prospectus` | School prospectus: curriculum, facilities, uniforms, attendance, transport and clubs |
 | Gallery | `/gallery` | Photographs from the school's existing website |
 | Contact | `/contact` | Akure address, telephone numbers, email addresses, map and visit guidance |
 
-Login, registration and password recovery pages use the public school identity.
+Login, registration and password recovery pages use the public school identity. Approved users can sign in with email or username. Public registration creates a restricted applicant account which receives no portal access until an authorized administrator approves the requested student, parent, or teacher role. Email ownership verification is not required for approved or administrator-created accounts.
 
 Public pages include canonical URLs, social metadata and structured data. Discovery endpoints include `/sitemap.xml`, `/sitemap-pages.xml`, `/sitemap-images.xml`, `/robots.txt`, `/llms.txt`, `/llms-full.txt` and `/ai.txt`. A web app manifest, service worker and offline page are included.
 
@@ -40,24 +42,31 @@ The following modules are present in the codebase. Their availability depends on
 
 | Area | Implemented modules |
 | --- | --- |
-| School administration | Schools, school settings, users, role assignments and account applications |
-| Academic structure | Academic years, terms/semesters, class groups, classes, sections and subjects |
-| People | Students, teachers, parents, admissions, promotions and graduation |
-| Teaching | Subject assignments, syllabi, timetables and teacher responsibilities |
-| Assessment | Exams, exam papers, exam records, grading, result publication, reports and computer-based testing |
-| Finance | Fee categories, fees, invoices and invoice details |
-| Student welfare | Attendance, discipline and parent welfare views |
-| Communication | Notices, broadcasts, contact messages and admission review |
-| Reporting and media | Dashboard analytics, executive reports, enrollment/performance reports, media library and gallery management |
-| Maintenance | Database backup/download and commands for migration, permission and student-record maintenance |
+| Identity and access | Email/username login, administrator-managed accounts, public applications, role/permission assignment, account locks, forced password change and school context |
+| School administration | Schools, school/site settings, academic years, terms/semesters, class groups, classes, sections, subjects and staff directory |
+| People and progression | Students, parents, teachers, administrators, parent-child links, admissions, promotions and graduation |
+| Admissions | Public registration, documents, interviews, internal notes, status history, offers, acceptance, fee confirmation and conversion to student/parent records |
+| Teaching and curriculum | Assignments, subject allocation, syllabi, schemes of work, timetables, calendar, clubs, resources and teacher responsibilities |
+| Assessment and results | Exams, exam slots/papers, CA1/CA2/exam scoring, grade systems, spreadsheet entry/import, publication, reports, exports and history |
+| Computer-based testing | Assessment authoring, publication, timed student attempts, autosave/concurrency controls, scoring, result publication, printing and integrity auditing |
+| Finance and payments | Fee categories/catalogue approval, class or individual invoicing, waivers/fines, collections, manual payments, ledger, receipts, reversals, reconciliation, Paystack and Flutterwave |
+| Student and family services | Attendance, discipline, behaviour reports, student support, parent-teacher appointments, transport, authorized pickup and parent welfare views |
+| Communication | Notices, broadcasts, assignment reminders, fee/payment messages, contact enquiries, support reminders and transport/appointment alerts |
+| Accountability and reporting | School-scoped audit log, dashboard analytics, executive/enrollment/performance reports, media library and gallery management |
+| AI and public learning | Role-scoped ClassPilot workspaces and public curriculum-grounded Open Learning with explicit saved progress |
+| Operations | Queue/scheduler health, security headers, HTTPS enforcement, encrypted backups, restore verification and maintenance commands |
 
 The permission matrix defines super-admin, principal, admin, teacher, student, parent, applicant and basic user roles. Access is enforced through route middleware, permissions and policies; a role does not automatically receive every action in a module. See [app/Support/PermissionMatrix.php](app/Support/PermissionMatrix.php).
+
+See the [documentation index](docs/README.md) for workflow and deployment guides, including [authentication and access](docs/authentication-and-access.md), [fees and payments](docs/fees-and-payments.md), [CBT integrity](docs/cbt-integrity.md), and [school workflows](docs/school-workflows.md).
 
 ### Fee payment ledger
 
 Fee collections are recorded as append-only payment transactions with receipt numbers, cashier and payer snapshots, payment methods, external references and reconciliation history. Corrections create linked reversal transactions; payment and reconciliation rows cannot be edited or deleted. The historical `fee_invoice_records.paid` value is retained only as a derived compatibility projection, and existing non-zero balances are imported into the ledger during migration.
 
-The ledger includes optional provider/reference fields for future gateway callbacks, but no Paystack or Flutterwave account is configured by this repository. Online collection must not be enabled until webhook signature verification, idempotency and a live-provider acceptance test have been completed.
+The `/fees` workspace combines the catalogue, student invoices, and collections. Approved catalogue items can carry fixed or percentage waivers and fines, then be billed to a whole class/section or an individual student. Staff can filter paid/partial/unpaid balances by class and record manual payments; parents see linked-child invoices and outstanding balances.
+
+Paystack and Flutterwave hosted checkout are integrated with server-side initialization and verification, signed webhook handling, idempotent fulfillment, amount/currency checks, immutable receipts, and tenant-scoped access. Each gateway is enabled independently only after a deployment supplies its own secrets and public HTTPS URLs. See [Fees and payments](docs/fees-and-payments.md), [Paystack fee payments](docs/paystack-fee-payments.md), and [Flutterwave fee payments](docs/flutterwave-fee-payments.md).
 
 Dashboard layouts, forms, tables, and navigation share a responsive light/dark design system. See [Dashboard design](docs/dashboard-design.md) for conventions and validation coverage.
 
@@ -71,7 +80,7 @@ Dashboard layouts, forms, tables, and navigation share a responsive light/dark d
 | Node.js | Node 20 or 22 is compatible with the locked Vite version |
 | Frontend packages | Install with `npm ci` using `package-lock.json` |
 
-The application uses Laravel 12, Livewire 3, Tailwind CSS 3, Vite 8 and Font Awesome. Livewire provides Alpine at runtime; the application JavaScript intentionally does not start a second Alpine instance.
+The application currently uses Laravel 12, Livewire 3, Tailwind CSS 3, Vite 8 and Font Awesome. Livewire provides Alpine at runtime; the application JavaScript intentionally does not start a second Alpine instance. Consult `composer.lock` and `package-lock.json` for the exact installed versions.
 
 The initial migration imports [database/schema/baseline-schema.sql](database/schema/baseline-schema.sql), which uses MySQL/MariaDB syntax. SQLite is not a supported fresh-install path for this baseline. Use `composer check-platform-reqs` to check PHP and extension requirements against the installed packages.
 
@@ -106,7 +115,7 @@ Create the first super-admin interactively:
 php artisan watersprings:create-super-admin
 ```
 
-Log in at `/login`, then configure the school and its academic structure. The schema does not populate a Watersprings school, classes or student records automatically.
+Log in at `/login`, then configure the school and its academic structure. The schema does not populate a Watersprings school, classes or student records automatically. Existing accounts may log in by email; usernames can be assigned later. New public registrations remain applicants without dashboard access until approved under Account Applications.
 
 Build the frontend and start the application:
 
@@ -119,20 +128,21 @@ Open `http://localhost:8000`. For frontend development, run `npm run dev` in a s
 
 ### Setup limitations
 
-- `database/seeders` is not included. The legacy `watersprings:init` command calls missing seeders, so use the manual setup above instead of `watersprings:init` or `migrate --seed`.
+- `database/seeders` is not included. The legacy `watersprings:init` and `watersprings:update` commands call missing seeders, and the update command also performs destructive Git operations. Do not use either command for a current installation. Follow the manual, reviewed deployment procedure instead of `migrate --seed`.
 - When no school records exist, Admission links to Watersprings' existing online application form and Contact provides direct contact channels. Existing local Livewire forms render when school records become available. Configure the correct school, entry classes, sections and message recipients before using those forms.
 - Dashboard branding and command names use Watersprings. Academic setup, school data and operational configuration still need to be completed.
 - `.env.example` uses `MAIL_MAILER=log` and the database queue. Local mail is written to logs; it is not delivered to recipients. A queue worker and scheduler must be running for queued mail and reminders.
 
 ## Optional services and deployment
 
-Cloudinary settings (`CLOUDINARY_URL` and `CLOUDINARY_FOLDER`) are available for media features. Mail providers and other service settings are defined in [config/services.php](config/services.php). Configure only the integrations you use.
+Cloudinary settings (`CLOUDINARY_URL` and `CLOUDINARY_FOLDER`) are available for dashboard gallery uploads. Mail, SMS placeholders, payment providers, and other service settings are defined in [config/services.php](config/services.php). Configure only integrations the deployment actually uses. ClassPilot and Open Learning provider settings are documented in [ClassPilot](docs/class-pilot.md) and [Open Learning](docs/open-learning.md).
 
 For deployment:
 
 - Point the web server's document root to `public/` and use a PHP runtime compatible with the lockfile.
 - Set `APP_ENV=production`, `APP_DEBUG=false` and the correct `APP_URL`. Canonical links and sitemaps use the application URL.
 - Configure database access and real mail delivery, and make `storage/` and `bootstrap/cache/` writable by the application.
+- Keep uploaded files in persistent `storage/app/public`, run `php artisan storage:link`, and verify `public/storage` points to that directory. The link is not tracked by Git.
 - Install dependencies and run `npm run build`; dependency directories, compiled frontend assets and `public/hot` are excluded from Git.
 - Run the database queue worker and scheduler under supervision; do not serve production traffic with `QUEUE_CONNECTION=sync`.
 - Configure encrypted backups, off-site retention, restore tests, health monitoring and HTTPS using the [operations runbook](docs/operations.md).
@@ -165,7 +175,7 @@ docs/                     Implementation and migration notes
 
 ## Validation
 
-WaterSpring has an automated safety net. Database-backed feature tests cover authentication and account restrictions, tenant boundaries, admissions, payments, appointments, transport, audit history, operational health, and critical academic workflows. Database-free unit tests cover result rules, ClassPilot providers and policies, dependency compatibility, PWA privacy, export formatting, and public UX contracts.
+WaterSpring has an automated safety net. Database-backed feature tests cover authentication and applicant restrictions, tenant boundaries, admissions, fee catalogue/class billing/payments, appointments, transport, audit history, CBT integrity, ClassPilot/Open Learning access, operational health, and critical academic workflows. Database-free unit tests cover result rules, AI providers and policies, dependency compatibility, PWA privacy, export formatting, and public UX contracts.
 
 ### Test database safety
 
