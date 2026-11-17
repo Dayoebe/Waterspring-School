@@ -64,10 +64,11 @@ For a normal release:
 1. back up the database and verify that a recent backup restores;
 2. put the application into maintenance mode when the migration requires it;
 3. install locked PHP and Node dependencies for the target environment;
-4. run `php artisan migrate --force` and `php artisan permissions:sync-matrix --no-interaction`;
-5. build assets with `npm ci && npm run build`;
-6. clear/rebuild deployment caches and restart long-running queue workers;
-7. bring the application up, then check `/health`, `ops:health`, logs, queue failures, authentication, and critical role/payment workflows.
+4. run `php artisan migrate --force`, `php artisan permissions:sync-matrix --no-interaction`, and `php artisan storage:link`;
+5. verify `public/storage` points to the persistent `storage/app/public` directory, which contains uploaded public files;
+6. build assets with `npm ci && npm run build`;
+7. clear/rebuild deployment caches and restart long-running queue workers;
+8. bring the application up, then check `/health`, `ops:health`, logs, queue failures, authentication, and critical role/payment workflows.
 
 Never run `migrate:fresh`, `RefreshDatabase`, or the feature suite against the operational database.
 

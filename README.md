@@ -142,6 +142,7 @@ For deployment:
 - Point the web server's document root to `public/` and use a PHP runtime compatible with the lockfile.
 - Set `APP_ENV=production`, `APP_DEBUG=false` and the correct `APP_URL`. Canonical links and sitemaps use the application URL.
 - Configure database access and real mail delivery, and make `storage/` and `bootstrap/cache/` writable by the application.
+- Keep uploaded files in persistent `storage/app/public`, run `php artisan storage:link`, and verify `public/storage` points to that directory. The link is not tracked by Git.
 - Install dependencies and run `npm run build`; dependency directories, compiled frontend assets and `public/hot` are excluded from Git.
 - Run the database queue worker and scheduler under supervision; do not serve production traffic with `QUEUE_CONNECTION=sync`.
 - Configure encrypted backups, off-site retention, restore tests, health monitoring and HTTPS using the [operations runbook](docs/operations.md).

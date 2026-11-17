@@ -27,7 +27,7 @@ class School extends Model
 
     public function getLogoUrlAttribute()
     {
-        return $this->logo_path ? Storage::url($this->logo_path) : asset(config('app.logo'));
+        return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : asset(config('app.logo'));
     }
 
     /**
