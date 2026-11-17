@@ -55,6 +55,14 @@ The backup service requires the Sodium PHP extension plus working `mysqldump` an
 
 Production defaults to HTTPS enforcement. Set `FORCE_HTTPS=true`, use an `https://` `APP_URL`, and terminate TLS at the web server or a trusted proxy. If TLS terminates upstream, set `TRUSTED_PROXIES` to the explicit proxy IP/CIDR list (or `REMOTE_ADDR` only when the application is reachable exclusively through that proxy); do not use a wildcard on an internet-reachable origin. Confirm Laravel sees forwarded HTTPS correctly before accepting traffic. Responses include CSP, clickjacking, MIME-sniffing, referrer, permissions and production HSTS protections.
 
+## Login sessions and 419 errors
+
+Session cookies default to HTTPS-only when `APP_ENV=production`; set `SESSION_SECURE_COOKIE=true` explicitly in production if you prefer the setting to be visible in the environment. Keep `APP_KEY` unchanged across releases and identical on every application instance.
+
+Use one canonical HTTPS hostname for the whole login flow. Redirect the alternate `www`/non-`www` hostname to it, and leave `SESSION_DOMAIN` unset unless the application must share sessions across subdomains. If TLS is terminated by a load balancer or reverse proxy, configure `TRUSTED_PROXIES` with its exact IP/CIDR entries so Laravel can correctly identify HTTPS.
+
+The default `SESSION_DRIVER=file` is suitable only when requests share one persistent application filesystem and `storage/framework/sessions` is writable by PHP. For multiple application instances, configure a shared Redis or database session store; do not rely on local files or sticky sessions as the only session persistence. Ensure any CDN or page cache bypasses `/login` and does not cache requests that set cookies. After changing environment values, rebuild Laravel's configuration cache and verify in the browser's network panel that `GET /login` sets the session cookie and `POST /login` sends it back.
+
 ## Deployment sequence
 
 Use a reviewed release process instead of the legacy `watersprings:init` or `watersprings:update` commands. Both still reference seeders that are not present; the update command also performs destructive Git operations.
