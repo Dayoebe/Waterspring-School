@@ -33,4 +33,15 @@ class DashboardImageUrlTest extends TestCase
             $school->logo_url
         );
     }
+
+    public function test_dashboard_profile_photos_and_school_logos_keep_cloudinary_urls(): void
+    {
+        $photoUrl = 'https://res.cloudinary.com/demo/image/upload/profile-photos/person.jpg';
+        $logoUrl = 'https://res.cloudinary.com/demo/image/upload/school-logos/logo.png';
+        $user = new User(['profile_photo_path' => $photoUrl]);
+        $school = new School(['logo_path' => $logoUrl]);
+
+        $this->assertSame($photoUrl, $user->profile_photo_url);
+        $this->assertSame($logoUrl, $school->logo_url);
+    }
 }
