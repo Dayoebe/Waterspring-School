@@ -135,7 +135,7 @@ Open `http://localhost:8000`. For frontend development, run `npm run dev` in a s
 
 ## Optional services and deployment
 
-Cloudinary settings (`CLOUDINARY_URL` and `CLOUDINARY_FOLDER`) are available for dashboard gallery uploads. Mail, SMS placeholders, payment providers, and other service settings are defined in [config/services.php](config/services.php). Configure only integrations the deployment actually uses. ClassPilot and Open Learning provider settings are documented in [ClassPilot](docs/class-pilot.md) and [Open Learning](docs/open-learning.md).
+Cloudinary settings (`CLOUDINARY_URL`, `CLOUDINARY_FOLDER`, and `CLOUDINARY_ROOT_FOLDER`) are available for dashboard image uploads. Gallery images use `CLOUDINARY_FOLDER`; other images are organized beneath `CLOUDINARY_ROOT_FOLDER`. Image attachments use public Cloudinary URLs, while non-image files remain on application storage. Mail, SMS placeholders, payment providers, and other service settings are defined in [config/services.php](config/services.php). Configure only integrations the deployment actually uses. ClassPilot and Open Learning provider settings are documented in [ClassPilot](docs/class-pilot.md) and [Open Learning](docs/open-learning.md).
 
 For deployment:
 

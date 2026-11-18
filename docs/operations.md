@@ -80,6 +80,14 @@ For a normal release:
 
 Never run `migrate:fresh`, `RefreshDatabase`, or the feature suite against the operational database.
 
+## Cloudinary image storage
+
+Configure `CLOUDINARY_URL` and `CLOUDINARY_FOLDER` for gallery uploads. Dashboard image uploads use Cloudinary folders beneath `CLOUDINARY_ROOT_FOLDER` (default `waterspring`), with gallery images using `CLOUDINARY_FOLDER`. Non-image documents and media remain on the configured application storage.
+
+Run `php artisan cloudinary:migrate-local-images` to preview local image references that can be migrated. Add `--execute` to upload those images and update their database references; local files are retained. Run this from an environment that can access both the database and the local files being migrated.
+
+Images in attachment fields are uploaded as public Cloudinary assets. Do not upload confidential images there; use a private storage and delivery flow for sensitive files.
+
 ## Environment-dependent acceptance
 
 Automated checks do not prove external delivery. Before production sign-off, verify real SMTP delivery, password reset, fee/receipt/admin notifications, provider callbacks/webhooks, payment settlement, Cloudinary uploads if enabled, backup off-site copying, restore permissions, proxy HTTPS detection, and monitoring alerts. Keep all provider and encryption secrets outside Git.
