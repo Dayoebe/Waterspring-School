@@ -9,7 +9,6 @@ use App\Services\CloudinaryImageStorage;
 use App\Support\SiteSettings;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -700,11 +699,11 @@ class ManageSiteSettings extends Component
         $themeFaviconUrl = trim((string) ($validated['form']['theme_favicon_url'] ?? ''));
 
         if ($this->themeLogoFile) {
-            $themeLogoUrl = $this->storeThemeMedia($this->themeLogoFile, 'logos', $themeLogoUrl);
+            $themeLogoUrl = $this->storeThemeMedia($this->themeLogoFile, 'logos');
         }
 
         if ($this->themeFaviconFile) {
-            $themeFaviconUrl = $this->storeThemeMedia($this->themeFaviconFile, 'favicons', $themeFaviconUrl);
+            $themeFaviconUrl = $this->storeThemeMedia($this->themeFaviconFile, 'favicons');
         }
 
         $payload = [
@@ -1104,10 +1103,11 @@ class ManageSiteSettings extends Component
         ) ?: '[]';
     }
 
-    protected function storeThemeMedia(mixed $file, string $folder, string $existingUrl = ''): string
+    protected function storeThemeMedia(mixed $file, string $folder): string
     {
-        $scopeFolder = $this->scope === 'school'
-            ? 'school-' . $this->targetSchoolId()
+        $schoolId = $this->targetSchoolId();
+        $scopeFolder = $this->scope === 'school' && $schoolId
+            ? 'school-' . $schoolId
             : 'general';
         $storage = app(CloudinaryImageStorage::class);
         $newUrl = $storage->upload(
@@ -1115,28 +1115,7 @@ class ManageSiteSettings extends Component
             $storage->folder('site-settings/' . $scopeFolder . '/' . $folder)
         );
 
-        $this->deleteManagedThemeAsset($existingUrl, $newUrl);
-
         return $newUrl;
-    }
-
-    protected function deleteManagedThemeAsset(?string $existingUrl, string $newUrl = ''): void
-    {
-        $existingPath = parse_url((string) $existingUrl, PHP_URL_PATH);
-        $newPath = parse_url($newUrl, PHP_URL_PATH);
-
-        if (!$existingPath || $existingPath === $newPath) {
-            return;
-        }
-
-        if (!str_starts_with($existingPath, '/storage/site-settings/')) {
-            return;
-        }
-
-        $diskPath = ltrim(substr($existingPath, strlen('/storage/')), '/');
-        if ($diskPath !== '') {
-            Storage::disk('public')->delete($diskPath);
-        }
     }
 
     public function render()

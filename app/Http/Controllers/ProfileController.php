@@ -109,6 +109,7 @@ class ProfileController extends Controller
             'blood_group' => $request->blood_group,
         ];
 
+        $oldProfilePhotoPath = null;
         if ($request->hasFile('profile_photo')) {
             $storage = app(CloudinaryImageStorage::class);
             $newPath = $storage->upload(
@@ -116,14 +117,14 @@ class ProfileController extends Controller
                 $storage->folder('profile-photos', $user->school_id)
             );
 
-            if ($user->profile_photo_path && str_starts_with($user->profile_photo_path, 'profile-photos/')) {
-                Storage::disk('public')->delete($user->profile_photo_path);
-            }
-
+            $oldProfilePhotoPath = $user->profile_photo_path;
             $payload['profile_photo_path'] = $newPath;
         }
 
         $user->forceFill($payload)->save();
+        if ($oldProfilePhotoPath && str_starts_with($oldProfilePhotoPath, 'profile-photos/')) {
+            Storage::disk('public')->delete($oldProfilePhotoPath);
+        }
 
         if ($user->staffProfile) {
             $user->staffProfile->update([

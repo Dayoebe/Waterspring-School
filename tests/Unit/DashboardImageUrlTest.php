@@ -2,6 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Models\Assessment\Question;
+use App\Models\ExamPaper;
+use App\Models\MediaAsset;
+use App\Models\Notice;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -43,5 +47,26 @@ class DashboardImageUrlTest extends TestCase
 
         $this->assertSame($photoUrl, $user->profile_photo_url);
         $this->assertSame($logoUrl, $school->logo_url);
+    }
+
+    public function test_cloudinary_urls_are_used_for_other_dashboard_image_references(): void
+    {
+        $url = 'https://res.cloudinary.com/demo/image/upload/v1/gallery/image.png';
+        $question = new Question([
+            'question_media_disk' => 'cloudinary',
+            'question_media_path' => $url,
+        ]);
+        $examPaper = new ExamPaper(['attachment_path' => $url]);
+        $notice = new Notice(['attachment' => $url]);
+        $mediaAsset = new MediaAsset(['disk' => 'cloudinary', 'path' => $url]);
+
+        $this->assertSame($url, $question->question_media_url);
+        $this->assertSame($url, $examPaper->attachment_url);
+        $this->assertSame($url, $notice->attachment_url);
+        $this->assertSame($url, $mediaAsset->url);
+        $this->assertSame(
+            'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/gallery/image.png',
+            $mediaAsset->optimized_url
+        );
     }
 }

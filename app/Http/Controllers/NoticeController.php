@@ -169,19 +169,13 @@ class NoticeController extends Controller
     public function update(UpdateNoticeRequest $request, Notice $notice): RedirectResponse
     {
         $data = $request->validated();
-        $attachmentPath = $notice->attachment;
-
-        if ($request->boolean('remove_attachment') && $attachmentPath) {
-            $this->deleteLocalAttachment($attachmentPath);
-            $attachmentPath = null;
-        }
+        $oldAttachmentPath = $notice->attachment;
+        $attachmentPath = $oldAttachmentPath;
 
         if (isset($data['attachment'])) {
-            if ($attachmentPath) {
-                $this->deleteLocalAttachment($attachmentPath);
-            }
-
             $attachmentPath = $this->storeNoticeAttachment($data['attachment'], $request->user()->school_id);
+        } elseif ($request->boolean('remove_attachment')) {
+            $attachmentPath = null;
         }
 
         $notice->update([
@@ -192,6 +186,9 @@ class NoticeController extends Controller
             'active' => $request->boolean('active'),
             'attachment' => $attachmentPath,
         ]);
+        if ($oldAttachmentPath && $oldAttachmentPath !== $attachmentPath) {
+            $this->deleteLocalAttachment($oldAttachmentPath);
+        }
 
         return redirect()
             ->route('notices.show', $notice)

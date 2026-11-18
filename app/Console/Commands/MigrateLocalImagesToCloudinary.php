@@ -61,7 +61,7 @@ class MigrateLocalImagesToCloudinary extends Command
         );
         $this->migrateRecords(
             MediaAsset::query()->whereNotNull('path')->where(function (Builder $query): void {
-                $query->whereNull('disk')->orWhere('disk', '!=', 'cloudinary');
+                $query->whereNull('disk')->orWhereIn('disk', ['public', 'local']);
             }),
             'path',
             'public',
@@ -73,7 +73,7 @@ class MigrateLocalImagesToCloudinary extends Command
         );
         $this->migrateRecords(
             Question::query()->whereNotNull('question_media_path')->where(function (Builder $query): void {
-                $query->whereNull('question_media_disk')->orWhere('question_media_disk', '!=', 'cloudinary');
+                $query->whereNull('question_media_disk')->orWhereIn('question_media_disk', ['public', 'local']);
             }),
             'question_media_path',
             'public',
@@ -111,7 +111,7 @@ class MigrateLocalImagesToCloudinary extends Command
             )
         );
         $this->migrateRecords(
-            AdmissionDocument::query()->whereNotNull('path')->where('disk', '!=', 'cloudinary'),
+            AdmissionDocument::query()->whereNotNull('path')->whereIn('disk', ['public', 'local']),
             'path',
             'local',
             fn (AdmissionDocument $document): string => $storage->folder(
@@ -141,7 +141,9 @@ class MigrateLocalImagesToCloudinary extends Command
         $query->chunkById(100, function ($records) use ($pathField, $disk, $folderFor, $diskField, $clearDerivedMedia): void {
             foreach ($records as $record) {
                 $reference = $record->getAttribute($pathField);
-                $localPath = $this->localImagePath(is_string($reference) ? $reference : null, $disk);
+                $recordDisk = $diskField ? $record->getAttribute($diskField) : null;
+                $sourceDisk = is_string($recordDisk) && $recordDisk !== '' ? $recordDisk : $disk;
+                $localPath = $this->localImagePath(is_string($reference) ? $reference : null, $sourceDisk);
                 if (!$localPath) {
                     continue;
                 }
@@ -157,7 +159,12 @@ class MigrateLocalImagesToCloudinary extends Command
 
                 $record->setAttribute(
                     $pathField,
-                    $this->uploadLocalImage($localPath, $disk, $folder)
+                    $this->uploadLocalImage(
+                        $localPath,
+                        $sourceDisk,
+                        $folder,
+                        strtolower(class_basename($record)) . '-' . $record->getKey() . '-' . $pathField
+                    )
                 );
                 if ($diskField !== null) {
                     $record->setAttribute($diskField, 'cloudinary');
@@ -204,7 +211,12 @@ class MigrateLocalImagesToCloudinary extends Command
                             . 'SiteSetting#' . $setting->getKey() . ' ' . $key . ' into ' . $folder);
 
                         if ($this->executing) {
-                            $payload['theme'][$key] = $this->uploadLocalImage($localPath, 'public', $folder);
+                            $payload['theme'][$key] = $this->uploadLocalImage(
+                                $localPath,
+                                'public',
+                                $folder,
+                                'site-setting-' . $setting->getKey() . '-' . $key
+                            );
                             $setting->setAttribute($column, $payload);
                             $updated = true;
                         }
@@ -253,9 +265,9 @@ class MigrateLocalImagesToCloudinary extends Command
             : null;
     }
 
-    private function uploadLocalImage(string $path, string $disk, string $folder): string
+    private function uploadLocalImage(string $path, string $disk, string $folder, string $publicId): string
     {
-        $cacheKey = $disk . ':' . $path . ':' . $folder;
+        $cacheKey = $disk . ':' . $path . ':' . $folder . ':' . $publicId;
         if (isset($this->uploadedUrls[$cacheKey])) {
             return $this->uploadedUrls[$cacheKey];
         }
@@ -263,7 +275,8 @@ class MigrateLocalImagesToCloudinary extends Command
         return $this->uploadedUrls[$cacheKey] = app(CloudinaryImageStorage::class)->uploadFile(
             $path,
             basename($path),
-            $folder
+            $folder,
+            $publicId
         );
     }
 }
