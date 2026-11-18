@@ -16,6 +16,7 @@ use App\Models\SchemeOfWork;
 use App\Models\School;
 use App\Models\SchoolEvent;
 use App\Models\Section;
+use App\Models\StudentRecognition;
 use App\Models\StudentRecord;
 use App\Models\Subject;
 use App\Models\Syllabus;
@@ -71,6 +72,8 @@ class DashboardStats extends Component
     public $learningPanel = [];
 
     public $calendarPanel = [];
+
+    public $recognitionPanel = [];
 
     public $academicContext = [];
 
@@ -150,6 +153,8 @@ class DashboardStats extends Component
                 $this->loadCalendarPanel($user);
             }
         }
+
+        $this->loadRecognitionPanel($user);
 
         $this->loading = false;
     }
@@ -1291,6 +1296,51 @@ class DashboardStats extends Component
             ])
             ->values()
             ->all();
+    }
+
+    private function loadRecognitionPanel(User $user): void
+    {
+        $academicYearId = $user->school?->academic_year_id;
+        $classIds = collect();
+
+        if ($user->hasAnyRole(['principal', 'admin', 'super-admin', 'super_admin'])) {
+            $classIds = MyClass::query()
+                ->whereHas('classGroup', fn ($query) => $query->where('school_id', $user->school_id))
+                ->instructional()->pluck('id');
+        } elseif ($this->isTeacher) {
+            $classIds = MyClass::query()
+                ->whereHas('classGroup', fn ($query) => $query->where('school_id', $user->school_id))
+                ->whereHas('teachers', fn ($query) => $query->whereKey($user->id))
+                ->pluck('id');
+        } elseif ($this->isStudent) {
+            $classIds = collect([$user->studentRecord?->getClassForYear($academicYearId)?->id ?? $user->studentRecord?->my_class_id])->filter();
+        } elseif ($this->isParent) {
+            $classIds = $user->children()
+                ->where('users.school_id', $user->school_id)
+                ->whereNull('users.deleted_at')
+                ->with('studentRecord')
+                ->get()
+                ->map(fn (User $child) => $child->studentRecord?->getClassForYear($academicYearId)?->id ?? $child->studentRecord?->my_class_id)
+                ->filter()->unique();
+        }
+
+        $weekStart = Carbon::now('Africa/Lagos')->startOfWeek(Carbon::MONDAY)->toDateString();
+        $this->recognitionPanel = StudentRecognition::query()
+            ->where('school_id', $user->school_id)
+            ->publiclyVisible()
+            ->whereDate('week_start_date', $weekStart)
+            ->whereIn('my_class_id', $classIds)
+            ->with(['student', 'myClass'])
+            ->orderBy('my_class_id')
+            ->get()
+            ->map(fn (StudentRecognition $recognition): array => [
+                'id' => $recognition->id,
+                'student' => $recognition->student?->name,
+                'class' => $recognition->myClass?->name,
+                'category' => $recognition->category_label,
+                'week' => $recognition->week_start_date->format('M j').'–'.$recognition->week_end_date->format('M j, Y'),
+                'photo' => $recognition->photo_url,
+            ])->values()->all();
     }
 
     private function loadTeacherPanel(User $user): void

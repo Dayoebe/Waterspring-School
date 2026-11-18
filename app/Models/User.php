@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryImageStorage;
 use App\Support\SchoolContext;
 use App\Support\Username;
-use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -234,6 +234,11 @@ class User extends Authenticatable
     public function openLearningRecords()
     {
         return $this->hasMany(OpenLearningRecord::class);
+    }
+
+    public function recognitions()
+    {
+        return $this->hasMany(StudentRecognition::class, 'student_id');
     }
 
     // Profile Photo

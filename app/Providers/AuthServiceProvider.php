@@ -7,11 +7,13 @@ use App\Models\ClassPilot\Material as ClassPilotMaterial;
 use App\Models\Exam;
 use App\Models\ExamPaper;
 use App\Models\MyClass;
+use App\Models\StudentRecognition;
 use App\Policies\ClassPilotMaterialPolicy;
 use App\Policies\ClassPilotSessionPolicy;
 use App\Policies\ExamPaperPolicy;
 use App\Policies\ExamPolicy;
 use App\Policies\MyClassPolicy;
+use App\Policies\StudentRecognitionPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -27,6 +29,7 @@ class AuthServiceProvider extends ServiceProvider
         ExamPaper::class => ExamPaperPolicy::class,
         ClassPilotMaterial::class => ClassPilotMaterialPolicy::class,
         ClassPilotSession::class => ClassPilotSessionPolicy::class,
+        StudentRecognition::class => StudentRecognitionPolicy::class,
     ];
 
     /**

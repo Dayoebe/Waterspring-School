@@ -43,6 +43,7 @@ trait RestrictsTeacherPortalAccess
             'student-support.index',
             'appointments.index',
             'clubs.index',
+            'recognitions.index',
             'syllabi.index',
             'syllabi.create',
             'syllabi.show',

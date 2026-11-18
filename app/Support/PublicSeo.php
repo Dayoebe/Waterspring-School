@@ -19,7 +19,7 @@ class PublicSeo
     {
         $pages = [];
 
-        foreach (['home', 'about', 'team', 'academics', 'open-learning', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
+        foreach (['home', 'about', 'team', 'academics', 'open-learning', 'face-of-the-week', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'] as $routeName) {
             $pages[$routeName] = self::pageMeta($routeName, $settings);
         }
 
@@ -31,7 +31,7 @@ class PublicSeo
      */
     public static function pageMeta(?string $routeName, array $settings): array
     {
-        $routeName = in_array($routeName, ['home', 'about', 'team', 'academics', 'open-learning', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
+        $routeName = in_array($routeName, ['home', 'about', 'team', 'academics', 'open-learning', 'face-of-the-week', 'why-watersprings', 'admission', 'prospectus', 'gallery', 'contact'], true)
             ? $routeName
             : 'home';
 
@@ -63,6 +63,15 @@ class PublicSeo
                 'changefreq' => 'weekly',
                 'priority' => '0.9',
                 'schemaType' => 'LearningResource',
+            ],
+            'face-of-the-week' => [
+                'label' => 'Face of the Week',
+                'title' => 'Face of the Week | '.$siteName,
+                'description' => 'Celebrate Watersprings students recognised for excellence, character, leadership, creativity, growth and positive contributions.',
+                'summary' => 'The published weekly student recognition archive for classes at '.$siteName.'.',
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
+                'schemaType' => 'CollectionPage',
             ],
             'why-watersprings' => [
                 'label' => 'Why Watersprings',

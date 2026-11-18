@@ -5,6 +5,7 @@ namespace App\Livewire\Students;
 use App\Models\AcademicYear;
 use App\Models\Semester;
 use App\Models\StudentPeriodStatus;
+use App\Models\StudentRecognition;
 use App\Models\StudentRecord;
 use App\Models\User;
 use Livewire\Component;
@@ -12,16 +13,28 @@ use Livewire\Component;
 class StudentDetail extends Component
 {
     public User $student;
+
     public $activeTab = 'profile';
+
     public ?int $statusAcademicYearId = null;
+
     public ?int $statusSemesterId = null;
+
     public string $enrollmentStatus = 'withdrawn';
+
     public string $statusReason = '';
+
     public string $statusNotes = '';
+
     public $statusAcademicYears;
+
     public $statusSemesters;
+
     public $statusHistory;
+
     public ?int $studentRecordId = null;
+
+    public $recognitions;
 
     public function mount($studentId)
     {
@@ -29,7 +42,7 @@ class StudentDetail extends Component
             'studentRecord.myClass',
             'studentRecord.section',
             'parents',
-            'feeInvoices'
+            'feeInvoices',
         ])
             ->role('student')
             ->where('school_id', auth()->user()->school_id)
@@ -40,6 +53,13 @@ class StudentDetail extends Component
             ->firstOrFail();
         $this->student->setRelation('studentRecord', $studentRecord);
         $this->studentRecordId = $studentRecord->id;
+        $this->recognitions = StudentRecognition::query()
+            ->where('school_id', auth()->user()->school_id)
+            ->where('student_id', $this->student->id)
+            ->published()
+            ->with(['myClass', 'academicYear'])
+            ->latest('week_start_date')
+            ->get();
 
         // Check if parent accessing their child
         if (auth()->user()->hasRole('parent')) {
@@ -172,8 +192,8 @@ class StudentDetail extends Component
                     ['href' => route('dashboard'), 'text' => 'Dashboard'],
                     ['href' => route('students.index'), 'text' => 'Students'],
                     ['href' => route('students.show', $this->student->id), 'text' => $this->student->name, 'active' => true],
-                ]
+                ],
             ])
-            ->title($this->student->name . "'s Profile");
+            ->title($this->student->name."'s Profile");
     }
 }

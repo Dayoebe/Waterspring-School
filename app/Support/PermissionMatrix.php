@@ -35,6 +35,10 @@ class PermissionMatrix
             'manage school transport',
             'read staff directory',
             'manage staff directory',
+            'read student recognition',
+            'create student recognition',
+            'update student recognition',
+            'publish student recognition',
 
             'read teacher',
             'read staff directory',
@@ -189,6 +193,10 @@ class PermissionMatrix
             'approve classpilot material',
 
             'read student',
+            'read student recognition',
+            'create student recognition',
+            'update student recognition',
+            'publish student recognition',
             'read parent',
             'read school resources',
 
@@ -384,6 +392,10 @@ class PermissionMatrix
             'graduate student',
             'view graduations',
             'reset graduation',
+            'read student recognition',
+            'create student recognition',
+            'update student recognition',
+            'publish student recognition',
 
             'read parent',
             'create parent',

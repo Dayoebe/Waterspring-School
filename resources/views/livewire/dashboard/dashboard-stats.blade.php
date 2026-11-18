@@ -589,6 +589,18 @@
             </section>
         @endif
 
+        <section class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
+            <div class="flex flex-col gap-4 bg-sky-950 px-6 py-5 text-white sm:flex-row sm:items-center sm:justify-between">
+                <div><p class="text-xs font-black uppercase tracking-[0.2em] text-amber-300">Face of the Week</p><h3 class="mt-1 text-2xl font-black">Celebrating this week’s excellence</h3></div>
+                <div class="flex flex-wrap gap-2">@can('read student recognition')<a href="{{ route('recognitions.index') }}" class="rounded-xl bg-amber-300 px-4 py-2 text-sm font-bold text-sky-950">Manage recognitions</a>@endcan<a href="{{ route('face-of-the-week') }}" class="rounded-xl border border-white/30 px-4 py-2 text-sm font-bold text-white">Open Hall of Fame</a></div>
+            </div>
+            @if($recognitionPanel !== [])
+                <div class="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">@foreach($recognitionPanel as $recognition)<article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><img src="{{ $recognition['photo'] }}" alt="{{ $recognition['student'] }}" class="h-20 w-20 shrink-0 rounded-2xl object-cover"><div class="min-w-0"><h4 class="truncate font-black text-slate-900">{{ $recognition['student'] }}</h4><p class="text-sm font-semibold text-sky-800">{{ $recognition['class'] }}</p><p class="mt-1 line-clamp-2 text-xs text-slate-600">{{ $recognition['category'] }}</p><p class="mt-1 text-[11px] font-semibold text-slate-500">{{ $recognition['week'] }}</p></div></article>@endforeach</div>
+            @else
+                <div class="p-5"><div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-center text-sm text-slate-600">No published recognition is available for your classes this week.</div></div>
+            @endif
+        </section>
+
         <div class="grid gap-6 {{ ($isStudent || $isParent) ? 'grid-cols-1' : 'xl:grid-cols-[1.15fr,0.85fr]' }}">
 
             <section class="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">

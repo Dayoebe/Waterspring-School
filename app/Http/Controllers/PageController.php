@@ -74,6 +74,11 @@ class PageController extends Controller
         return view('livewire.site.gallery', compact('eventAlbums'));
     }
 
+    public function faceOfTheWeek()
+    {
+        return view('pages.face-of-the-week');
+    }
+
     public function prospectus()
     {
         return view('livewire.site.prospectus');

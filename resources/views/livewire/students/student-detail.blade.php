@@ -64,6 +64,11 @@
                     class="px-6 py-4 font-semibold transition whitespace-nowrap">
                 <i class="fas fa-money-bill-wave mr-2"></i>Fee Invoices
             </button>
+            <button @click="activeTab = 'recognitions'"
+                    :class="activeTab === 'recognitions' ? 'border-b-2 border-amber-500 text-amber-700' : 'text-gray-600 hover:text-amber-700'"
+                    class="px-6 py-4 font-semibold transition whitespace-nowrap">
+                <i class="fas fa-award mr-2"></i>Recognitions
+            </button>
         </div>
 
         <!-- Tab Content -->
@@ -344,6 +349,15 @@
                         </div>
                     @endif
                 </div>
+            </div>
+
+            <div x-show="activeTab === 'recognitions'" x-transition>
+                <div class="mb-6"><h3 class="text-xl font-bold text-gray-900">Face of the Week history</h3><p class="mt-1 text-sm text-gray-600">Published recognitions permanently associated with this student.</p></div>
+                @if($recognitions->isEmpty())
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center"><i class="fas fa-award text-4xl text-amber-300"></i><p class="mt-3 font-semibold text-gray-700">No published recognitions yet.</p></div>
+                @else
+                    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">@foreach($recognitions as $recognition)<x-recognition-card :recognition="$recognition" compact />@endforeach</div>
+                @endif
             </div>
 
             <!-- Fees Tab -->

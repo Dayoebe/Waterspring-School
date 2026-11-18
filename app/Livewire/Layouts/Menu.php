@@ -552,6 +552,13 @@ class Menu extends Component
                 'route' => 'clubs.index',
                 'permissions' => ['view clubs'],
             ],
+            [
+                'type' => 'menu-item',
+                'text' => 'Face of the Week',
+                'icon' => 'fas fa-award',
+                'route' => 'recognitions.index',
+                'permissions' => ['read student recognition'],
+            ],
         ];
     }
 

@@ -6,6 +6,7 @@
             ['label' => 'Why Watersprings', 'route' => 'why-watersprings', 'description' => 'What makes our school special'],
             ['label' => 'Our Team', 'route' => 'team', 'description' => 'Meet our leadership, teachers and staff'],
             ['label' => 'Gallery', 'route' => 'gallery', 'description' => 'A look at life in our school'],
+            ['label' => 'Face of the Week', 'route' => 'face-of-the-week', 'description' => 'Celebrate student excellence and character'],
         ]],
         'admissions' => ['label' => 'Admissions', 'items' => [
             ['label' => 'Admission Guide', 'route' => 'admission', 'description' => 'Apply for early years, primary or Years 7–9'],

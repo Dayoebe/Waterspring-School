@@ -72,6 +72,7 @@ use App\Livewire\Media\ManageMediaLibrary;
 use App\Livewire\Parents\AssignStudentsToParent;
 use App\Livewire\Parents\ManageParents;
 use App\Livewire\Parents\ParentDetail;
+use App\Livewire\Recognitions\ManageRecognitions;
 use App\Livewire\Resources\ManageSchoolResources;
 use App\Livewire\Result\Index;
 use App\Livewire\Result\StudentHistory;
@@ -181,6 +182,7 @@ Route::post('/admission/offer/{reference}/{token}', [AdmissionOfferController::c
     ->middleware('throttle:10,1')->name('admission.offer.accept');
 Route::get('/prospectus', [PageController::class, 'prospectus'])->name('prospectus');
 Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
+Route::get('/face-of-the-week', [PageController::class, 'faceOfTheWeek'])->name('face-of-the-week');
 Route::get('/team', [PageController::class, 'team'])->name('team');
 Route::get('/team/{staffProfile}', [PageController::class, 'staffProfile'])->whereNumber('staffProfile')->name('team.show');
 Route::get('/payments/paystack/callback', PaystackCallbackController::class)
@@ -240,6 +242,10 @@ Route::post('logout', [AuthController::class, 'logout'])
     ->name('logout');
 
 Route::middleware($schoolContextMiddleware)->group(function () {
+    Route::get('/recognitions/face-of-the-week', ManageRecognitions::class)
+        ->middleware('permission:read student recognition')
+        ->name('recognitions.index');
+
     Route::match(['GET', 'POST'], '/database/download', [DatabaseBackupController::class, 'download'])
         ->middleware('role:super-admin|super_admin')
         ->name('database.download');

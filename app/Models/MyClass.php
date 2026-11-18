@@ -50,6 +50,11 @@ class MyClass extends Model
         return $this->hasMany(StudentRecord::class);
     }
 
+    public function recognitions(): HasMany
+    {
+        return $this->hasMany(StudentRecognition::class);
+    }
+
     /**
      * Get class teachers for this class
      */

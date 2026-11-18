@@ -41,7 +41,6 @@ class AcademicYear extends Model
         return $this->hasMany(Semester::class);
     }
 
-
     /**
      * Get all of the exams for the AcademicYear.
      */
@@ -54,11 +53,17 @@ class AcademicYear extends Model
     {
         return $this->belongsTo(Result::class);
     }
+
     /**
      * The studentRecords that belong to the AcademicYear.
      */
     public function studentRecords(): BelongsToMany
     {
         return $this->belongsToMany(StudentRecord::class)->as('studentAcademicYearBasedRecords')->using(AcademicYearStudentRecord::class)->withPivot('my_class_id', 'section_id');
+    }
+
+    public function recognitions(): HasMany
+    {
+        return $this->hasMany(StudentRecognition::class);
     }
 }
