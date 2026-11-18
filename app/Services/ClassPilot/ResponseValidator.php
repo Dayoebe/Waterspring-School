@@ -63,6 +63,12 @@ class ResponseValidator
             'club_agenda' => [
                 'agenda' => 'required|string|max:10000',
             ],
+            'student_recognition_reason' => [
+                'reason' => 'required|string|min:20|max:1200',
+            ],
+            'student_recognition_message' => [
+                'message' => 'required|string|min:10|max:500',
+            ],
             default => ['answer' => 'required|string|max:30000', 'suggested_next_steps' => 'nullable|array'],
         };
 

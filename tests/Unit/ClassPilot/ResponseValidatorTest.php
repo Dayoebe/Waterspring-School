@@ -98,6 +98,18 @@ class ResponseValidatorTest extends TestCase
         ]));
     }
 
+    public function test_it_accepts_student_recognition_reason_and_message_drafts(): void
+    {
+        $validator = app(ResponseValidator::class);
+
+        $this->assertArrayHasKey('reason', $validator->validate('student_recognition_reason', [
+            'reason' => 'The student demonstrates integrity through respectful and responsible choices in the class community.',
+        ]));
+        $this->assertArrayHasKey('message', $validator->validate('student_recognition_message', [
+            'message' => 'Congratulations on this recognition. Keep making thoughtful choices and encouraging others.',
+        ]));
+    }
+
     private function syllabusDraft(): array
     {
         return [

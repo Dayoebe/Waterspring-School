@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\InSchool;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Semester extends Model
@@ -35,19 +36,25 @@ class Semester extends Model
         return $this->belongsTo(School::class);
     }
 
+    public function recognitions()
+    {
+        return $this->hasMany(StudentRecognition::class);
+    }
+
     // public function result()
     // {
     //     return $this->belongsTo(Result::class);
     // }
 
     public function results()
-{
-    return $this->hasMany(Result::class);
-}
+    {
+        return $this->hasMany(Result::class);
+    }
+
     /**
      * Get all of the exams for the Semester.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function exams()
     {
@@ -61,5 +68,4 @@ class Semester extends Model
     {
         return $this->hasManyThrough(ExamSlot::class, Exam::class, 'semester_id');
     }
-    
 }

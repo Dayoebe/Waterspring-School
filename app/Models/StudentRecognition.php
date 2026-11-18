@@ -13,7 +13,7 @@ class StudentRecognition extends Model
     use HasFactory;
 
     protected $fillable = [
-        'school_id', 'student_id', 'my_class_id', 'academic_year_id', 'category',
+        'school_id', 'student_id', 'my_class_id', 'academic_year_id', 'semester_id', 'category',
         'custom_category', 'reason', 'congratulatory_message', 'week_start_date',
         'week_end_date', 'photo_path', 'status', 'public_display_approved',
         'published_slot', 'custom_category_approved_at', 'custom_category_approved_by',
@@ -48,6 +48,11 @@ class StudentRecognition extends Model
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
     }
 
     public function creator()

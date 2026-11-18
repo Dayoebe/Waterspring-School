@@ -7,9 +7,11 @@ use App\Models\AcademicYear;
 use App\Models\ClassGroup;
 use App\Models\MyClass;
 use App\Models\School;
+use App\Models\Semester;
 use App\Models\StudentRecognition;
 use App\Models\StudentRecord;
 use App\Models\User;
+use App\Services\ClassPilot\Contracts\AiProvider;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,7 +64,6 @@ class FaceOfTheWeekTest extends TestCase
             ->call('openCreate')
             ->assertSee($context['class']->name)
             ->assertDontSee($otherClass->name)
-            ->set('academicYearId', (string) $context['year']->id)
             ->set('classId', (string) $context['class']->id)
             ->set('studentId', (string) $context['student']->id)
             ->set('category', 'character_integrity')
@@ -76,10 +77,70 @@ class FaceOfTheWeekTest extends TestCase
         $this->assertDatabaseHas('student_recognitions', [
             'student_id' => $context['student']->id,
             'my_class_id' => $context['class']->id,
+            'academic_year_id' => $context['year']->id,
+            'semester_id' => $context['term']->id,
             'status' => 'published',
             'published_slot' => 1,
             'published_by' => $teacher->id,
         ]);
+    }
+
+    public function test_ai_drafts_both_blank_fields_without_overwriting_or_saving(): void
+    {
+        $context = $this->context();
+        $teacher = $this->user($context['school'], 'Drafting Teacher');
+        $teacher->assignRole(Role::findOrCreate('teacher', 'web'));
+        foreach (['read student recognition', 'create student recognition'] as $permission) {
+            $teacher->givePermissionTo(Permission::findOrCreate($permission, 'web'));
+        }
+        $context['class']->teachers()->attach($teacher->id);
+        $provider = new FakeRecognitionProvider;
+        app()->instance(AiProvider::class, $provider);
+
+        $component = Livewire::actingAs($teacher)
+            ->test(ManageRecognitions::class)
+            ->call('openCreate')
+            ->assertSee('Active academic context')
+            ->assertSee($context['year']->name)
+            ->assertSee($context['term']->name)
+            ->assertDontSee('Select session')
+            ->set('classId', (string) $context['class']->id)
+            ->set('studentId', (string) $context['student']->id)
+            ->set('category', 'character_integrity')
+            ->call('generateReasonWithAi')
+            ->assertHasNoErrors()
+            ->assertSet('reason', 'Recognition Student demonstrates integrity through respectful and responsible choices, providing a positive example for the class community.')
+            ->call('generateMessageWithAi')
+            ->assertHasNoErrors()
+            ->assertSet('message', 'Congratulations, Recognition Student! Your integrity and positive example in Primary One are worthy of recognition. Keep making thoughtful choices and encouraging others.')
+            ->assertSee('never saved or published');
+
+        $this->assertCount(2, $provider->calls);
+        $this->assertDatabaseCount('student_recognitions', 0);
+        $this->assertDatabaseHas('class_pilot_usage', [
+            'user_id' => $teacher->id,
+            'feature' => 'student_recognition_reason',
+            'status' => 'completed',
+        ]);
+
+        $component->set('reason', 'Teacher-written verified reason that must remain unchanged.')
+            ->call('generateReasonWithAi')
+            ->assertHasErrors('reasonAiGeneration')
+            ->assertSet('reason', 'Teacher-written verified reason that must remain unchanged.');
+
+        $readOnlyTeacher = $this->user($context['school'], 'Read Only Teacher');
+        $readOnlyTeacher->assignRole(Role::findOrCreate('teacher', 'web'));
+        $readOnlyTeacher->givePermissionTo(Permission::findOrCreate('read student recognition', 'web'));
+        $context['class']->teachers()->attach($readOnlyTeacher->id);
+        Livewire::actingAs($readOnlyTeacher)
+            ->test(ManageRecognitions::class)
+            ->set('classId', (string) $context['class']->id)
+            ->set('studentId', (string) $context['student']->id)
+            ->set('category', 'character_integrity')
+            ->call('generateReasonWithAi')
+            ->assertForbidden();
+
+        $this->assertCount(2, $provider->calls);
     }
 
     private function context(): array
@@ -87,7 +148,8 @@ class FaceOfTheWeekTest extends TestCase
         Role::findOrCreate('student', 'web');
         $school = School::query()->create(['name' => 'Recognition School', 'code' => 'REC'.uniqid()]);
         $year = AcademicYear::query()->create(['start_year' => '2030', 'stop_year' => '2031', 'school_id' => $school->id]);
-        $school->update(['academic_year_id' => $year->id]);
+        $term = Semester::query()->create(['name' => 'First Term', 'school_id' => $school->id, 'academic_year_id' => $year->id]);
+        $school->update(['academic_year_id' => $year->id, 'semester_id' => $term->id]);
         $group = ClassGroup::query()->create(['name' => 'Primary', 'school_id' => $school->id]);
         $class = MyClass::query()->create(['name' => 'Primary One', 'class_group_id' => $group->id]);
         $student = $this->user($school, 'Recognition Student');
@@ -107,7 +169,7 @@ class FaceOfTheWeekTest extends TestCase
         ]);
         $creator = $this->user($school, 'Recognition Administrator');
 
-        return compact('school', 'year', 'group', 'class', 'student', 'record', 'creator');
+        return compact('school', 'year', 'term', 'group', 'class', 'student', 'record', 'creator');
     }
 
     private function recognition(array $context, string $studentName, string $status, bool $public): StudentRecognition
@@ -123,6 +185,7 @@ class FaceOfTheWeekTest extends TestCase
             'student_id' => $student->id,
             'my_class_id' => $context['class']->id,
             'academic_year_id' => $context['year']->id,
+            'semester_id' => $context['term']->id,
             'category' => 'character_integrity',
             'reason' => 'A specific record of excellent conduct and a positive contribution to the class.',
             'congratulatory_message' => 'Congratulations on this well-earned recognition.',
@@ -146,5 +209,34 @@ class FaceOfTheWeekTest extends TestCase
             'school_id' => $school->id,
             'locked' => false,
         ]);
+    }
+}
+
+class FakeRecognitionProvider implements AiProvider
+{
+    public array $calls = [];
+
+    public function generate(string $system, string $prompt): array
+    {
+        $this->calls[] = compact('system', 'prompt');
+
+        return str_contains($system, 'student_recognition_reason')
+            ? ['reason' => 'Recognition Student demonstrates integrity through respectful and responsible choices, providing a positive example for the class community.']
+            : ['message' => 'Congratulations, Recognition Student! Your integrity and positive example in Primary One are worthy of recognition. Keep making thoughtful choices and encouraging others.'];
+    }
+
+    public function name(): string
+    {
+        return 'fake';
+    }
+
+    public function model(): string
+    {
+        return 'recognition-test-model';
+    }
+
+    public function configured(): bool
+    {
+        return true;
     }
 }

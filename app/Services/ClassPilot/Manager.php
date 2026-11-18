@@ -58,6 +58,8 @@ class Manager
             'club_activity' => '{"description":"..."}',
             'club_term_plan' => '{"objectives":"...","strengths":"...","focus_areas":"...","resources_needed":"...","success_indicators":"..."}',
             'club_agenda' => '{"agenda":"..."}',
+            'student_recognition_reason' => '{"reason":"..."}',
+            'student_recognition_message' => '{"message":"..."}',
             'tutor' => '{"answer":"...","hints":["..."],"example":"...","suggested_next_steps":["..."]}',
             'family' => '{"answer":"...","key_points":["..."],"practical_steps":["..."],"reflection_questions":["..."],"when_to_seek_support":["..."],"suggested_next_steps":["..."]}',
         ];
@@ -67,6 +69,7 @@ class Manager
             $feature === 'family' => 'No approved school material is included. For general home, family, or faith questions, give clearly framed general guidance without implying it comes from school records.',
             in_array($feature, ['syllabus', 'scheme', 'scheme_topic'], true) => 'No approved curriculum material was found. Use general educational knowledge without claiming official curriculum alignment.',
             in_array($feature, ['club_profile', 'club_activity', 'club_term_plan', 'club_agenda'], true) => 'No approved club-planning source is included. Use general enrichment-planning knowledge without inventing school commitments, people, dates, locations, budgets, or available resources.',
+            in_array($feature, ['student_recognition_reason', 'student_recognition_message'], true) => 'Use only the nomination facts explicitly supplied. Do not invent marks, rankings, incidents, awards, quotations, dates, or achievements.',
             default => 'No approved curriculum material was found. Say clearly that guidance uses general educational knowledge.',
         };
         $featureInstruction = $feature === 'syllabus'
@@ -78,6 +81,8 @@ class Manager
                 'club_activity' => 'Create an editable club activity description for coordinator review. Use the supplied club and activity title plus only the schedule or location facts explicitly provided. Describe purpose, likely student participation, preparation, and expected learning without claiming the activity has happened or inventing people, dates, locations, costs, or outcomes. Do not include Markdown code fences.',
                 'club_term_plan' => 'Create an editable club term-plan draft for coordinator review. Use the supplied club, term goal, academic year, term, and existing draft. Fill every field with realistic, age-appropriate planning content. Do not invent available resources, budgets, partnerships, achievements, or school commitments. Do not write coordinator notes or imply the plan is approved or published. Do not include Markdown code fences.',
                 'club_agenda' => 'Create editable weekly club agenda details for coordinator review. Use the supplied weekly focus, term plan, week, and any explicitly supplied date. Include practical tasks, discussion or practice, and an expected outcome. Do not claim the agenda has happened or invent people, locations, costs, or available resources. Do not include Markdown code fences.',
+                'student_recognition_reason' => 'Create one concise, respectful reason for a teacher to review before recognising the selected student. Base it only on the selected recognition category and supplied nomination facts. Do not invent a specific incident, mark, ranking, award, quotation, or outcome. Use the student name naturally, write 35 to 80 words, and do not include placeholders or Markdown.',
+                'student_recognition_message' => 'Create one warm, age-appropriate congratulatory message for a teacher to review. Use the student name, class, and recognition category supplied. Celebrate and encourage the student without inventing facts, promises, rankings, awards, or quotations. Write 20 to 55 words and do not include Markdown.',
                 default => '',
             };
 
