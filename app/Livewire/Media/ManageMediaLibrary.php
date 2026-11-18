@@ -77,7 +77,8 @@ class ManageMediaLibrary extends Component
                 $this->mediaFile,
                 $storage->folder('media-library/' . $schoolId . '/' . now()->format('Y/m'))
             );
-            $imageSize = @getimagesize($this->mediaFile->getRealPath());
+            $imagePath = $this->mediaFile->getRealPath();
+            $imageSize = is_string($imagePath) ? @getimagesize($imagePath) : false;
             if (is_array($imageSize) && count($imageSize) >= 2) {
                 $width = (int) $imageSize[0];
                 $height = (int) $imageSize[1];

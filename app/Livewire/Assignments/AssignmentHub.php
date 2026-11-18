@@ -371,9 +371,6 @@ class AssignmentHub extends Component
         $path = $existing?->attachment_path;
         $name = $existing?->attachment_name;
         if ($this->submissionFile) {
-            if ($path && !filter_var($path, FILTER_VALIDATE_URL)) {
-                Storage::disk('local')->delete($path);
-            }
             $path = $this->storeAssignmentFile(
                 $this->submissionFile,
                 'assignment-submissions',
@@ -407,6 +404,9 @@ class AssignmentHub extends Component
 
             return $submission;
         });
+        if ($this->submissionFile && $existing?->attachment_path && !filter_var($existing->attachment_path, FILTER_VALIDATE_URL)) {
+            Storage::disk('local')->delete($existing->attachment_path);
+        }
         $notifications = app(AssignmentNotificationService::class);
         $notifications->sendSubmissionReceived($submission);
         if ($submission->status === 'graded') {

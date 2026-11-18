@@ -132,8 +132,8 @@ class ManageSchools extends Component
             'email' => $this->email,
         ];
 
+        $oldLogoPath = $school->logo_path;
         if ($this->logo) {
-            $this->deleteLocalLogo($school->logo_path);
             $storage = app(CloudinaryImageStorage::class);
             $data['logo_path'] = $storage->upload(
                 $this->logo,
@@ -142,6 +142,9 @@ class ManageSchools extends Component
         }
 
         $school->update($data);
+        if ($this->logo) {
+            $this->deleteLocalLogo($oldLogoPath);
+        }
 
         session()->flash('success', 'School updated successfully');
         $this->switchMode('list');

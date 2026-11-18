@@ -864,9 +864,10 @@ class CbtManagement extends Component
             'question_media_original_name' => $question->question_media_original_name,
             'question_media_mime_type' => $question->question_media_mime_type,
         ];
+        $oldQuestionMediaDisk = $question->question_media_disk;
+        $oldQuestionMediaPath = $question->question_media_path;
 
         if ($this->remove_question_media || $this->question_media) {
-            $this->deleteQuestionMediaFile($question->question_media_disk, $question->question_media_path);
             $questionMedia = [
                 'question_media_disk' => null,
                 'question_media_path' => null,
@@ -894,6 +895,9 @@ class CbtManagement extends Component
             'explanation' => $this->explanation,
             ...$questionMedia,
         ]);
+        if ($this->remove_question_media || $this->question_media) {
+            $this->deleteQuestionMediaFile($oldQuestionMediaDisk, $oldQuestionMediaPath);
+        }
 
         $this->resetQuestionForm();
         $this->showEditQuestionModal = false;
