@@ -66,6 +66,8 @@ class FaceOfTheWeekTest extends TestCase
             ->assertDontSee($otherClass->name)
             ->set('classId', (string) $context['class']->id)
             ->set('studentId', (string) $context['student']->id)
+            ->assertSee('Student profile photograph')
+            ->assertSee($context['student']->profile_photo_url, false)
             ->set('category', 'character_integrity')
             ->set('reason', 'This student consistently acts with honesty, kindness and respect for classmates.')
             ->set('message', 'Congratulations on setting a thoughtful example for your class.')
@@ -153,6 +155,7 @@ class FaceOfTheWeekTest extends TestCase
         $group = ClassGroup::query()->create(['name' => 'Primary', 'school_id' => $school->id]);
         $class = MyClass::query()->create(['name' => 'Primary One', 'class_group_id' => $group->id]);
         $student = $this->user($school, 'Recognition Student');
+        $student->update(['profile_photo_path' => 'students/recognition-student.jpg']);
         $student->assignRole('student');
         $record = StudentRecord::query()->create([
             'user_id' => $student->id,

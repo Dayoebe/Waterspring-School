@@ -421,6 +421,14 @@ class ManageRecognitions extends Component
         if ($this->classId && $this->contextAcademicYearId) {
             $students = $classes->firstWhere('id', (int) $this->classId)?->studentsForAcademicYear($this->contextAcademicYearId) ?? collect();
         }
+        $selectedStudent = $this->studentId ? $students->firstWhere('id', (int) $this->studentId) : null;
+        $editingRecognition = $this->editingId ? $this->scopedQuery()->find($this->editingId) : null;
+        $photoPreviewUrl = $editingRecognition?->photo_path
+            ? app(CloudinaryImageStorage::class)->url($editingRecognition->photo_path)
+            : $selectedStudent?->profile_photo_url;
+        $photoPreviewSource = $editingRecognition?->photo_path
+            ? 'Current recognition photograph'
+            : 'Student profile photograph';
         $academicContext = [
             'year' => $this->contextAcademicYearId ? auth()->user()->school?->academicYears()->find($this->contextAcademicYearId)?->name : null,
             'term' => $this->contextSemesterId ? Semester::query()->where('school_id', auth()->user()->school_id)->find($this->contextSemesterId)?->name : null,
@@ -430,7 +438,7 @@ class ManageRecognitions extends Component
             ->when(trim($this->search) !== '', fn ($q) => $q->whereHas('student', fn ($u) => $u->where('name', 'like', '%'.trim($this->search).'%')))
             ->latest('week_start_date')->latest('id')->paginate(12);
 
-        return view('livewire.recognitions.manage-recognitions', compact('classes', 'students', 'academicContext', 'recognitions'))
+        return view('livewire.recognitions.manage-recognitions', compact('classes', 'students', 'selectedStudent', 'photoPreviewUrl', 'photoPreviewSource', 'academicContext', 'recognitions'))
             ->layout('layouts.dashboard', [
                 'title' => 'Face of the Week',
                 'description' => 'Select, review and publish weekly student recognition.',
