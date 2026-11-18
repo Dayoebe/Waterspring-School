@@ -33,12 +33,15 @@ class CloudinaryImageStorageTest extends TestCase
             'https://res.cloudinary.com/demo/image/upload/v1/waterspring/profile-photos/avatar.png',
             $url
         );
-        Http::assertSent(fn (Request $request): bool =>
-            $request->url() === 'https://api.cloudinary.com/v1_1/demo/image/upload'
-            && $request->method() === 'POST'
-            && ($request->data()['folder'] ?? null) === 'waterspring/profile-photos/school-7'
-            && isset($request->data()['signature'])
-        );
+        Http::assertSent(function (Request $request): bool {
+            $data = collect($request->data());
+            $folder = $data->firstWhere('name', 'folder');
+
+            return $request->url() === 'https://api.cloudinary.com/v1_1/demo/image/upload'
+                && $request->method() === 'POST'
+                && ($folder['contents'] ?? null) === 'waterspring/profile-photos/school-7'
+                && $data->contains(fn (array $part): bool => ($part['name'] ?? null) === 'signature');
+        });
     }
 
     public function test_it_throws_when_cloudinary_credentials_are_missing(): void

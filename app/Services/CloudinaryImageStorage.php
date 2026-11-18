@@ -19,7 +19,7 @@ class CloudinaryImageStorage
         return $this->uploadFile($path, $file->getClientOriginalName(), $folder);
     }
 
-    public function uploadFile(string $path, string $originalName, string $folder): string
+    public function uploadFile(string $path, string $originalName, string $folder, ?string $publicId = null): string
     {
         if (!is_file($path) || !is_readable($path)) {
             throw new RuntimeException('The local image file is unavailable.');
@@ -40,9 +40,14 @@ class CloudinaryImageStorage
             'api_key' => $credentials['api_key'],
             'folder' => $folder,
             'timestamp' => time(),
-            'use_filename' => 1,
-            'unique_filename' => 1,
         ];
+        if ($publicId !== null) {
+            $params['public_id'] = $publicId;
+            $params['overwrite'] = 1;
+        } else {
+            $params['use_filename'] = 1;
+            $params['unique_filename'] = 1;
+        }
 
         $paramsToSign = $params;
         unset($paramsToSign['api_key']);
