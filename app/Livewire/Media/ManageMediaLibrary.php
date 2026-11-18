@@ -3,6 +3,7 @@
 namespace App\Livewire\Media;
 
 use App\Models\MediaAsset;
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -62,20 +63,31 @@ class ManageMediaLibrary extends Component
             return;
         }
 
-        $disk = 'public';
-        $storedPath = $this->mediaFile->store('media-library/' . $schoolId . '/' . now()->format('Y/m'), $disk);
-
         $mimeType = (string) ($this->mediaFile->getMimeType() ?: 'application/octet-stream');
         $fileSize = (int) ($this->mediaFile->getSize() ?: 0);
-
         $optimizedPath = null;
         $thumbnails = [];
         $width = null;
         $height = null;
+        $storage = app(CloudinaryImageStorage::class);
 
         if (str_starts_with($mimeType, 'image/')) {
-            [$width, $height] = $this->imageDimensions($disk, $storedPath);
-            [$optimizedPath, $thumbnails] = $this->optimizeImage($disk, $storedPath, $mimeType, $width, $height);
+            $disk = 'cloudinary';
+            $storedPath = $storage->upload(
+                $this->mediaFile,
+                $storage->folder('media-library/' . $schoolId . '/' . now()->format('Y/m'))
+            );
+            $imageSize = @getimagesize($this->mediaFile->getRealPath());
+            if (is_array($imageSize) && count($imageSize) >= 2) {
+                $width = (int) $imageSize[0];
+                $height = (int) $imageSize[1];
+            }
+        } else {
+            $disk = 'public';
+            $storedPath = $this->mediaFile->store(
+                'media-library/' . $schoolId . '/' . now()->format('Y/m'),
+                $disk
+            );
         }
 
         MediaAsset::query()->create([
@@ -106,16 +118,18 @@ class ManageMediaLibrary extends Component
             ->where('school_id', auth()->user()?->school_id)
             ->findOrFail($assetId);
 
-        Storage::disk($asset->disk ?: 'public')->delete($asset->path);
+        if ($asset->disk !== 'cloudinary') {
+            Storage::disk($asset->disk ?: 'public')->delete($asset->path);
 
-        if ($asset->optimized_path) {
-            Storage::disk($asset->disk ?: 'public')->delete($asset->optimized_path);
-        }
+            if ($asset->optimized_path) {
+                Storage::disk($asset->disk ?: 'public')->delete($asset->optimized_path);
+            }
 
-        if (is_array($asset->thumbnails)) {
-            foreach ($asset->thumbnails as $thumbPath) {
-                if (is_string($thumbPath) && $thumbPath !== '') {
-                    Storage::disk($asset->disk ?: 'public')->delete($thumbPath);
+            if (is_array($asset->thumbnails)) {
+                foreach ($asset->thumbnails as $thumbPath) {
+                    if (is_string($thumbPath) && $thumbPath !== '') {
+                        Storage::disk($asset->disk ?: 'public')->delete($thumbPath);
+                    }
                 }
             }
         }
@@ -123,107 +137,6 @@ class ManageMediaLibrary extends Component
         $asset->delete();
 
         session()->flash('success', 'Media asset deleted.');
-    }
-
-    protected function imageDimensions(string $disk, string $path): array
-    {
-        $fullPath = Storage::disk($disk)->path($path);
-        $size = @getimagesize($fullPath);
-
-        if (!is_array($size) || count($size) < 2) {
-            return [null, null];
-        }
-
-        return [(int) $size[0], (int) $size[1]];
-    }
-
-    protected function optimizeImage(string $disk, string $path, string $mimeType, ?int $width, ?int $height): array
-    {
-        if (!function_exists('imagecreatefromstring') || !function_exists('imagescale')) {
-            return [null, []];
-        }
-
-        $fullPath = Storage::disk($disk)->path($path);
-        $binary = @file_get_contents($fullPath);
-        if ($binary === false) {
-            return [null, []];
-        }
-
-        $sourceImage = @imagecreatefromstring($binary);
-        if (!$sourceImage) {
-            return [null, []];
-        }
-
-        $sourceWidth = $width ?: imagesx($sourceImage);
-        $sourceHeight = $height ?: imagesy($sourceImage);
-
-        $optimizedPath = null;
-        $thumbnails = [];
-
-        try {
-            $maxWidth = min(1600, $sourceWidth > 0 ? $sourceWidth : 1600);
-            $optimizedImage = $sourceImage;
-
-            if ($sourceWidth > $maxWidth && $maxWidth > 0) {
-                $scaledHeight = (int) round(($sourceHeight / $sourceWidth) * $maxWidth);
-                $scaledImage = @imagescale($sourceImage, $maxWidth, $scaledHeight, IMG_BICUBIC_FIXED);
-                if ($scaledImage) {
-                    $optimizedImage = $scaledImage;
-                }
-            }
-
-            $base = pathinfo($path, PATHINFO_FILENAME);
-            $dir = trim(pathinfo($path, PATHINFO_DIRNAME), '.');
-
-            if (function_exists('imagewebp')) {
-                $optimizedPath = $dir . '/' . $base . '-optimized.webp';
-                @imagewebp($optimizedImage, Storage::disk($disk)->path($optimizedPath), 82);
-
-                $thumbSmall = $dir . '/' . $base . '-thumb-400.webp';
-                $thumbLarge = $dir . '/' . $base . '-thumb-900.webp';
-
-                $this->writeWebpThumb($optimizedImage, Storage::disk($disk)->path($thumbSmall), 400);
-                $this->writeWebpThumb($optimizedImage, Storage::disk($disk)->path($thumbLarge), 900);
-
-                $thumbnails = [
-                    'small' => $thumbSmall,
-                    'large' => $thumbLarge,
-                ];
-            }
-
-            if ($optimizedImage !== $sourceImage) {
-                imagedestroy($optimizedImage);
-            }
-        } finally {
-            imagedestroy($sourceImage);
-        }
-
-        return [$optimizedPath, $thumbnails];
-    }
-
-    protected function writeWebpThumb($sourceImage, string $targetPath, int $targetWidth): void
-    {
-        if (!function_exists('imagewebp')) {
-            return;
-        }
-
-        $srcWidth = imagesx($sourceImage);
-        $srcHeight = imagesy($sourceImage);
-
-        if ($srcWidth <= 0 || $srcHeight <= 0) {
-            return;
-        }
-
-        $width = min($targetWidth, $srcWidth);
-        $height = (int) round(($srcHeight / $srcWidth) * $width);
-
-        $thumb = @imagescale($sourceImage, $width, $height, IMG_BICUBIC_FIXED);
-        if (!$thumb) {
-            return;
-        }
-
-        @imagewebp($thumb, $targetPath, 80);
-        imagedestroy($thumb);
     }
 
     public function render()

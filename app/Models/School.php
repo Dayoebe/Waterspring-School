@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,7 +28,8 @@ class School extends Model
 
     public function getLogoUrlAttribute()
     {
-        return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : asset(config('app.logo'));
+        return app(CloudinaryImageStorage::class)->url($this->logo_path)
+            ?: asset(config('app.logo'));
     }
 
     /**

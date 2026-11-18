@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryImageStorage;
 use App\Traits\InSchool;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +51,11 @@ class Notice extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getAttachmentUrlAttribute(): ?string
+    {
+        return app(CloudinaryImageStorage::class)->url($this->attachment);
     }
 
     public function readByUsers(): BelongsToMany

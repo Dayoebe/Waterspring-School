@@ -5,6 +5,7 @@ namespace App\Livewire\Cbt;
 use App\Models\Assessment\Assessment;
 use App\Models\Assessment\AssessmentStudentLock;
 use App\Models\Assessment\Question;
+use App\Services\CloudinaryImageStorage;
 use App\Models\Assessment\StudentAnswer;
 use App\Models\MyClass;
 use App\Models\Subject;
@@ -1342,17 +1343,27 @@ class CbtManagement extends Component
         }
 
         $schoolId = (int) $this->currentSchoolId();
-        $disk = 'public';
-        $path = $this->question_media->store(
-            'cbt-questions/'.$schoolId.'/'.$assessmentId.'/'.now()->format('Y/m'),
-            $disk
-        );
+        $mimeType = $this->question_media->getMimeType() ?: 'application/octet-stream';
+        if (str_starts_with($mimeType, 'image/')) {
+            $storage = app(CloudinaryImageStorage::class);
+            $disk = 'cloudinary';
+            $path = $storage->upload(
+                $this->question_media,
+                $storage->folder('cbt-questions/assessment-'.$assessmentId.'/'.now()->format('Y/m'), $schoolId)
+            );
+        } else {
+            $disk = 'public';
+            $path = $this->question_media->store(
+                'cbt-questions/'.$schoolId.'/'.$assessmentId.'/'.now()->format('Y/m'),
+                $disk
+            );
+        }
 
         return [
             'disk' => $disk,
             'path' => $path,
             'original_name' => $this->question_media->getClientOriginalName(),
-            'mime_type' => $this->question_media->getMimeType() ?: 'application/octet-stream',
+            'mime_type' => $mimeType,
         ];
     }
 
@@ -1362,7 +1373,9 @@ class CbtManagement extends Component
             return;
         }
 
-        Storage::disk($disk ?: 'public')->delete($path);
+        if ($disk !== 'cloudinary' && !filter_var($path, FILTER_VALIDATE_URL)) {
+            Storage::disk($disk ?: 'public')->delete($path);
+        }
     }
 
     protected function assessmentsForCurrentSchool(): Builder

@@ -8,6 +8,7 @@ use App\Models\Exam;
 use App\Models\ExamPaper;
 use App\Models\Semester;
 use App\Models\Subject;
+use App\Services\CloudinaryImageStorage;
 use App\Traits\ResolvesAccessibleStudents;
 use App\Traits\RestrictsTeacherExamPaperManagement;
 use Illuminate\Database\Eloquent\Builder;
@@ -163,7 +164,7 @@ class ExamPaperController extends Controller
         $this->ensureCurrentUserCanManagePaperScope($examPaper->my_class_id, $examPaper->subject_id);
 
         if ($examPaper->attachment_path) {
-            Storage::disk('public')->delete($examPaper->attachment_path);
+            $this->deleteLocalAttachment($examPaper->attachment_path);
         }
 
         $examPaper->delete();
@@ -326,7 +327,7 @@ class ExamPaperController extends Controller
         }
 
         return [
-            'attachment_path' => $file->store('exam-papers', 'public'),
+            'attachment_path' => $this->storeExamAttachment($file),
             'attachment_name' => $file->getClientOriginalName(),
             'attachment_mime_type' => $file->getMimeType(),
             'attachment_size' => $file->getSize(),
@@ -337,7 +338,7 @@ class ExamPaperController extends Controller
     {
         if ($request->file('attachment')) {
             if ($examPaper->attachment_path) {
-                Storage::disk('public')->delete($examPaper->attachment_path);
+                $this->deleteLocalAttachment($examPaper->attachment_path);
             }
 
             return $this->storeAttachment($request);
@@ -345,7 +346,7 @@ class ExamPaperController extends Controller
 
         if ($request->boolean('remove_attachment')) {
             if ($examPaper->attachment_path) {
-                Storage::disk('public')->delete($examPaper->attachment_path);
+                $this->deleteLocalAttachment($examPaper->attachment_path);
             }
 
             return [
@@ -368,6 +369,28 @@ class ExamPaperController extends Controller
     {
         if (!$examPaper->is_sealed) {
             return;
+        }
+
+        protected function storeExamAttachment(\Illuminate\Http\UploadedFile $file): string
+        {
+            $mimeType = (string) ($file->getMimeType() ?: '');
+            if (str_starts_with($mimeType, 'image/')) {
+                $storage = app(CloudinaryImageStorage::class);
+
+                return $storage->upload(
+                    $file,
+                    $storage->folder('exam-papers', auth()->user()?->school_id)
+                );
+            }
+
+            return $file->store('exam-papers', 'public');
+        }
+
+        protected function deleteLocalAttachment(string $path): void
+        {
+            if (!filter_var($path, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($path);
+            }
         }
 
         abort_unless(auth()->user()?->can('seal exam paper'), 403);

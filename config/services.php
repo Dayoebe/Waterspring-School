@@ -33,6 +33,7 @@ return [
     'cloudinary' => [
         'url' => env('CLOUDINARY_URL'),
         'folder' => env('CLOUDINARY_FOLDER', 'School/gallery'),
+        'root_folder' => env('CLOUDINARY_ROOT_FOLDER', 'waterspring'),
     ],
 
     'sms' => [

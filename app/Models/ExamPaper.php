@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -134,7 +135,7 @@ class ExamPaper extends Model
             return null;
         }
 
-        return asset('storage/' . $this->attachment_path);
+        return app(CloudinaryImageStorage::class)->url($this->attachment_path);
     }
 
     public function getIsPublishedAttribute(): bool

@@ -5,11 +5,9 @@ namespace App\Livewire\Gallery;
 use App\Models\GalleryCategory;
 use App\Models\GalleryItem;
 use App\Models\School;
-use Illuminate\Http\UploadedFile;
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -194,7 +192,8 @@ class ManageGallery extends Component
         $mediaUrl = trim((string) ($validated['itemMediaUrl'] ?? ''));
         if ($this->itemImage) {
             try {
-                $mediaUrl = $this->uploadToCloudinary($this->itemImage, $schoolId);
+                $storage = app(CloudinaryImageStorage::class);
+                $mediaUrl = $storage->upload($this->itemImage, $storage->folder('gallery', $schoolId));
             } catch (\Throwable $e) {
                 report($e);
                 $this->addError('itemImage', 'Image upload failed. Check CLOUDINARY_URL and try again.');
@@ -353,71 +352,6 @@ class ManageGallery extends Component
         }
 
         return $slug;
-    }
-
-    protected function uploadToCloudinary(UploadedFile $file, int $schoolId): string
-    {
-        $credentials = $this->cloudinaryCredentials();
-        $timestamp = time();
-        $folder = trim((string) config('services.cloudinary.folder', 'watersprings/gallery'), '/')
-            . '/school-' . $schoolId;
-
-        $uploadParams = [
-            'api_key' => $credentials['api_key'],
-            'folder' => $folder,
-            'timestamp' => $timestamp,
-            'use_filename' => 1,
-            'unique_filename' => 1,
-        ];
-
-        $paramsToSign = $uploadParams;
-        unset($paramsToSign['api_key']);
-        ksort($paramsToSign);
-        $signatureBase = collect($paramsToSign)
-            ->map(fn ($value, $key) => $key . '=' . $value)
-            ->implode('&');
-        $signature = sha1($signatureBase . $credentials['api_secret']);
-
-        $response = Http::timeout(30)
-            ->attach(
-                'file',
-                file_get_contents($file->getRealPath()),
-                $file->getClientOriginalName()
-            )
-            ->post(
-                'https://api.cloudinary.com/v1_1/' . $credentials['cloud_name'] . '/image/upload',
-                $uploadParams + ['signature' => $signature]
-            );
-
-        if (!$response->successful()) {
-            throw new RuntimeException('Cloudinary upload failed: ' . $response->body());
-        }
-
-        $secureUrl = data_get($response->json(), 'secure_url');
-        if (!is_string($secureUrl) || $secureUrl === '') {
-            throw new RuntimeException('Cloudinary did not return a secure URL.');
-        }
-
-        return $secureUrl;
-    }
-
-    protected function cloudinaryCredentials(): array
-    {
-        $url = trim((string) config('services.cloudinary.url'));
-        if ($url === '') {
-            throw new RuntimeException('Missing CLOUDINARY_URL configuration.');
-        }
-
-        $parts = parse_url($url);
-        if (!$parts || !isset($parts['host'], $parts['user'], $parts['pass'])) {
-            throw new RuntimeException('Invalid CLOUDINARY_URL format.');
-        }
-
-        return [
-            'cloud_name' => (string) $parts['host'],
-            'api_key' => urldecode((string) $parts['user']),
-            'api_secret' => urldecode((string) $parts['pass']),
-        ];
     }
 
     public function render()

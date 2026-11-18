@@ -2,6 +2,7 @@
 
 namespace App\Models\Assessment;
 
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -177,7 +178,10 @@ class Question extends Model
             return null;
         }
 
-        return Storage::disk($this->question_media_disk ?: 'public')->url($this->question_media_path);
+        return app(CloudinaryImageStorage::class)->url(
+            $this->question_media_path,
+            $this->question_media_disk ?: 'public'
+        );
     }
 
     public function hasMultipleCorrectAnswers()

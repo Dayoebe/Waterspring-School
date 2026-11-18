@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\SchoolContext;
 use App\Support\Username;
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -239,9 +240,8 @@ class User extends Authenticatable
     // Profile Photo
     public function getProfilePhotoUrlAttribute()
     {
-        return $this->profile_photo_path
-            ? Storage::disk('public')->url($this->profile_photo_path)
-            : asset('images/default-avatar.png');
+        return app(CloudinaryImageStorage::class)->url($this->profile_photo_path)
+            ?: asset('images/default-avatar.png');
     }
 
     // Helper Methods

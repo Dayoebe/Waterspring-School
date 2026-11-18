@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,16 +47,23 @@ class MediaAsset extends Model
 
     public function getUrlAttribute(): string
     {
-        return Storage::disk($this->disk ?: 'public')->url($this->path);
+        return app(CloudinaryImageStorage::class)->url($this->path, $this->disk ?: 'public') ?? '';
     }
 
     public function getOptimizedUrlAttribute(): ?string
     {
+        if ($this->disk === 'cloudinary' && is_string($this->path)) {
+            return app(CloudinaryImageStorage::class)->transformedUrl(
+                $this->path,
+                'f_auto,q_auto,w_1600'
+            );
+        }
+
         if (!$this->optimized_path) {
             return null;
         }
 
-        return Storage::disk($this->disk ?: 'public')->url($this->optimized_path);
+        return app(CloudinaryImageStorage::class)->url($this->optimized_path, $this->disk ?: 'public');
     }
 
     public function getPreviewUrlAttribute(): string

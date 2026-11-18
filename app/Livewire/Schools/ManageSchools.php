@@ -3,6 +3,7 @@
 namespace App\Livewire\Schools;
 
 use App\Models\School;
+use App\Services\CloudinaryImageStorage;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -96,7 +97,11 @@ class ManageSchools extends Component
         ];
 
         if ($this->logo) {
-            $data['logo_path'] = $this->logo->store('schools', 'public');
+            $storage = app(CloudinaryImageStorage::class);
+            $data['logo_path'] = $storage->upload(
+                $this->logo,
+                $storage->folder('school-logos') . '/' . Str::slug($this->name)
+            );
         }
 
         School::create($data);
@@ -128,11 +133,12 @@ class ManageSchools extends Component
         ];
 
         if ($this->logo) {
-            // Delete old logo if exists
-            if ($school->logo_path) {
-                Storage::disk('public')->delete($school->logo_path);
-            }
-            $data['logo_path'] = $this->logo->store('schools', 'public');
+            $this->deleteLocalLogo($school->logo_path);
+            $storage = app(CloudinaryImageStorage::class);
+            $data['logo_path'] = $storage->upload(
+                $this->logo,
+                $storage->folder('school-logos', (int) $school->id)
+            );
         }
 
         $school->update($data);
@@ -151,9 +157,7 @@ class ManageSchools extends Component
             return;
         }
 
-        if ($school->logo_path) {
-            Storage::disk('public')->delete($school->logo_path);
-        }
+        $this->deleteLocalLogo($school->logo_path);
 
         $school->delete();
         session()->flash('success', 'School deleted successfully');
@@ -196,6 +200,13 @@ class ManageSchools extends Component
         } while (School::where('code', $code)->exists());
 
         return $code;
+    }
+
+    protected function deleteLocalLogo(?string $path): void
+    {
+        if ($path && !filter_var($path, FILTER_VALIDATE_URL)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function render()

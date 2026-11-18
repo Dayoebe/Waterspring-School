@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Username;
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -109,7 +110,11 @@ class ProfileController extends Controller
         ];
 
         if ($request->hasFile('profile_photo')) {
-            $newPath = $request->file('profile_photo')->store('profile-photos', 'public');
+            $storage = app(CloudinaryImageStorage::class);
+            $newPath = $storage->upload(
+                $request->file('profile_photo'),
+                $storage->folder('profile-photos', $user->school_id)
+            );
 
             if ($user->profile_photo_path && str_starts_with($user->profile_photo_path, 'profile-photos/')) {
                 Storage::disk('public')->delete($user->profile_photo_path);

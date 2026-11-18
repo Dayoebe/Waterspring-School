@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateNoticeRequest;
 use App\Mail\NoticePublishedMail;
 use App\Models\Notice;
 use App\Models\User;
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
@@ -47,7 +48,7 @@ class NoticeController extends Controller
         $data = $request->validated();
         $user = $request->user();
         $attachmentPath = isset($data['attachment'])
-            ? $data['attachment']->store('notices/', 'public')
+            ? $this->storeNoticeAttachment($data['attachment'], $user->school_id)
             : null;
         $canSendNoticeEmail = $this->canSendNoticeEmail($user);
         $sendEmail = $canSendNoticeEmail && $request->boolean('send_email');
@@ -171,16 +172,16 @@ class NoticeController extends Controller
         $attachmentPath = $notice->attachment;
 
         if ($request->boolean('remove_attachment') && $attachmentPath) {
-            Storage::disk('public')->delete($attachmentPath);
+            $this->deleteLocalAttachment($attachmentPath);
             $attachmentPath = null;
         }
 
         if (isset($data['attachment'])) {
             if ($attachmentPath) {
-                Storage::disk('public')->delete($attachmentPath);
+                $this->deleteLocalAttachment($attachmentPath);
             }
 
-            $attachmentPath = $data['attachment']->store('notices/', 'public');
+            $attachmentPath = $this->storeNoticeAttachment($data['attachment'], $request->user()->school_id);
         }
 
         $notice->update([
@@ -205,5 +206,24 @@ class NoticeController extends Controller
         $notice->delete();
 
         return back()->with('success', 'Notice deleted successfully');
+    }
+
+    protected function storeNoticeAttachment(\Illuminate\Http\UploadedFile $file, ?int $schoolId): string
+    {
+        $mimeType = (string) ($file->getMimeType() ?: '');
+        if (str_starts_with($mimeType, 'image/')) {
+            $storage = app(CloudinaryImageStorage::class);
+
+            return $storage->upload($file, $storage->folder('notices', $schoolId));
+        }
+
+        return $file->store('notices/', 'public');
+    }
+
+    protected function deleteLocalAttachment(string $path): void
+    {
+        if (!filter_var($path, FILTER_VALIDATE_URL)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

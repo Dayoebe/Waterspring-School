@@ -3,6 +3,7 @@
 namespace App\Livewire\Admins;
 
 use App\Models\User;
+use App\Services\CloudinaryImageStorage;
 use App\Support\Username;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -146,7 +147,11 @@ class ManageAdmins extends Component
             ];
 
             if ($this->profile_photo) {
-                $data['profile_photo_path'] = $this->profile_photo->store('profile-photos', 'public');
+                $storage = app(CloudinaryImageStorage::class);
+                $data['profile_photo_path'] = $storage->upload(
+                    $this->profile_photo,
+                    $storage->folder('profile-photos', auth()->user()->school_id)
+                );
             }
 
             $user = User::create($data);
@@ -198,7 +203,11 @@ class ManageAdmins extends Component
             }
 
             if ($this->profile_photo) {
-                $data['profile_photo_path'] = $this->profile_photo->store('profile-photos', 'public');
+                $storage = app(CloudinaryImageStorage::class);
+                $data['profile_photo_path'] = $storage->upload(
+                    $this->profile_photo,
+                    $storage->folder('profile-photos', auth()->user()->school_id)
+                );
             }
 
             $admin->update($data);

@@ -5,6 +5,7 @@ namespace App\Livewire\Schools;
 use App\Models\MediaAsset;
 use App\Models\School;
 use App\Models\SiteSetting;
+use App\Services\CloudinaryImageStorage;
 use App\Support\SiteSettings;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
@@ -1105,8 +1106,14 @@ class ManageSiteSettings extends Component
 
     protected function storeThemeMedia(mixed $file, string $folder, string $existingUrl = ''): string
     {
-        $storedPath = $file->store('site-settings/' . $folder, 'public');
-        $newUrl = url(Storage::url($storedPath));
+        $scopeFolder = $this->scope === 'school'
+            ? 'school-' . $this->targetSchoolId()
+            : 'general';
+        $storage = app(CloudinaryImageStorage::class);
+        $newUrl = $storage->upload(
+            $file,
+            $storage->folder('site-settings/' . $scopeFolder . '/' . $folder)
+        );
 
         $this->deleteManagedThemeAsset($existingUrl, $newUrl);
 
