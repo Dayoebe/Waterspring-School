@@ -111,7 +111,7 @@
                                 <p class="text-sm font-semibold text-slate-800">Current attachment</p>
                                 <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <a
-                                        href="{{ asset('storage/' . $notice->attachment) }}"
+                                        href="{{ $notice->attachment_url }}"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="inline-flex items-center text-sm font-semibold text-blue-700 hover:text-blue-800"

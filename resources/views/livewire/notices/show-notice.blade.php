@@ -49,7 +49,7 @@
         <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Attachment</h4>
         @if ($notice->attachment)
             <a
-                href="{{ asset('storage/' . $notice->attachment) }}"
+                href="{{ $notice->attachment_url }}"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"

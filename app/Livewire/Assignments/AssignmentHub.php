@@ -10,7 +10,9 @@ use App\Models\AssignmentSubmission;
 use App\Models\MyClass;
 use App\Models\Subject;
 use App\Services\AssignmentNotificationService;
+use App\Services\CloudinaryImageStorage;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -211,7 +213,11 @@ class AssignmentHub extends Component
         }
 
         $assignment = DB::transaction(function () use ($validated, $classId, $subjectId, $recipientIds): Assignment {
-            $path = $this->assignmentFile?->store('assignments/'.auth()->user()->school_id, 'local');
+            $path = $this->storeAssignmentFile(
+                $this->assignmentFile,
+                'assignments',
+                (int) auth()->user()->school_id
+            );
             $structuredScore = collect($this->questions)->sum('points');
             $assignment = Assignment::query()->create([
                 'school_id' => auth()->user()->school_id,
@@ -365,10 +371,14 @@ class AssignmentHub extends Component
         $path = $existing?->attachment_path;
         $name = $existing?->attachment_name;
         if ($this->submissionFile) {
-            if ($path) {
+            if ($path && !filter_var($path, FILTER_VALIDATE_URL)) {
                 Storage::disk('local')->delete($path);
             }
-            $path = $this->submissionFile->store('assignment-submissions/'.auth()->user()->school_id, 'local');
+            $path = $this->storeAssignmentFile(
+                $this->submissionFile,
+                'assignment-submissions',
+                (int) auth()->user()->school_id
+            );
             $name = $this->submissionFile->getClientOriginalName();
         }
         $submission = DB::transaction(function () use ($assignment, $studentRecord, $path, $name): AssignmentSubmission {
@@ -468,6 +478,9 @@ class AssignmentHub extends Component
     public function downloadAssignment(int $assignmentId)
     {
         $assignment = $this->findVisibleAssignment($assignmentId);
+        if (app(CloudinaryImageStorage::class)->isCloudinaryUrl($assignment->attachment_path)) {
+            return redirect()->away($assignment->attachment_path);
+        }
         abort_unless($assignment->attachment_path && Storage::disk('local')->exists($assignment->attachment_path), 404);
 
         return Storage::disk('local')->download($assignment->attachment_path, $assignment->attachment_name);
@@ -479,9 +492,28 @@ class AssignmentHub extends Component
         $assignment = $this->findVisibleAssignment($submission->assignment_id);
         $student = auth()->user()->studentRecord;
         abort_unless($this->canManageAssignment($assignment) || ($student && $submission->student_record_id === $student->id), 403);
+        if (app(CloudinaryImageStorage::class)->isCloudinaryUrl($submission->attachment_path)) {
+            return redirect()->away($submission->attachment_path);
+        }
         abort_unless($submission->attachment_path && Storage::disk('local')->exists($submission->attachment_path), 404);
 
         return Storage::disk('local')->download($submission->attachment_path, $submission->attachment_name);
+    }
+
+    protected function storeAssignmentFile(?UploadedFile $file, string $area, int $schoolId): ?string
+    {
+        if (!$file) {
+            return null;
+        }
+
+        $mimeType = (string) ($file->getMimeType() ?: '');
+        if (str_starts_with($mimeType, 'image/')) {
+            $storage = app(CloudinaryImageStorage::class);
+
+            return $storage->upload($file, $storage->folder($area, $schoolId));
+        }
+
+        return $file->store($area . '/' . $schoolId, 'local');
     }
 
     protected function visibleAssignments(): Builder

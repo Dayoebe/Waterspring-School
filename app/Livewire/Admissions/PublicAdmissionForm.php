@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admissions;
 
+use App\Services\CloudinaryImageStorage;
 use App\Mail\AdmissionNotificationMail;
 use App\Models\AdmissionRegistration;
 use App\Models\AdmissionStatusHistory;
@@ -162,14 +163,26 @@ class PublicAdmissionForm extends Component
             ]);
 
             if ($this->document) {
-                $path = $this->document->store("admissions/{$registration->school_id}/{$registration->id}", 'local');
+                $mimeType = (string) ($this->document->getMimeType() ?: '');
+                if (str_starts_with($mimeType, 'image/')) {
+                    $storage = app(CloudinaryImageStorage::class);
+                    $path = $storage->upload(
+                        $this->document,
+                        $storage->folder('admissions/' . $registration->id . '/documents', (int) $registration->school_id)
+                    );
+                    $disk = 'cloudinary';
+                } else {
+                    $path = $this->document->store("admissions/{$registration->school_id}/{$registration->id}", 'local');
+                    $disk = 'local';
+                }
+
                 $registration->documents()->create([
                     'school_id' => $registration->school_id,
                     'category' => 'supporting',
                     'original_name' => $this->document->getClientOriginalName(),
                     'path' => $path,
-                    'disk' => 'local',
-                    'mime_type' => $this->document->getMimeType(),
+                    'disk' => $disk,
+                    'mime_type' => $mimeType,
                     'size_bytes' => $this->document->getSize(),
                 ]);
             }

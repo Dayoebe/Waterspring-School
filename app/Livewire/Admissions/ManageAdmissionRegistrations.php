@@ -4,6 +4,7 @@ namespace App\Livewire\Admissions;
 
 use App\Mail\AdmissionNotificationMail;
 use App\Models\AdmissionDocument;
+use App\Services\CloudinaryImageStorage;
 use App\Models\AdmissionInterview;
 use App\Models\AdmissionRegistration;
 use App\Models\AdmissionStatusHistory;
@@ -314,7 +315,19 @@ class ManageAdmissionRegistrations extends Component
             'documentCategory' => ['required', 'in:supporting,birth_certificate,previous_report,medical,offer,fee_receipt'],
         ]);
         $admission = $this->admissionQuery()->findOrFail($admissionId);
-        $path = $this->pipelineDocument->store("admissions/{$admission->school_id}/{$admission->id}", 'local');
+        $mimeType = (string) ($this->pipelineDocument->getMimeType() ?: '');
+        if (str_starts_with($mimeType, 'image/')) {
+            $storage = app(CloudinaryImageStorage::class);
+            $path = $storage->upload(
+                $this->pipelineDocument,
+                $storage->folder('admissions/' . $admission->id . '/documents', (int) $admission->school_id)
+            );
+            $disk = 'cloudinary';
+        } else {
+            $path = $this->pipelineDocument->store("admissions/{$admission->school_id}/{$admission->id}", 'local');
+            $disk = 'local';
+        }
+
         try {
             AdmissionDocument::query()->create([
                 'admission_registration_id' => $admission->id,
@@ -322,13 +335,15 @@ class ManageAdmissionRegistrations extends Component
                 'category' => $this->documentCategory,
                 'original_name' => $this->pipelineDocument->getClientOriginalName(),
                 'path' => $path,
-                'disk' => 'local',
-                'mime_type' => $this->pipelineDocument->getMimeType(),
+                'disk' => $disk,
+                'mime_type' => $mimeType,
                 'size_bytes' => $this->pipelineDocument->getSize(),
                 'uploaded_by' => auth()->id(),
             ]);
         } catch (Throwable $exception) {
-            Storage::disk('local')->delete($path);
+            if ($disk === 'local') {
+                Storage::disk('local')->delete($path);
+            }
 
             throw $exception;
         }

@@ -91,7 +91,7 @@
                         @if ($notice->attachment)
                             <div class="mt-4">
                                 <a
-                                    href="{{ asset('storage/' . $notice->attachment) }}"
+                                    href="{{ $notice->attachment_url }}"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="inline-flex items-center rounded-lg bg-amber-100 px-3 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-200"

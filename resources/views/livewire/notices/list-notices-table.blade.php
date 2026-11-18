@@ -69,7 +69,7 @@
                             </td>
                             <td class="px-4 py-3">
                                 @if ($notice->attachment)
-                                    <a href="{{ asset('storage/' . $notice->attachment) }}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-blue-700 hover:text-blue-800">
+                                    <a href="{{ $notice->attachment_url }}" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-blue-700 hover:text-blue-800">
                                         Open file
                                     </a>
                                 @else
