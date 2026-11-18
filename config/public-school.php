@@ -3,7 +3,7 @@
 // Public website content verified against waterspringsschool.com.ng on 7 September 2026.
 // Kept separate from dashboard school records during the public-site migration.
 return [
-    'school_name' => 'Watersprings International School & College Akure',
+    'school_name' => 'Watersprings International School',
     'school_location' => 'Akure, Ondo State',
     'school_motto' => 'Under the leadership of God',
     'tagline' => 'This is where your child belongs',
