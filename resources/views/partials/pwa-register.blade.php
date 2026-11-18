@@ -157,7 +157,7 @@
         if ('serviceWorker' in navigator && window.isSecureContext) {
             window.addEventListener('load', async () => {
                 try {
-                    const registration = await navigator.serviceWorker.register(@js(route('pwa.service-worker')));
+                    const registration = await navigator.serviceWorker.register(@js(route('pwa.service-worker', [], false)));
                     registration.update().catch(() => undefined);
                 } catch (error) {
                     console.warn('Service worker registration failed.', error);

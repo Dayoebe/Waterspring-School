@@ -10,12 +10,23 @@ class PwaServiceWorkerPrivacyTest extends TestCase
 
     private string $publicHtaccess;
 
+    private string $registrationPartial;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->serviceWorker = file_get_contents(__DIR__.'/../../public/service-worker.js');
         $this->publicHtaccess = file_get_contents(__DIR__.'/../../public/.htaccess');
+        $this->registrationPartial = file_get_contents(__DIR__.'/../../resources/views/partials/pwa-register.blade.php');
+    }
+
+    public function test_service_worker_registration_uses_a_same_origin_relative_url(): void
+    {
+        $this->assertStringContainsString(
+            "navigator.serviceWorker.register(@js(route('pwa.service-worker', [], false)))",
+            $this->registrationPartial
+        );
     }
 
     public function test_only_explicit_public_documents_are_eligible_for_page_caching(): void
