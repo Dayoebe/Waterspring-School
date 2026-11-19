@@ -6,6 +6,7 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\User;
+use App\Services\CloudinaryImageStorage;
 use App\Support\Username;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -98,6 +99,8 @@ class ManageStudents extends Component
     public $admission_date = '';
 
     public $profile_photo = null;
+
+    public $currentProfilePhotoUrl = null;
 
     public $parent_id = '';
 
@@ -217,6 +220,7 @@ class ManageStudents extends Component
         $this->password = '';
         $this->assignedParent = $student->parents->first();
         $this->parent_id = $this->assignedParent?->id ?? '';
+        $this->currentProfilePhotoUrl = $student->profile_photo_url;
 
         $this->fill([
             'name' => $student->name,
@@ -261,6 +265,7 @@ class ManageStudents extends Component
             'section_id' => 'nullable|exists:sections,id',
             'birthday' => 'nullable|date|before:today',
             'phone' => 'nullable|string|max:20',
+            'profile_photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             'admission_date' => 'nullable|date',
             'parent_id' => 'nullable|integer',
         ]);
@@ -302,7 +307,7 @@ class ManageStudents extends Component
         }
 
         DB::transaction(function () {
-            $user = User::create([
+            $userData = [
                 'name' => $this->name,
                 'username' => $this->username,
                 'email' => $this->email,
@@ -317,7 +322,17 @@ class ManageStudents extends Component
                 'state' => $this->state,
                 'city' => $this->city,
                 'school_id' => auth()->user()->school_id,
-            ]);
+            ];
+
+            if ($this->profile_photo) {
+                $storage = app(CloudinaryImageStorage::class);
+                $userData['profile_photo_path'] = $storage->upload(
+                    $this->profile_photo,
+                    $storage->folder('profile-photos', auth()->user()->school_id)
+                );
+            }
+
+            $user = User::create($userData);
 
             $user->assignRole('student');
 
@@ -424,6 +439,7 @@ class ManageStudents extends Component
             'birthday' => 'nullable|date|before:today',
             'phone' => 'nullable|string|max:20',
             'parent_id' => 'nullable|integer',
+            'profile_photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
         ]);
 
         $existingParent = $student->parents()->first();
@@ -494,6 +510,14 @@ class ManageStudents extends Component
             if (filled($this->password)) {
                 $studentData['password'] = trim($this->password);
                 $studentData['requires_password_change'] = false;
+            }
+
+            if ($this->profile_photo) {
+                $storage = app(CloudinaryImageStorage::class);
+                $studentData['profile_photo_path'] = $storage->upload(
+                    $this->profile_photo,
+                    $storage->folder('profile-photos', auth()->user()->school_id)
+                );
             }
 
             $student->update($studentData);
@@ -759,6 +783,7 @@ class ManageStudents extends Component
             'studentId', 'name', 'username', 'email', 'password', 'gender', 'birthday',
             'phone', 'address', 'blood_group', 'religion', 'nationality',
             'state', 'city', 'my_class_id', 'section_id', 'admission_number', 'admission_date',
+            'profile_photo', 'currentProfilePhotoUrl',
             'parent_id', 'assignedParent',
             'showParentPanel', 'parentEntryMode', 'newParentName', 'newParentUsername', 'newParentEmail',
             'newParentPassword', 'newParentPasswordConfirmation', 'newParentGender', 'newParentPhone',

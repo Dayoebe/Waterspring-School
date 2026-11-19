@@ -52,6 +52,18 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
                     <input type="tel" wire:model="phone" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Student Photo</label>
+                    <input type="file" wire:model="profile_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-indigo-500">
+                    <p class="mt-1 text-xs text-gray-500">JPEG, PNG or WebP; maximum 2 MB.</p>
+                    @error('profile_photo') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    @if ($profile_photo)
+                        <div class="mt-3">
+                            <p class="text-sm text-gray-600 mb-2">Photo preview:</p>
+                            <img src="{{ $profile_photo->temporaryUrl() }}" alt="Student photo preview" class="h-24 w-24 rounded-lg object-cover">
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 

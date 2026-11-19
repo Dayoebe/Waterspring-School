@@ -89,6 +89,16 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Address</label>
                     <textarea wire:model="address" rows="3" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"></textarea>
                 </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Student Photo</label>
+                    <input type="file" wire:model="profile_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-amber-500">
+                    <p class="mt-1 text-xs text-gray-500">JPEG, PNG or WebP; maximum 2 MB.</p>
+                    @error('profile_photo') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    <div class="mt-3">
+                        <p class="text-sm text-gray-600 mb-2">{{ $profile_photo ? 'New photo preview:' : 'Current photo:' }}</p>
+                        <img src="{{ $profile_photo ? $profile_photo->temporaryUrl() : $currentProfilePhotoUrl }}" alt="{{ $name }} profile photo" class="h-24 w-24 rounded-lg object-cover">
+                    </div>
+                </div>
             </div>
         </div>
 
