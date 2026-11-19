@@ -52,11 +52,35 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
                     <input type="tel" wire:model="phone" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <div class="md:col-span-2">
+                <div
+                    class="md:col-span-2"
+                    x-data="{ isUploading: false, progress: 0 }"
+                    x-on:livewire-upload-start="isUploading = true; progress = 0"
+                    x-on:livewire-upload-progress="progress = $event.detail.progress"
+                    x-on:livewire-upload-finish="progress = 100; setTimeout(() => { isUploading = false; progress = 0 }, 1200)"
+                    x-on:livewire-upload-error="isUploading = false; progress = 0"
+                    x-on:livewire-upload-cancel="isUploading = false; progress = 0"
+                >
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Student Photo</label>
                     <input type="file" wire:model="profile_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border-2 border-gray-300 p-3 focus:ring-2 focus:ring-indigo-500">
                     <p class="mt-1 text-xs text-gray-500">JPEG, PNG or WebP; maximum 2 MB.</p>
                     @error('profile_photo') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    <div x-show="isUploading || progress > 0" class="mt-3" role="status" aria-live="polite">
+                        <div class="mb-1 flex justify-between text-sm text-gray-600">
+                            <span x-text="isUploading ? 'Uploading photo…' : 'Upload complete'"></span>
+                            <span x-text="Math.round(progress) + '%'"></span>
+                        </div>
+                        <div
+                            class="h-2 overflow-hidden rounded-full bg-gray-200"
+                            role="progressbar"
+                            aria-label="Photo upload progress"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            x-bind:aria-valuenow="Math.round(progress)"
+                        >
+                            <div class="h-full rounded-full bg-indigo-600 transition-all duration-150" x-bind:style="'width: ' + progress + '%'"></div>
+                        </div>
+                    </div>
                     @if ($profile_photo)
                         <div class="mt-3">
                             <p class="text-sm text-gray-600 mb-2">Photo preview:</p>
