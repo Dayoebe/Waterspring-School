@@ -8,11 +8,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::dropIfExists('exam_records');
+        if (! Schema::hasTable('exam_records')) {
+            return;
+        }
+
+        if (Schema::hasTable('legacy_exam_records')) {
+            throw new RuntimeException('Cannot archive exam_records because legacy_exam_records already exists.');
+        }
+
+        Schema::rename('exam_records', 'legacy_exam_records');
     }
 
     public function down(): void
     {
+        if (Schema::hasTable('legacy_exam_records') && ! Schema::hasTable('exam_records')) {
+            Schema::rename('legacy_exam_records', 'exam_records');
+
+            return;
+        }
+
+        if (Schema::hasTable('exam_records')) {
+            return;
+        }
+
         Schema::create('exam_records', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();

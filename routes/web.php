@@ -20,6 +20,7 @@ use App\Http\Controllers\LockUserAccountController;
 use App\Http\Controllers\MyClassController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\OperationalHealthController;
+use App\Http\Controllers\OperationalReadinessController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaystackCallbackController;
 use App\Http\Controllers\PaystackPaymentController;
@@ -153,9 +154,13 @@ $statelessPublicFileMiddleware = [
 ];
 
 Route::get('/health', OperationalHealthController::class)
-    ->middleware('throttle:60,1')
     ->withoutMiddleware($statelessPublicFileMiddleware)
     ->name('health');
+
+Route::get('/health/ready', OperationalReadinessController::class)
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware($statelessPublicFileMiddleware)
+    ->name('health.ready');
 
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest')->withoutMiddleware($statelessPublicFileMiddleware);
 Route::get('/service-worker.js', [PwaController::class, 'serviceWorker'])->name('pwa.service-worker')->withoutMiddleware($statelessPublicFileMiddleware);

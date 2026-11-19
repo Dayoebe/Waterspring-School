@@ -36,11 +36,25 @@ class OperationalReliabilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_health_endpoint_reports_scheduler_database_and_queue_state_without_details(): void
+    public function test_liveness_endpoint_does_not_depend_on_database_scheduler_or_queue_state(): void
+    {
+        Cache::forget(OperationalHealthService::SCHEDULER_HEARTBEAT_KEY);
+        $health = \Mockery::mock(OperationalHealthService::class);
+        $health->shouldNotReceive('check');
+        $this->app->instance(OperationalHealthService::class, $health);
+
+        $response = $this->get('/health')
+            ->assertOk()
+            ->assertExactJson(['status' => 'ok']);
+
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+    }
+
+    public function test_readiness_endpoint_reports_scheduler_database_and_queue_state_without_details(): void
     {
         Cache::put(OperationalHealthService::SCHEDULER_HEARTBEAT_KEY, now()->timestamp, 300);
 
-        $this->get('/health')
+        $this->get('/health/ready')
             ->assertOk()
             ->assertJsonPath('status', 'ok')
             ->assertJsonPath('checks.database', 'ok')
@@ -49,7 +63,7 @@ class OperationalReliabilityTest extends TestCase
             ->assertJsonStructure(['checked_at']);
 
         Cache::forget(OperationalHealthService::SCHEDULER_HEARTBEAT_KEY);
-        $this->get('/health')->assertStatus(503)->assertJsonPath('checks.scheduler', 'failed');
+        $this->get('/health/ready')->assertStatus(503)->assertJsonPath('checks.scheduler', 'failed');
     }
 
     public function test_security_headers_and_https_enforcement_are_applied_globally(): void
@@ -65,6 +79,17 @@ class OperationalReliabilityTest extends TestCase
         config()->set('operations.force_https', true);
         $this->get('/health')->assertStatus(308)->assertRedirect('https://localhost/health');
         $this->post('/logout')->assertStatus(400);
+    }
+
+    public function test_trusted_forwarded_https_does_not_redirect_at_the_proxy_boundary(): void
+    {
+        config()->set('operations.force_https', true);
+        config()->set('operations.trusted_proxies', '*');
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10'])
+            ->withHeader('X-Forwarded-Proto', 'https')
+            ->get('/health')
+            ->assertOk();
     }
 
     public function test_queue_storage_exists_and_all_application_mail_is_queued_and_encrypted(): void

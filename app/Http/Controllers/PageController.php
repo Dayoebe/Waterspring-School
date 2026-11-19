@@ -7,6 +7,7 @@ use App\Models\GalleryCategory;
 use App\Models\School;
 use App\Models\StaffProfile;
 use App\Support\SiteSettings;
+use Illuminate\Database\QueryException;
 
 class PageController extends Controller
 {
@@ -17,23 +18,32 @@ class PageController extends Controller
 
     public function home()
     {
-        $clubs = $this->publicClubs()->limit(6)->get();
+        $clubs = $this->publicContent(
+            fn () => $this->publicClubs()->limit(6)->get(),
+            collect()
+        );
 
         return view('livewire.site.home', compact('clubs'));
     }
 
     public function about()
     {
-        $administrators = $this->publicStaff()
-            ->whereHas('department', fn ($query) => $query->where('category', 'management'))
-            ->get();
+        $administrators = $this->publicContent(
+            fn () => $this->publicStaff()
+                ->whereHas('department', fn ($query) => $query->where('category', 'management'))
+                ->get(),
+            collect()
+        );
 
         return view('livewire.site.about', compact('administrators'));
     }
 
     public function academics()
     {
-        $clubs = $this->publicClubs()->get();
+        $clubs = $this->publicContent(
+            fn () => $this->publicClubs()->get(),
+            collect()
+        );
 
         return view('livewire.site.academics', compact('clubs'));
     }
@@ -55,21 +65,24 @@ class PageController extends Controller
 
     public function gallery()
     {
-        $school = $this->publicSchool();
-        $eventAlbums = GalleryCategory::query()
-            ->withoutGlobalScope('school')
-            ->where('school_id', $school?->id ?? 0)
-            ->where('is_active', true)
-            ->whereHas('items', fn ($query) => $query->withoutGlobalScope('school')->where('is_active', true))
-            ->with(['items' => fn ($query) => $query
+        $eventAlbums = $this->publicContent(function () {
+            $school = $this->publicSchool();
+
+            return GalleryCategory::query()
                 ->withoutGlobalScope('school')
+                ->where('school_id', $school?->id ?? 0)
                 ->where('is_active', true)
-                ->orderByDesc('is_featured')
+                ->whereHas('items', fn ($query) => $query->withoutGlobalScope('school')->where('is_active', true))
+                ->with(['items' => fn ($query) => $query
+                    ->withoutGlobalScope('school')
+                    ->where('is_active', true)
+                    ->orderByDesc('is_featured')
+                    ->orderBy('sort_order')
+                    ->orderByDesc('taken_on')])
                 ->orderBy('sort_order')
-                ->orderByDesc('taken_on')])
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+                ->orderBy('name')
+                ->get();
+        }, collect());
 
         return view('livewire.site.gallery', compact('eventAlbums'));
     }
@@ -86,7 +99,11 @@ class PageController extends Controller
 
     public function team()
     {
-        $staff = $this->publicStaff()->get()->groupBy(fn ($profile) => $profile->department?->name ?: 'Other Staff');
+        $staff = $this->publicContent(
+            fn () => $this->publicStaff()->get()
+                ->groupBy(fn ($profile) => $profile->department?->name ?: 'Other Staff'),
+            collect()
+        );
 
         return view('livewire.site.team', compact('staff'));
     }
@@ -126,5 +143,16 @@ class PageController extends Controller
             ->where('is_active', true)
             ->orderByRaw('category is null, category')
             ->orderBy('name');
+    }
+
+    protected function publicContent(callable $query, mixed $fallback): mixed
+    {
+        try {
+            return $query();
+        } catch (QueryException $exception) {
+            report($exception);
+
+            return $fallback;
+        }
     }
 }
