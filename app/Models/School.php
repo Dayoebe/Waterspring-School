@@ -78,4 +78,9 @@ class School extends Model
     {
         return $this->hasOne(Semester::class, 'id', 'semester_id');
     }
+
+    public function birthdaySetting(): HasOne
+    {
+        return $this->hasOne(BirthdaySetting::class);
+    }
 }

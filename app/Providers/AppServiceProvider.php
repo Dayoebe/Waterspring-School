@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\BirthdaySetting;
+use App\Models\StudentRecord;
+use App\Models\User;
+use App\Services\BirthdayService;
 use App\Services\ClassPilot\Contracts\AiProvider;
 use App\Services\ClassPilot\GeminiProvider;
 use App\Services\ClassPilot\GroqProvider;
@@ -37,6 +41,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        User::saved(function (User $user): void {
+            if ($user->wasRecentlyCreated || $user->wasChanged(['birthday', 'birthday_is_private', 'school_id', 'locked', 'deleted_at', 'name', 'profile_photo_path'])) {
+                if ($user->school_id) {
+                    app(BirthdayService::class)->clearCache((int) $user->school_id);
+                }
+            }
+        });
+        User::deleted(function (User $user): void {
+            if ($user->school_id) {
+                app(BirthdayService::class)->clearCache((int) $user->school_id);
+            }
+        });
+        BirthdaySetting::saved(fn (BirthdaySetting $settings) => app(BirthdayService::class)->clearCache((int) $settings->school_id));
+        StudentRecord::saved(function (StudentRecord $record): void {
+            $schoolId = $record->user()->value('school_id');
+            if ($schoolId) {
+                app(BirthdayService::class)->clearCache((int) $schoolId);
+            }
+        });
+
         Validator::extend('complex_password', function ($attribute, $value, $parameters, $validator) {
             return preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/', $value);
         });

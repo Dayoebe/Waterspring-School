@@ -5,13 +5,33 @@ namespace App\Models;
 use App\Services\CloudinaryImageStorage;
 use App\Support\SchoolContext;
 use App\Support\Username;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * @property int $id
+ * @property ?int $school_id
+ * @property string $name
+ * @property ?string $email
+ * @property bool $email_is_placeholder
+ * @property bool $locked
+ * @property ?Carbon $birthday
+ * @property string $profile_photo_url
+ * @property-read ?School $school
+ * @property-read ?StudentRecord $studentRecord
+ * @property-read ?StaffProfile $staffProfile
+ * @property-read Collection<int, User> $parents
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
@@ -25,6 +45,7 @@ class User extends Authenticatable
         'requires_password_change',
         'gender',
         'birthday',
+        'birthday_is_private',
         'phone',
         'address',
         'blood_group',
@@ -48,6 +69,7 @@ class User extends Authenticatable
         'email_is_placeholder' => 'boolean',
         'requires_password_change' => 'boolean',
         'birthday' => 'date',
+        'birthday_is_private' => 'boolean',
         'locked' => 'boolean',
     ];
 
@@ -110,7 +132,8 @@ class User extends Authenticatable
     }
 
     // Relationships
-    public function school()
+    /** @return BelongsTo<School, $this> */
+    public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
@@ -153,12 +176,14 @@ class User extends Authenticatable
         return $this->hasOne(TeacherRecord::class);
     }
 
-    public function staffProfile()
+    /** @return HasOne<StaffProfile, $this> */
+    public function staffProfile(): HasOne
     {
         return $this->hasOne(StaffProfile::class);
     }
 
-    public function studentRecord()
+    /** @return HasOne<StudentRecord, $this> */
+    public function studentRecord(): HasOne
     {
         return $this->hasOne(StudentRecord::class);
     }
@@ -168,12 +193,14 @@ class User extends Authenticatable
         return $this->hasMany(FeeInvoice::class, 'user_id');
     }
 
-    public function parents()
+    /** @return BelongsToMany<User, $this> */
+    public function parents(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'parent_records', 'student_id', 'user_id');
     }
 
-    public function children()
+    /** @return BelongsToMany<User, $this> */
+    public function children(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'parent_records', 'user_id', 'student_id');
     }
@@ -239,6 +266,11 @@ class User extends Authenticatable
     public function recognitions()
     {
         return $this->hasMany(StudentRecognition::class, 'student_id');
+    }
+
+    public function birthdayDeliveries(): HasMany
+    {
+        return $this->hasMany(BirthdayEmailDelivery::class, 'celebrant_id');
     }
 
     // Profile Photo

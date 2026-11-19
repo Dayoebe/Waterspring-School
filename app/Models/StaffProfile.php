@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $job_title
+ * @property-read ?StaffDepartment $department
+ */
 class StaffProfile extends Model
 {
     use HasFactory;
@@ -24,6 +28,7 @@ class StaffProfile extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<StaffDepartment, $this> */
     public function department(): BelongsTo
     {
         return $this->belongsTo(StaffDepartment::class, 'staff_department_id');

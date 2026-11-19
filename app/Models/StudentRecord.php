@@ -6,12 +6,17 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @property int $id
+ * @property-read ?MyClass $baseClass
+ */
 class StudentRecord extends Model
 {
     protected $appends = ['student_subjects_count'];
@@ -45,6 +50,7 @@ class StudentRecord extends Model
         return $this->hasMany(StudentPeriodStatus::class);
     }
 
+    /** @return BelongsTo<MyClass, $this> */
     public function baseClass()
     {
         return $this->belongsTo(MyClass::class, 'my_class_id');
