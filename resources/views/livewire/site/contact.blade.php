@@ -63,11 +63,21 @@
                         </div>
                     </div>
 
-                    <iframe class="h-80 w-full rounded-2xl border border-slate-200 shadow-sm" loading="lazy" style="border:0;" allowfullscreen
-                        title="Map showing {{ \App\Support\PublicSeo::siteName($settings) }} location"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        src="{{ $mapEmbedUrl }}">
-                    </iframe>
+                    @if ($mapEmbedUrl !== '')
+                        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <iframe class="h-80 w-full" loading="lazy" style="border:0;" allowfullscreen
+                                title="Map showing {{ \App\Support\PublicSeo::siteName($settings) }} location"
+                                referrerpolicy="no-referrer-when-downgrade"
+                                src="{{ $mapEmbedUrl }}">
+                            </iframe>
+                            <div class="border-t border-slate-200 px-4 py-3 text-right">
+                                <a href="{{ $mapEmbedUrl }}" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-sky-700 hover:underline">
+                                    Open location in Google Maps
+                                    <span aria-hidden="true">&nearr;</span>
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <div>

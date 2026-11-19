@@ -23,6 +23,7 @@ class SecurityHeaders
             "font-src 'self' data: https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob: https:",
             "connect-src 'self' https:",
+            "frame-src 'self' https://www.google.com https://maps.google.com",
             "media-src 'self' blob: https:",
             "worker-src 'self' blob:",
             "manifest-src 'self'",
