@@ -238,7 +238,7 @@
                     <x-password-input label="New Password" input-id="password" name="password"
                         required minlength="8" autocomplete="new-password"
                         class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
-                    <p class="mt-1 text-xs text-slate-500">Use at least 8 characters and choose a value different from your current password.</p>
+                    <p class="mt-1 text-xs text-slate-500">Use at least 8 characters, choose a value different from your current password, and do not use a default password.</p>
                     @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 

@@ -39,7 +39,13 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password:web'],
-            'password' => ['required', 'string', 'min:8', 'different:current_password'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                Rule::notIn(['password', '12345678']),
+                'different:current_password',
+            ],
             'password_confirmation' => ['required', 'same:password'],
         ], [
             'current_password.required' => 'Enter your current password.',
@@ -47,6 +53,7 @@ class ProfileController extends Controller
             'password.required' => 'Enter a new password.',
             'password.min' => 'The new password must be at least 8 characters.',
             'password.different' => 'The new password must be different from your current password.',
+            'password.not_in' => 'Choose a stronger password. The default passwords "password" and "12345678" are not allowed.',
             'password_confirmation.required' => 'Confirm your new password.',
             'password_confirmation.same' => 'The password confirmation does not match the new password.',
         ]);
