@@ -10,6 +10,9 @@
     $contactPhoneSecondary = data_get($settings, 'contact.phone_secondary', '');
     $contactEmail = data_get($settings, 'contact.email', '');
     $mapEmbedUrl = data_get($settings, 'contact.map_embed_url', '');
+    $mapLinkUrl = $contactAddress !== ''
+        ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($contactAddress)
+        : $mapEmbedUrl;
     $pageMeta = \App\Support\PublicSeo::pageMeta('contact', $settings);
 @endphp
 
@@ -71,7 +74,7 @@
                                 src="{{ $mapEmbedUrl }}">
                             </iframe>
                             <div class="border-t border-slate-200 px-4 py-3 text-right">
-                                <a href="{{ $mapEmbedUrl }}" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-sky-700 hover:underline">
+                                <a href="{{ $mapLinkUrl }}" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-sky-700 hover:underline">
                                     Open location in Google Maps
                                     <span aria-hidden="true">&nearr;</span>
                                 </a>
