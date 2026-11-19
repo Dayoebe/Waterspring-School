@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\Username;
 use App\Services\CloudinaryImageStorage;
+use App\Support\Username;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use RuntimeException;
+use Throwable;
 
 // Import Rule for validation
 
@@ -32,23 +36,59 @@ class ProfileController extends Controller
      */
     public function changePassword(Request $request)
     {
-        $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|min:8|confirmed',
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password:web'],
+            'password' => ['required', 'string', 'min:8', 'different:current_password'],
+            'password_confirmation' => ['required', 'same:password'],
+        ], [
+            'current_password.required' => 'Enter your current password.',
+            'current_password.current_password' => 'The current password you entered is incorrect.',
+            'password.required' => 'Enter a new password.',
+            'password.min' => 'The new password must be at least 8 characters.',
+            'password.different' => 'The new password must be different from your current password.',
+            'password_confirmation.required' => 'Confirm your new password.',
+            'password_confirmation.same' => 'The password confirmation does not match the new password.',
         ]);
 
-        $user = auth()->user();
+        $actor = $request->user();
 
-        if (! Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'Current password is incorrect']);
+        try {
+            DB::connection($actor->getConnectionName())->transaction(function () use ($actor, $validated): void {
+                $user = $actor->newQuery()->lockForUpdate()->findOrFail($actor->getKey());
+
+                // Recheck inside the lock so a concurrent password update cannot be overwritten.
+                if (! Hash::check($validated['current_password'], $user->password)) {
+                    throw ValidationException::withMessages([
+                        'current_password' => 'The current password changed before this request completed. Please try again.',
+                    ]);
+                }
+
+                $user->forceFill([
+                    'password' => Hash::make($validated['password']),
+                    'requires_password_change' => false,
+                ])->saveOrFail();
+
+                $user->refresh();
+
+                if (! Hash::check($validated['password'], $user->password)) {
+                    throw new RuntimeException('The stored password could not be verified after saving.');
+                }
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors([
+                'password' => 'The new password could not be saved. Your existing password is still active. Please try again.',
+            ]);
         }
 
-        $user->password = Hash::make($request->password);
-        $user->requires_password_change = false;
-        $user->save();
+        $request->session()->regenerate();
+        $request->session()->regenerateToken();
 
-        return redirect()->route('profile.edit')
-            ->with('success', 'Password changed successfully.');
+        return redirect()->to(route('profile.edit').'#password')
+            ->with('success', 'Password changed successfully. You can now use your new password to sign in.');
     }
 
     /**

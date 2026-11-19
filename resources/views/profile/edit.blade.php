@@ -14,8 +14,9 @@
 
     <div class="space-y-6">
         @if (session('success'))
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-                {{ session('success') }}
+            <div role="status" aria-live="polite" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                <strong class="font-bold">Success!</strong>
+                <span class="font-semibold">{{ session('success') }}</span>
             </div>
         @endif
 
@@ -210,19 +211,24 @@
 
                 <div class="md:col-span-2">
                     <x-password-input label="Current Password" input-id="current_password" name="current_password"
+                        required autocomplete="current-password"
                         class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
                     @error('current_password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <x-password-input label="New Password" input-id="password" name="password"
+                        required minlength="8" autocomplete="new-password"
                         class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
+                    <p class="mt-1 text-xs text-slate-500">Use at least 8 characters and choose a value different from your current password.</p>
                     @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <x-password-input label="Confirm Password" input-id="password_confirmation" name="password_confirmation"
+                        required minlength="8" autocomplete="new-password"
                         class="border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-200" />
+                    @error('password_confirmation') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2 flex justify-end">
