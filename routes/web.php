@@ -46,6 +46,8 @@ use App\Livewire\Assignments\AssignmentHub;
 use App\Livewire\Attendance\ManageAttendance;
 use App\Livewire\Attendance\ParentStudentWelfare;
 use App\Livewire\Behaviour\BehaviourReportHub;
+use App\Livewire\Birthdays\BirthdayDirectory;
+use App\Livewire\Birthdays\ManageBirthdaySettings;
 use App\Livewire\Broadcasts\ManageBroadcastMessages;
 use App\Livewire\Broadcasts\MyBroadcastInbox;
 use App\Livewire\Calendar\SchoolCalendar;
@@ -247,6 +249,14 @@ Route::post('logout', [AuthController::class, 'logout'])
     ->name('logout');
 
 Route::middleware($schoolContextMiddleware)->group(function () {
+    Route::get('/birthdays', BirthdayDirectory::class)
+        ->middleware('permission:view birthdays')
+        ->name('birthdays.index');
+
+    Route::get('/dashboard/birthdays/settings', ManageBirthdaySettings::class)
+        ->middleware('permission:manage birthday settings')
+        ->name('birthdays.settings');
+
     Route::get('/recognitions/face-of-the-week', ManageRecognitions::class)
         ->middleware('permission:read student recognition')
         ->name('recognitions.index');

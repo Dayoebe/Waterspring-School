@@ -601,6 +601,8 @@
             @endif
         </section>
 
+        @livewire('birthdays.birthday-widget', [], key('dashboard-birthday-widget'))
+
         <div class="grid gap-6 {{ ($isStudent || $isParent) ? 'grid-cols-1' : 'xl:grid-cols-[1.15fr,0.85fr]' }}">
 
             <section class="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm">

@@ -107,6 +107,13 @@ class Menu extends Component
 
         return [
             ['header' => 'School Community'],
+            [
+                'type' => 'menu-item',
+                'text' => 'Birthdays',
+                'icon' => 'fas fa-cake-candles',
+                'route' => 'birthdays.index',
+                'permissions' => ['view birthdays'],
+            ],
             ...($isFamily ? [[
                 'type' => 'menu-item',
                 'text' => 'Teachers',
@@ -764,6 +771,12 @@ class Menu extends Component
                         'text' => 'All Schools',
                         'route' => 'schools.index',
                         'permissions' => ['read school'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Birthday Settings',
+                        'route' => 'birthdays.settings',
+                        'permissions' => ['manage birthday settings'],
                     ],
                     [
                         'type' => 'menu-item',

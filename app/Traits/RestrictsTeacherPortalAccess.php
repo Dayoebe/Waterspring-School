@@ -44,6 +44,7 @@ trait RestrictsTeacherPortalAccess
             'appointments.index',
             'clubs.index',
             'recognitions.index',
+            'birthdays.index',
             'syllabi.index',
             'syllabi.create',
             'syllabi.show',

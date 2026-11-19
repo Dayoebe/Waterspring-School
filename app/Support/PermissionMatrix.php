@@ -39,6 +39,9 @@ class PermissionMatrix
             'create student recognition',
             'update student recognition',
             'publish student recognition',
+            'view birthdays',
+            'send birthday wishes',
+            'manage birthday settings',
 
             'read teacher',
             'read staff directory',
@@ -197,6 +200,8 @@ class PermissionMatrix
             'create student recognition',
             'update student recognition',
             'publish student recognition',
+            'view birthdays',
+            'send birthday wishes',
             'read parent',
             'read school resources',
 
@@ -244,6 +249,8 @@ class PermissionMatrix
             'read broadcast message',
             'create broadcast message',
             'view own broadcasts',
+            'view birthdays',
+            'send birthday wishes',
             'manage cbt',
         ];
 
@@ -266,6 +273,8 @@ class PermissionMatrix
             'read timetable',
             'submit assignment',
             'view own broadcasts',
+            'view birthdays',
+            'send birthday wishes',
         ];
 
         $parent = [
@@ -292,6 +301,8 @@ class PermissionMatrix
             'book parent teacher appointment',
             'view child transport',
             'read fee invoice',
+            'view birthdays',
+            'send birthday wishes',
         ];
 
         $basicUser = [
@@ -396,6 +407,9 @@ class PermissionMatrix
             'create student recognition',
             'update student recognition',
             'publish student recognition',
+            'view birthdays',
+            'send birthday wishes',
+            'manage birthday settings',
 
             'read parent',
             'create parent',
