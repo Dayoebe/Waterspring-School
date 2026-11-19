@@ -69,25 +69,17 @@
                     @endif
                     @foreach ($section['items'] as $menuItem)
                         @if (empty($menuItem['submenu']))
-                            @if (!empty($menuItem['route_url']))
-                                <a
-                                    class="dashboard-nav-link {{ $menuItem['active'] ? 'is-active' : '' }}"
-                                    href="{{ $menuItem['route_url'] }}"
-                                    title="{{ $menuItem['text'] }}"
-                                    x-show="matches(@js($menuItem['search']))"
-                                    @if($menuItem['active']) aria-current="page" @endif
-                                    wire:navigate
-                                >
-                                    <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
-                                    <span x-show="menuOpen">{{ $menuItem['text'] }}</span>
-                                </a>
-                            @else
-                                <div class="dashboard-nav-link is-disabled" title="{{ $menuItem['text'] }} — coming soon" x-show="matches(@js($menuItem['search']))">
-                                    <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
-                                    <span x-show="menuOpen">{{ $menuItem['text'] }}</span>
-                                    <small x-show="menuOpen">Soon</small>
-                                </div>
-                            @endif
+                            <a
+                                class="dashboard-nav-link {{ $menuItem['active'] ? 'is-active' : '' }}"
+                                href="{{ $menuItem['route_url'] }}"
+                                title="{{ $menuItem['text'] }}"
+                                x-show="matches(@js($menuItem['search']))"
+                                @if($menuItem['active']) aria-current="page" @endif
+                                wire:navigate
+                            >
+                                <i class="{{ $menuItem['icon'] ?? 'far fa-circle' }}" aria-hidden="true"></i>
+                                <span x-show="menuOpen">{{ $menuItem['text'] }}</span>
+                            </a>
                         @else
                             @php
                                 $groupId = 'dashboard-nav-' . $menuItem['id'];
@@ -123,11 +115,7 @@
                                                 <h3 class="dashboard-subnav-label">{{ $submenuSection['label'] }}</h3>
                                             @endif
                                             @foreach ($submenuSection['items'] as $submenuItem)
-                                                @if (!empty($submenuItem['route_url']))
-                                                    <a class="dashboard-subnav-link {{ $submenuItem['active'] ? 'is-active' : '' }}" href="{{ $submenuItem['route_url'] }}" x-show="matches(@js($submenuItem['search']))" @if($submenuItem['active']) aria-current="page" @endif wire:navigate>{{ $submenuItem['text'] }}</a>
-                                                @else
-                                                    <span class="dashboard-subnav-link is-disabled" x-show="matches(@js($submenuItem['search']))">{{ $submenuItem['text'] }} <small>Soon</small></span>
-                                                @endif
+                                                <a class="dashboard-subnav-link {{ $submenuItem['active'] ? 'is-active' : '' }}" href="{{ $submenuItem['route_url'] }}" x-show="matches(@js($submenuItem['search']))" @if($submenuItem['active']) aria-current="page" @endif wire:navigate>{{ $submenuItem['text'] }}</a>
                                             @endforeach
                                         </div>
                                     @endforeach

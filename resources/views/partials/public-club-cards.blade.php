@@ -39,7 +39,7 @@
     @empty
         <div class="rounded-3xl border border-dashed border-sky-200 bg-sky-50 p-8 text-center sm:col-span-2 lg:col-span-3">
             <i class="fas fa-people-group text-3xl text-sky-500" aria-hidden="true"></i>
-            <h3 class="mt-4 text-xl font-black text-slate-900">Club programme updates are coming soon</h3>
+            <h3 class="mt-4 text-xl font-black text-slate-900">No club programmes are published</h3>
             <p class="mx-auto mt-2 max-w-xl leading-7 text-slate-600">Contact the school office for current extracurricular opportunities.</p>
         </div>
     @endforelse

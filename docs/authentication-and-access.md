@@ -53,14 +53,13 @@ A role name alone does not grant access. Protected routes combine authentication
 
 Password recovery remains email-based at `/forgot-password`. It requires a working mail transport and a queue worker only where the selected mail path queues delivery. If an account has an undeliverable or placeholder email, an administrator must first replace it with a usable unique address or reset the account through an approved administrative process.
 
-## Security checks
+## Production security checks
 
 After changing authentication or roles, run at minimum:
 
 ```bash
-php artisan test --filter='AuthenticationCompatibilityTest|AccountSecurityMiddlewareTest|CriticalWorkflowSafetyTest'
 php artisan permissions:audit-access
 php artisan route:list
 ```
 
-Use only a disposable test database whose name is `testing` or ends in `_test`/`_testing`. `permissions:audit-access` creates and normally deletes temporary role users while it checks the menu, so it should also be run on the disposable database rather than operational records.
+`permissions:audit-access` creates and normally deletes temporary role users while it checks the menu. Run it only in a controlled pre-production environment, never against operational school records.

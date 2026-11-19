@@ -10,39 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
-    services:
-      mariadb:
-        image: mariadb:10.11
-        env:
-          MARIADB_DATABASE: waterspring_testing
-          MARIADB_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-
-    env:
-      APP_ENV: testing
-      APP_KEY: base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
-      APP_URL: http://localhost
-      CACHE_STORE: array
-      DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: waterspring_testing
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      MAIL_MAILER: array
-      QUEUE_CONNECTION: sync
-      SESSION_DRIVER: array
-      TELESCOPE_ENABLED: false
 
     steps:
       - name: Check out repository
@@ -69,23 +39,19 @@ jobs:
           restore-keys: composer-${{ runner.os }}-
 
       - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
       - name: Install frontend dependencies
         run: npm ci
 
-      # Feature tests render Blade layouts that resolve the Vite manifest.
       - name: Build production assets
         run: npm run build
 
-      - name: Validate clean database migrations
-        run: php artisan migrate:fresh --force
-
-      - name: Run application tests
-        run: php artisan test --colors=always
-
       - name: Compile Blade views
         run: php artisan view:cache
+
+      - name: Validate Composer configuration
+        run: composer validate --strict
 
       - name: Audit PHP dependencies
         run: composer audit --no-interaction

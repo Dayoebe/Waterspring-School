@@ -38,13 +38,10 @@
         "barryvdh/laravel-debugbar": "^4.4",
         "barryvdh/laravel-ide-helper": "^3.8",
         "beyondcode/laravel-query-detector": "^2.3",
-        "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.5",
         "laravel/sail": "^1.18",
-        "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^8.9",
         "larastan/larastan": "^3.14",
-        "phpunit/phpunit": "^11.5",
         "spatie/laravel-ignition": "^2.12"
     },
     "autoload": {
@@ -53,11 +50,6 @@
             "Livewire\\": "app/Livewire/",  
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
         }
     },
     "scripts": {

@@ -67,7 +67,7 @@
                     @elseif($classes->isEmpty())
                         <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
                             <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-2xl text-slate-400 shadow-sm"><i class="fas fa-book-open" aria-hidden="true"></i></span>
-                            <h3 class="mt-4 text-lg font-black">Published learning topics are coming soon</h3>
+                            <h3 class="mt-4 text-lg font-black">No learning topics are published</h3>
                             <p class="mx-auto mt-2 max-w-xl leading-7 text-slate-600">There are no published schemes of work with topics for the current academic year yet. We will show them here as soon as the school publishes approved curriculum content.</p>
                         </div>
                     @else

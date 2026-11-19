@@ -175,18 +175,7 @@ docs/                     Implementation and migration notes
 
 ## Validation
 
-WaterSpring has an automated safety net. Database-backed feature tests cover authentication and applicant restrictions, tenant boundaries, admissions, fee catalogue/class billing/payments, appointments, transport, audit history, CBT integrity, ClassPilot/Open Learning access, operational health, and critical academic workflows. Database-free unit tests cover result rules, AI providers and policies, dependency compatibility, PWA privacy, export formatting, and public UX contracts.
-
-### Test database safety
-
-The feature suite uses MySQL/MariaDB and refuses to start unless `APP_ENV=testing` and the configured database is named `testing` or ends in `_test`/`_testing`. Create a disposable schema once for local testing; never reuse the operational database:
-
-```bash
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS waterspring_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-DB_DATABASE=waterspring_testing php artisan test
-```
-
-`RefreshDatabase` rebuilds this disposable schema as tests run. GitHub Actions provisions its own MariaDB service, validates a clean migration, runs the database-backed suite, compiles Blade views, builds production assets, and audits Composer and NPM dependencies on every pull request and push to `main`.
+GitHub Actions installs production PHP dependencies, builds production assets, compiles Blade views, validates the Composer manifest, and audits Composer and NPM dependencies on every pull request and push to `main`.
 
 Useful verification and build commands:
 
@@ -199,9 +188,7 @@ node --check public/service-worker.js
 npm run build
 ```
 
-The public-site migration was checked with HTTP requests and Chromium at 390px and 1440px widths, including image loading, mobile navigation, FAQ controls and structured data. Those checks do not establish end-to-end coverage for the management platform. Live form submission and PWA installation were not tested.
-
-Run the committed PHPUnit suite only against the dedicated `testing` database configured in `phpunit.xml`; never point PHPUnit at a database containing operational records. The complete fresh-install procedure should remain a release check on an empty disposable database, and authenticated browser checks remain necessary for final release acceptance.
+Before release, verify authenticated role flows, live form submission, mail delivery, queues, scheduler execution, payment-provider acceptance, PWA installation, and production health endpoints in a controlled pre-production environment.
 
 ## License and attribution
 

@@ -32,20 +32,19 @@ For a planned 200-student sitting:
 1. use production-like infrastructure and a restored copy of the schema with anonymized test users;
 2. confirm the queue and scheduler are healthy, database connections are sized for PHP worker concurrency, and storage/log disks have headroom;
 3. publish the exact paper only after verifying class, subject, duration, attempt limit, question count, and result-publication state;
-4. run `cbt:integrity-check` and the automated CBT tests;
+4. run `cbt:integrity-check` and complete a controlled end-to-end CBT rehearsal;
 5. load-test login, exam start, periodic saves, submission bursts, reconnects, duplicate tabs, expiry, and result viewing with representative latency;
 6. monitor application errors, slow queries, database locks/connections, CPU, memory, network, and response latency during a rehearsal; and
 7. keep an invigilation/incident procedure that records affected student, paper, attempt, timestamps, and evidence without editing raw answers directly.
 
 The repository contains integrity and concurrency protections, but it does not contain a universal guarantee that one server can support 200 simultaneous candidates. Capacity depends on the deployed PHP workers, database, network, autosave frequency, question media, and monitoring. A measured rehearsal is the release gate.
 
-## Regression checks
+## Production verification
 
-Use a disposable database:
+Run the integrity check and complete a controlled rehearsal before release:
 
 ```bash
-php artisan test tests/Feature/Cbt
 php artisan cbt:integrity-check
 ```
 
-Do not use `migrate:fresh`, `RefreshDatabase`, or the feature suite against operational school data.
+Do not use destructive migration commands against operational school data.

@@ -7,8 +7,6 @@
 .env.*
 !.env.example
 /auth.json
-.phpunit.result.cache
-/.phpunit.cache/
 /.idea/
 /.vscode/
 /.DS_Store

@@ -68,7 +68,6 @@
 .dashboard-nav-link span { flex: 1; min-width: 0; }
 .dashboard-nav-link:hover, .dashboard-nav-link.is-parent-active { background: var(--surface-muted); color: var(--ink); }
 .dashboard-nav-link.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-.dashboard-nav-link.is-disabled, .dashboard-subnav-link.is-disabled { opacity: .55; cursor: default; }
 .dashboard-nav-link small, .dashboard-subnav-link small { font-size: .6rem; text-transform: uppercase; border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; }
 .dashboard-nav-chevron { margin-left: auto; font-size: .6rem; transition: transform .18s; }
 .dashboard-nav-chevron.is-rotated { transform: rotate(180deg); }

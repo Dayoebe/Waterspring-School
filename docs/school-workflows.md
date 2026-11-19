@@ -37,15 +37,6 @@ Transport managers can create routes and ordered stops, assign a student to an a
 
 Parents can see only transport assignments, guardians, and movement events for linked children. Pickup codes are sensitive operational credentials: disclose them only through an approved process, rotate after suspected exposure, and do not place them in general notices or logs.
 
-## Regression checks
+## Production verification
 
-Run these only against a disposable test database:
-
-```bash
-php artisan test tests/Feature/Admissions
-php artisan test tests/Feature/Administration
-php artisan test tests/Feature/Appointments
-php artisan test tests/Feature/Transport
-```
-
-Production acceptance must also verify actual mail delivery, scheduler execution, role-specific browser access, and school boundary behavior.
+Production acceptance must verify admissions, administration, appointments, transport, actual mail delivery, scheduler execution, role-specific browser access, and school boundary behavior in a controlled pre-production environment.

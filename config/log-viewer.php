@@ -106,25 +106,6 @@ return [
             'name' => ucfirst(env('APP_ENV', 'local')),
         ],
 
-        // 'staging' => [
-        //     'name' => 'Staging',
-        //     'host' => 'https://staging.example.com/log-viewer',
-        //     'auth' => [      // Example of HTTP Basic auth
-        //         'username' => 'username',
-        //         'password' => 'password',
-        //     ],
-        // ],
-        //
-        // 'production' => [
-        //     'name' => 'Production',
-        //     'host' => 'https://example.com/log-viewer',
-        //     'auth' => [      // Example of Bearer token auth
-        //         'token' => env('LOG_VIEWER_PRODUCTION_TOKEN'),
-        //     ],
-        //     'headers' => [
-        //         'X-Foo' => 'Bar',
-        //     ],
-        // ],
     ],
 
     /*

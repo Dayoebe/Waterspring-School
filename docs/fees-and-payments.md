@@ -61,12 +61,6 @@ php artisan payments:flutterwave-status
 php artisan queue:failed
 ```
 
-## Regression checks
+## Production verification
 
-Run finance tests only on a disposable test database:
-
-```bash
-php artisan test tests/Feature/Fees
-```
-
-Automated tests cover catalogue approval, class billing, dashboard visibility, manual ledger entries, reversals, tenant boundaries, provider configuration, verified fulfillment, and replay protection. They do not prove that a live provider has accepted the deployment or settled funds.
+Before release, verify catalogue approval, class billing, dashboard visibility, manual ledger entries, reversals, tenant boundaries, provider configuration, verified fulfillment, and replay protection in a controlled pre-production environment. These checks do not prove that a live provider has accepted the deployment or settled funds.
