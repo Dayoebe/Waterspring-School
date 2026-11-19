@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -110,13 +111,13 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        $user = auth()->user();
+        $actor = $request->user();
         $request->merge(['username' => Username::normalize($request->input('username'))]);
 
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'username' => Username::rules($user->id),
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'username' => Username::rules($actor->id),
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($actor->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
             'birthday' => ['nullable', 'date', 'before_or_equal:today'],
@@ -131,22 +132,34 @@ class ProfileController extends Controller
             'staff_bio' => ['nullable', 'string', 'max:5000'],
             'staff_qualifications' => ['nullable', 'string', 'max:3000'],
             'staff_responsibilities' => ['nullable', 'string', 'max:3000'],
+        ], [
+            'username.min' => 'The username must be at least 3 characters.',
+            'username.max' => 'The username must not be longer than 50 characters.',
+            'username.regex' => 'The username may contain only letters, numbers, dots, underscores, and hyphens.',
+            'username.unique' => 'That username is already in use. Choose another username.',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()->to(route('profile.edit').'#profile-information')
+                ->withErrors($validator, 'profile')
+                ->withInput();
+        }
+
+        $validated = $validator->validated();
         $payload = [
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
             'email_is_placeholder' => false,
-            'phone' => $request->phone,
-            'gender' => $request->gender,
-            'birthday' => $request->birthday ?: null,
-            'address' => $request->address,
-            'city' => $request->city,
-            'state' => $request->state,
-            'nationality' => $request->nationality,
-            'religion' => $request->religion,
-            'blood_group' => $request->blood_group,
+            'phone' => $validated['phone'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'birthday' => $validated['birthday'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'state' => $validated['state'] ?? null,
+            'nationality' => $validated['nationality'] ?? null,
+            'religion' => $validated['religion'] ?? null,
+            'blood_group' => $validated['blood_group'] ?? null,
         ];
 
         $oldProfilePhotoPath = null;
@@ -154,27 +167,48 @@ class ProfileController extends Controller
             $storage = app(CloudinaryImageStorage::class);
             $newPath = $storage->upload(
                 $request->file('profile_photo'),
-                $storage->folder('profile-photos', $user->school_id)
+                $storage->folder('profile-photos', $actor->school_id)
             );
 
-            $oldProfilePhotoPath = $user->profile_photo_path;
+            $oldProfilePhotoPath = $actor->profile_photo_path;
             $payload['profile_photo_path'] = $newPath;
         }
 
-        $user->forceFill($payload)->save();
+        try {
+            DB::connection($actor->getConnectionName())->transaction(function () use ($actor, $payload, $validated): void {
+                $user = $actor->newQuery()->lockForUpdate()->findOrFail($actor->getKey());
+                $user->forceFill($payload)->saveOrFail();
+
+                if ($user->staffProfile) {
+                    $user->staffProfile->forceFill([
+                        'job_title' => ($validated['staff_job_title'] ?? null) ?: $user->staffProfile->job_title,
+                        'bio' => $validated['staff_bio'] ?? null,
+                        'qualifications' => $validated['staff_qualifications'] ?? null,
+                        'responsibilities' => $validated['staff_responsibilities'] ?? null,
+                    ])->saveOrFail();
+                }
+
+                $user->refresh();
+
+                if ($user->username !== $validated['username']) {
+                    throw new RuntimeException('The stored username did not match the submitted username.');
+                }
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->to(route('profile.edit').'#profile-information')
+                ->withErrors([
+                    'profile_save' => 'Your profile could not be saved. No account changes were applied. Please try again.',
+                ], 'profile')
+                ->withInput();
+        }
+
         if ($oldProfilePhotoPath && str_starts_with($oldProfilePhotoPath, 'profile-photos/')) {
             Storage::disk('public')->delete($oldProfilePhotoPath);
         }
 
-        if ($user->staffProfile) {
-            $user->staffProfile->update([
-                'job_title' => $request->staff_job_title ?: $user->staffProfile->job_title,
-                'bio' => $request->staff_bio,
-                'qualifications' => $request->staff_qualifications,
-                'responsibilities' => $request->staff_responsibilities,
-            ]);
-        }
-
-        return redirect()->route('profile.edit')->with('success', 'Profile updated successfully.');
+        return redirect()->to(route('profile.edit').'#profile-information')
+            ->with('profile_success', 'Profile updated successfully. Your username is ready to use when signing in.');
     }
 }

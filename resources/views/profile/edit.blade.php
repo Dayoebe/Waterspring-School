@@ -69,9 +69,27 @@
             </div>
         </section>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <section id="profile-information" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h3 class="text-lg font-bold text-slate-900">Profile Information</h3>
             <p class="mt-1 text-sm text-slate-600">Update your personal and contact details.</p>
+
+            @if (session('profile_success'))
+                <div role="status" aria-live="polite" class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    <strong class="font-bold">Success!</strong>
+                    <span class="font-semibold">{{ session('profile_success') }}</span>
+                </div>
+            @endif
+
+            @if ($errors->profile->any())
+                <div role="alert" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <p class="font-bold">Your profile was not saved:</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5">
+                        @foreach ($errors->profile->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-5 space-y-4">
                 @csrf
@@ -82,7 +100,7 @@
                         <label for="name" class="mb-1 block text-sm font-semibold text-slate-700">Full Name</label>
                         <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('name', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
@@ -91,21 +109,21 @@
                             minlength="3" maxlength="50" autocomplete="username"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
                         <p class="mt-1 text-xs text-slate-500">You can use this username instead of your email when signing in.</p>
-                        @error('username') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('username', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="email" class="mb-1 block text-sm font-semibold text-slate-700">Email Address</label>
                         <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('email', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="phone" class="mb-1 block text-sm font-semibold text-slate-700">Phone</label>
                         <input id="phone" name="phone" type="text" value="{{ old('phone', $user->phone) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('phone', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
@@ -116,7 +134,7 @@
                             <option value="male" @selected(old('gender', $user->gender) === 'male')>Male</option>
                             <option value="female" @selected(old('gender', $user->gender) === 'female')>Female</option>
                         </select>
-                        @error('gender') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('gender', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
@@ -128,49 +146,49 @@
                             value="{{ old('birthday', optional($user->birthday)->format('Y-m-d')) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                         />
-                        @error('birthday') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('birthday', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="blood_group" class="mb-1 block text-sm font-semibold text-slate-700">Blood Group</label>
                         <input id="blood_group" name="blood_group" type="text" value="{{ old('blood_group', $user->blood_group) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('blood_group') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('blood_group', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="state" class="mb-1 block text-sm font-semibold text-slate-700">State</label>
                         <input id="state" name="state" type="text" value="{{ old('state', $user->state) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('state') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('state', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="city" class="mb-1 block text-sm font-semibold text-slate-700">City</label>
                         <input id="city" name="city" type="text" value="{{ old('city', $user->city) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('city') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('city', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="nationality" class="mb-1 block text-sm font-semibold text-slate-700">Nationality</label>
                         <input id="nationality" name="nationality" type="text" value="{{ old('nationality', $user->nationality) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('nationality') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('nationality', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="religion" class="mb-1 block text-sm font-semibold text-slate-700">Religion</label>
                         <input id="religion" name="religion" type="text" value="{{ old('religion', $user->religion) }}"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
-                        @error('religion') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('religion', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label for="address" class="mb-1 block text-sm font-semibold text-slate-700">Address</label>
                         <textarea id="address" name="address" rows="3"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{{ old('address', $user->address) }}</textarea>
-                        @error('address') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('address', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
@@ -178,7 +196,7 @@
                         <input id="profile_photo" name="profile_photo" type="file" accept="image/*"
                             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
                         <p class="mt-1 text-xs text-slate-500">Accepted image files up to 3MB.</p>
-                        @error('profile_photo') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('profile_photo', 'profile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     @if($user->staffProfile)
