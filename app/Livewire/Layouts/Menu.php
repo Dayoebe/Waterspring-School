@@ -682,6 +682,20 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'icon' => 'fas fa-envelope-open-text',
+                        'text' => 'My Weekly Digest',
+                        'route' => 'parent-digest.index',
+                        'permissions' => ['view parent digest'],
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'icon' => 'fas fa-envelope-circle-check',
+                        'text' => 'Weekly Digest Delivery',
+                        'route' => 'parent-digest.manage',
+                        'permissions' => ['manage parent digest'],
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'icon' => 'fas fa-calendar-check',
                         'text' => 'Parent-Teacher Appointments',
                         'route' => 'appointments.index',

@@ -44,6 +44,7 @@ class PermissionMatrix
             'view birthdays',
             'send birthday wishes',
             'manage birthday settings',
+            'manage parent digest',
 
             'read teacher',
             'read staff directory',
@@ -305,6 +306,7 @@ class PermissionMatrix
             'read fee invoice',
             'view birthdays',
             'send birthday wishes',
+            'view parent digest',
         ];
 
         $basicUser = [
@@ -414,6 +416,8 @@ class PermissionMatrix
             'view birthdays',
             'send birthday wishes',
             'manage birthday settings',
+            'view parent digest',
+            'manage parent digest',
 
             'read parent',
             'create parent',

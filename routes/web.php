@@ -75,7 +75,9 @@ use App\Livewire\Gallery\ManageGallery;
 use App\Livewire\Media\ManageMediaLibrary;
 use App\Livewire\Parents\AssignStudentsToParent;
 use App\Livewire\Parents\ManageParents;
+use App\Livewire\Parents\ManageWeeklyDigest;
 use App\Livewire\Parents\ParentDetail;
+use App\Livewire\Parents\WeeklyDigest;
 use App\Livewire\Recognitions\ManageRecognitions;
 use App\Livewire\Resources\ManageSchoolResources;
 use App\Livewire\Result\Index;
@@ -261,6 +263,14 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/dashboard/birthdays/settings', ManageBirthdaySettings::class)
         ->middleware('permission:manage birthday settings')
         ->name('birthdays.settings');
+
+    Route::get('/family/weekly-digest', WeeklyDigest::class)
+        ->middleware('permission:view parent digest')
+        ->name('parent-digest.index');
+
+    Route::get('/dashboard/communications/weekly-digest', ManageWeeklyDigest::class)
+        ->middleware('permission:manage parent digest')
+        ->name('parent-digest.manage');
 
     Route::get('/recognitions/face-of-the-week', ManageRecognitions::class)
         ->middleware('permission:read student recognition')
