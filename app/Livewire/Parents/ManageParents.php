@@ -6,6 +6,7 @@ use App\Models\MyClass;
 use App\Models\Section;
 use App\Models\StudentRecord;
 use App\Models\User;
+use App\Services\GuardianLinkService;
 use App\Support\Username;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -374,11 +375,14 @@ class ManageParents extends Component
             $selectedIds = collect($this->selectedStudentIds)->map(fn ($id) => (int) $id)->filter()->unique();
             $validCount = User::role('student')->where('school_id', auth()->user()->school_id)
                 ->whereIn('id', $selectedIds)
-                ->whereDoesntHave('parents')
+                ->when($this->parentId, fn ($query) => $query->whereDoesntHave(
+                    'parents',
+                    fn ($parents) => $parents->where('users.id', (int) $this->parentId)
+                ))
                 ->count();
 
             if ($validCount !== $selectedIds->count()) {
-                $this->addError('selectedStudentIds', 'One or more selected students already have a parent or do not belong to this school.');
+                $this->addError('selectedStudentIds', 'One or more students are invalid, outside this school, or already linked to this guardian.');
 
                 return false;
             }
@@ -434,12 +438,8 @@ class ManageParents extends Component
 
         if ($this->childEntryMode === 'existing') {
             foreach (collect($this->selectedStudentIds)->map(fn ($id) => (int) $id)->filter()->unique() as $studentId) {
-                DB::table('parent_records')->insert([
-                    'user_id' => $parent->id,
-                    'student_id' => $studentId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $student = User::role('student')->where('school_id', $parent->school_id)->findOrFail($studentId);
+                app(GuardianLinkService::class)->link($parent, $student, auth()->user());
             }
 
             return;
@@ -472,12 +472,7 @@ class ManageParents extends Component
             ]]);
         }
 
-        DB::table('parent_records')->insert([
-            'user_id' => $parent->id,
-            'student_id' => $student->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        app(GuardianLinkService::class)->link($parent, $student, auth()->user());
     }
 
     protected function generateStudentAdmissionNumber(): string
@@ -522,7 +517,11 @@ class ManageParents extends Component
             : collect();
         $availableStudents = in_array($this->mode, ['create', 'edit'], true) && trim($this->studentSearch) !== ''
             ? User::role('student')->where('school_id', auth()->user()->school_id)
-                ->whereDoesntHave('parents')->whereHas('studentRecord')
+                ->when($this->parentId, fn ($query) => $query->whereDoesntHave(
+                    'parents',
+                    fn ($parents) => $parents->where('users.id', (int) $this->parentId)
+                ))
+                ->whereHas('studentRecord')
                 ->where(function ($query): void {
                     $term = '%'.trim($this->studentSearch).'%';
                     $query->where(fn ($inner) => $inner->where('name', 'like', $term)

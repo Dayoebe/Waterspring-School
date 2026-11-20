@@ -8,8 +8,8 @@
                      class="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover">
                 
                 <div class="flex-1 text-white text-center md:text-left">
-                    <h2 class="text-3xl font-bold mb-2">Assign Students to {{ $parent->name }}</h2>
-                    <p class="text-white/80">Currently assigned: {{ $assignedStudents->count() }} {{ Str::plural('student', $assignedStudents->count()) }}</p>
+                    <h2 class="text-3xl font-bold mb-2">Manage students linked to {{ $parent->name }}</h2>
+                    <p class="text-white/80">Current guardian links: {{ $assignedStudents->count() }}</p>
                 </div>
                 
                 <a href="{{ route('parents.show', $parent->id) }}" 
@@ -48,11 +48,35 @@
                                     <p class="text-xs text-gray-500 mt-1">
                                         {{ $student->studentRecord->admission_number ?? 'N/A' }}
                                     </p>
+                                    <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                                        {{ str_replace('_', ' ', $student->pivot->relationship_type ?: 'guardian') }}
+                                        @if($student->pivot->is_primary_contact) · Primary contact @endif
+                                    </p>
                                 </div>
                             </div>
                             <div class="mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-center text-sm font-semibold text-emerald-800">
-                                <i class="fas fa-lock mr-2"></i>Relationship locked
+                                <i class="fas fa-shield-halved mr-2"></i>Verified guardian relationship
                             </div>
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                @foreach([
+                                    'can_view_academics' => 'Academics',
+                                    'can_view_attendance' => 'Attendance',
+                                    'can_view_portfolio' => 'Portfolio',
+                                    'receives_digest' => 'Digest',
+                                    'can_consent_events' => 'Event consent',
+                                ] as $field => $label)
+                                    <button type="button" wire:click="toggleAuthority({{ $student->id }}, '{{ $field }}')"
+                                            class="rounded-lg border px-2 py-2 font-semibold {{ $student->pivot->{$field} ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-500' }}">
+                                        <i class="fas {{ $student->pivot->{$field} ? 'fa-check' : 'fa-minus' }} mr-1" aria-hidden="true"></i>{{ $label }}
+                                    </button>
+                                @endforeach
+                            </div>
+                            @unless($student->pivot->is_primary_contact)
+                                <button type="button" wire:click="makePrimary({{ $student->id }})" wire:confirm="Make this guardian the primary contact for this student?"
+                                        class="mt-3 w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800 hover:bg-sky-100">
+                                    Make primary contact
+                                </button>
+                            @endunless
                         </div>
                     @endforeach
                 </div>
@@ -64,8 +88,29 @@
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
         <div class="dashboard-section-heading bg-blue-600 px-6 py-4">
             <h2 class="text-xl font-bold text-white">
-                <i class="fas fa-user-plus mr-2"></i>Available Students to Assign
+                <i class="fas fa-user-plus mr-2"></i>Add another guardian relationship
             </h2>
+        </div>
+
+        <div class="grid gap-4 border-b bg-sky-50 p-6 md:grid-cols-2 lg:grid-cols-3">
+            <label class="block">
+                <span class="mb-2 block text-sm font-semibold text-slate-700">Relationship</span>
+                <select wire:model="relationshipType" class="w-full rounded-lg border-slate-300">
+                    @foreach(\App\Services\GuardianLinkService::RELATIONSHIP_TYPES as $type)
+                        <option value="{{ $type }}">{{ ucfirst($type) }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <div class="space-y-2 text-sm text-slate-700">
+                <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewAcademics" class="rounded text-sky-700"> Academic records</label>
+                <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewAttendance" class="rounded text-sky-700"> Attendance records</label>
+                <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewPortfolio" class="rounded text-sky-700"> Approved portfolio items</label>
+            </div>
+            <div class="space-y-2 text-sm text-slate-700">
+                <label class="flex items-center gap-2"><input type="checkbox" wire:model="receivesDigest" class="rounded text-sky-700"> Receive weekly digest when enabled</label>
+                <label class="flex items-center gap-2"><input type="checkbox" wire:model="canConsentEvents" class="rounded text-sky-700"> May provide event consent</label>
+            </div>
+            @error('relationshipType') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
         <!-- Filters -->
@@ -121,7 +166,7 @@
                             </div>
                             <button wire:click="assignStudent({{ $student->id }})" 
                                     class="mt-3 w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
-                                <i class="fas fa-plus mr-2"></i>Assign to Parent
+                                <i class="fas fa-plus mr-2"></i>Link to Guardian
                             </button>
                         </div>
                     @endforeach

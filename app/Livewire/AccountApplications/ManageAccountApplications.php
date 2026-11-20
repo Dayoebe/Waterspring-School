@@ -3,35 +3,48 @@
 namespace App\Livewire\AccountApplications;
 
 use App\Events\AccountStatusChanged;
-use App\Models\User;
 use App\Models\AccountApplication;
+use App\Models\MyClass;
+use App\Models\Section;
+use App\Models\StudentRecord;
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ManageAccountApplications extends Component
 {
-    use WithPagination, AuthorizesRequests;
+    use AuthorizesRequests, WithPagination;
 
     public $mode = 'list'; // list, view, change-status
+
     public $filter = 'pending'; // pending, rejected
+
     public $search = '';
+
     public $selectedApplicant = null;
-    
+
     // Change Status Form
     public $status = '';
+
     public $reason = '';
+
     public $studentRecordFields = false;
-    
+
     // Student Record Fields (for approved students)
     public $admission_number = '';
+
     public $admission_date = '';
+
     public $my_class_id = '';
+
     public $section_id = '';
-    
+
     public $statuses = [];
+
     public $classes = [];
+
     public $sections = [];
 
     protected $queryString = [
@@ -45,9 +58,9 @@ class ManageAccountApplications extends Component
     public function mount()
     {
         $this->authorize('viewAny', [User::class, 'applicant']);
-        
+
         if ($this->mode === 'view' || $this->mode === 'change-status') {
-            if (!$this->selectedApplicant) {
+            if (! $this->selectedApplicant) {
                 return redirect()->route('account-applications.index');
             }
         }
@@ -56,11 +69,11 @@ class ManageAccountApplications extends Component
     public function switchMode($mode, $applicantId = null)
     {
         $this->mode = $mode;
-        
+
         if ($applicantId) {
             $this->selectedApplicant = User::with(['accountApplication.role', 'accountApplication.statuses'])
                 ->findOrFail($applicantId);
-            
+
             if ($mode === 'change-status') {
                 $this->loadChangeStatusForm();
             }
@@ -68,31 +81,32 @@ class ManageAccountApplications extends Component
             $this->selectedApplicant = null;
             $this->reset(['status', 'reason', 'studentRecordFields', 'admission_number', 'admission_date', 'my_class_id', 'section_id']);
         }
-        
+
         $this->resetValidation();
     }
 
     public function loadChangeStatusForm()
     {
-        if (!$this->selectedApplicant->accountApplication) {
+        if (! $this->selectedApplicant->accountApplication) {
             session()->flash('error', 'Application not found or already processed');
+
             return $this->switchMode('list');
         }
 
         $this->statuses = $this->selectedApplicant->accountApplication->getAllStatuses()->toArray();
         $this->status = $this->statuses[0] ?? '';
         $this->admission_date = now()->format('Y-m-d');
-        
+
         // Load classes for student role
-        $this->classes = \App\Models\MyClass::orderBy('name')->get();
-        
+        $this->classes = MyClass::orderBy('name')->get();
+
         $this->updatedStatus();
     }
 
     public function updatedStatus()
     {
-        if ($this->status === 'approved' && 
-            $this->selectedApplicant && 
+        if ($this->status === 'approved' &&
+            $this->selectedApplicant &&
             $this->selectedApplicant->accountApplication->role->name === 'student') {
             $this->studentRecordFields = true;
         } else {
@@ -102,7 +116,7 @@ class ManageAccountApplications extends Component
 
     public function updatedMyClassId()
     {
-        $this->sections = \App\Models\Section::where('my_class_id', $this->my_class_id)
+        $this->sections = Section::where('my_class_id', $this->my_class_id)
             ->orderBy('name')->get();
         $this->section_id = '';
     }
@@ -146,7 +160,7 @@ class ManageAccountApplications extends Component
         switch ($role->name) {
             case 'student':
                 $admissionNumber = $this->admission_number ?: $this->generateAdmissionNumber();
-                
+
                 $studentRecord = $this->selectedApplicant->studentRecord()->create([
                     'admission_number' => $admissionNumber,
                     'admission_date' => $this->admission_date,
@@ -161,13 +175,15 @@ class ManageAccountApplications extends Component
                         $currentAcademicYear->id => [
                             'my_class_id' => $this->my_class_id,
                             'section_id' => $this->section_id ?: null,
-                        ]
+                        ],
                     ]);
                 }
                 break;
 
             case 'parent':
-                $this->selectedApplicant->parentRecord()->create();
+                // Parent records represent verified guardian-to-student links.
+                // A parent applicant receives the role here and is linked only
+                // when an authorised administrator selects a student.
                 break;
 
             case 'teacher':
@@ -177,7 +193,7 @@ class ManageAccountApplications extends Component
 
         // Assign new role and remove applicant role
         $this->selectedApplicant->syncRoles([$role->name]);
-        
+
         // Delete application record
         $this->selectedApplicant->accountApplication->delete();
     }
@@ -186,10 +202,10 @@ class ManageAccountApplications extends Component
     {
         $schoolInitials = auth()->user()->school->initials ?? 'SCH';
         $currentYear = date('y');
-        
+
         do {
-            $admissionNumber = "{$schoolInitials}/{$currentYear}/" . mt_rand(100000, 999999);
-        } while (\App\Models\StudentRecord::where('admission_number', $admissionNumber)->exists());
+            $admissionNumber = "{$schoolInitials}/{$currentYear}/".mt_rand(100000, 999999);
+        } while (StudentRecord::where('admission_number', $admissionNumber)->exists());
 
         return $admissionNumber;
     }
@@ -198,9 +214,9 @@ class ManageAccountApplications extends Component
     {
         $applicant = User::findOrFail($applicantId);
         $this->authorize('delete', [$applicant, 'applicant']);
-        
+
         $applicant->delete();
-        
+
         session()->flash('success', 'Application deleted successfully');
     }
 
@@ -212,39 +228,39 @@ class ManageAccountApplications extends Component
             $query = User::role('applicant')
                 ->with(['accountApplication.role', 'accountApplication.statuses'])
                 ->inSchool()
-                ->when($this->search, function($q) {
-                    $q->where(function($query) {
-                        $query->where('name', 'like', '%' . $this->search . '%')
-                              ->orWhere('email', 'like', '%' . $this->search . '%');
+                ->when($this->search, function ($q) {
+                    $q->where(function ($query) {
+                        $query->where('name', 'like', '%'.$this->search.'%')
+                            ->orWhere('email', 'like', '%'.$this->search.'%');
                     });
                 });
 
-if ($this->filter === 'pending') {
-    $query->whereHas('accountApplication.statuses', function($q) {
-        $q->where('name', '!=', 'rejected')
-          ->whereRaw('statuses.id = (
+            if ($this->filter === 'pending') {
+                $query->whereHas('accountApplication.statuses', function ($q) {
+                    $q->where('name', '!=', 'rejected')
+                        ->whereRaw('statuses.id = (
               SELECT MAX(id) FROM statuses 
               WHERE statuses.model_id = account_applications.id 
               AND statuses.model_type = ?
-          )', [\App\Models\AccountApplication::class]);
-    });
-} else {
-    $query->whereHas('accountApplication.statuses', function($q) {
-        $q->where('name', 'rejected')
-          ->whereRaw('statuses.id = (
+          )', [AccountApplication::class]);
+                });
+            } else {
+                $query->whereHas('accountApplication.statuses', function ($q) {
+                    $q->where('name', 'rejected')
+                        ->whereRaw('statuses.id = (
               SELECT MAX(id) FROM statuses 
               WHERE statuses.model_id = account_applications.id 
               AND statuses.model_type = ?
-          )', [\App\Models\AccountApplication::class]);
-    });
-}
+          )', [AccountApplication::class]);
+                });
+            }
 
             $applicants = $query->latest()->paginate(15);
         }
 
         return view('livewire.account-applications.manage-account-applications', compact('applicants'))
             ->layout('layouts.dashboard', [
-                'breadcrumbs' => $this->getBreadcrumbs()
+                'breadcrumbs' => $this->getBreadcrumbs(),
             ])
             ->title($this->getPageTitle());
     }
@@ -257,23 +273,23 @@ if ($this->filter === 'pending') {
 
         if ($this->mode === 'list') {
             $breadcrumbs[] = [
-                'href' => route('account-applications.index'), 
+                'href' => route('account-applications.index'),
                 'text' => $this->filter === 'pending' ? 'Account Applications' : 'Rejected Applications',
-                'active' => true
+                'active' => true,
             ];
         } elseif ($this->mode === 'view' && $this->selectedApplicant) {
             $breadcrumbs[] = ['href' => route('account-applications.index'), 'text' => 'Account Applications'];
             $breadcrumbs[] = [
-                'href' => route('account-applications.show', $this->selectedApplicant->id), 
-                'text' => 'View ' . $this->selectedApplicant->name,
-                'active' => true
+                'href' => route('account-applications.show', $this->selectedApplicant->id),
+                'text' => 'View '.$this->selectedApplicant->name,
+                'active' => true,
             ];
         } elseif ($this->mode === 'change-status' && $this->selectedApplicant) {
             $breadcrumbs[] = ['href' => route('account-applications.index'), 'text' => 'Account Applications'];
             $breadcrumbs[] = [
-                'href' => route('account-applications.change-status', $this->selectedApplicant->id), 
+                'href' => route('account-applications.change-status', $this->selectedApplicant->id),
                 'text' => 'Change Status',
-                'active' => true
+                'active' => true,
             ];
         }
 
@@ -283,11 +299,11 @@ if ($this->filter === 'pending') {
     protected function getPageTitle()
     {
         if ($this->mode === 'view' && $this->selectedApplicant) {
-            return $this->selectedApplicant->name . "'s Application";
+            return $this->selectedApplicant->name."'s Application";
         } elseif ($this->mode === 'change-status') {
             return 'Change Application Status';
         }
-        
+
         return $this->filter === 'pending' ? 'Account Applications' : 'Rejected Applications';
     }
 }

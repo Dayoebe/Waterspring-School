@@ -168,6 +168,16 @@ class User extends Authenticatable
         return $this->hasOne(ParentRecord::class);
     }
 
+    public function guardianLinks(): HasMany
+    {
+        return $this->hasMany(ParentRecord::class, 'user_id');
+    }
+
+    public function guardianshipLinks(): HasMany
+    {
+        return $this->hasMany(ParentRecord::class, 'student_id');
+    }
+
     /**
      * Get the teacher record for this user (if teacher)
      */
@@ -196,13 +206,35 @@ class User extends Authenticatable
     /** @return BelongsToMany<User, $this> */
     public function parents(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'parent_records', 'student_id', 'user_id');
+        return $this->belongsToMany(User::class, 'parent_records', 'student_id', 'user_id')
+            ->withPivot([
+                'relationship_type', 'is_primary_contact', 'receives_digest',
+                'can_view_academics', 'can_view_attendance', 'can_view_portfolio',
+                'can_consent_events', 'active_from', 'active_until', 'verified_at', 'verified_by',
+            ])
+            ->withTimestamps();
+    }
+
+    public function guardians(): BelongsToMany
+    {
+        return $this->parents();
     }
 
     /** @return BelongsToMany<User, $this> */
     public function children(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'parent_records', 'user_id', 'student_id');
+        return $this->belongsToMany(User::class, 'parent_records', 'user_id', 'student_id')
+            ->withPivot([
+                'relationship_type', 'is_primary_contact', 'receives_digest',
+                'can_view_academics', 'can_view_attendance', 'can_view_portfolio',
+                'can_consent_events', 'active_from', 'active_until', 'verified_at', 'verified_by',
+            ])
+            ->withTimestamps();
+    }
+
+    public function wards(): BelongsToMany
+    {
+        return $this->children();
     }
 
     public function instructedClubs()

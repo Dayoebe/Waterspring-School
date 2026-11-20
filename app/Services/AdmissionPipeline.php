@@ -8,7 +8,6 @@ use App\Models\AdmissionInterview;
 use App\Models\AdmissionRegistration;
 use App\Models\AdmissionStatusHistory;
 use App\Models\MyClass;
-use App\Models\ParentRecord;
 use App\Models\School;
 use App\Models\Section;
 use App\Models\StudentRecord;
@@ -204,7 +203,11 @@ class AdmissionPipeline
             $this->assertClassScope($locked);
             [$student, $record, $studentPassword] = $this->createStudent($locked, $school);
             $parent = $this->resolveOrCreateParent($locked, $school);
-            ParentRecord::query()->firstOrCreate(['user_id' => $parent->id, 'student_id' => $student->id]);
+            app(GuardianLinkService::class)->link($parent, $student, $actor, [
+                'relationship_type' => 'guardian',
+                'can_view_academics' => true,
+                'can_view_attendance' => true,
+            ]);
 
             $locked->update([
                 'status' => 'enrolled',

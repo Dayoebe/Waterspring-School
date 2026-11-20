@@ -25,7 +25,15 @@ The public `/register` form accepts applications for student, parent, or teacher
 
 Applicants can sign in, but `PreventPendingAccountAccess` immediately logs them out of protected browser routes and returns HTTP 403 for protected API access. They have no dashboard, school data, or role permissions while approval is pending.
 
-Authorized staff review applications under **Account Applications**. Approval replaces the applicant role with the requested role and creates the required student, parent, or teacher record. Student approval also captures class, optional section, admission date, and admission number. Rejection retains the application history for staff review.
+Authorized staff review applications under **Account Applications**. Approval replaces the applicant role with the requested role. Student approval also creates the student record and captures class, optional section, admission date, and admission number; teacher approval creates the teacher record. A parent approval does not create an empty relationship record: authorised staff link the approved parent to a student separately after verifying the relationship. Rejection retains the application history for staff review.
+
+## Guardians and student relationships
+
+`parent_records` stores verified guardian-to-student relationships rather than a parent profile. A student may have multiple linked guardians, while the `(guardian, student)` pair remains unique. Each relationship records its type, primary-contact status, verification details, and explicit authority for academics, attendance, portfolio viewing, weekly digests, and event consent.
+
+Existing relationships are preserved as primary contacts during the multi-guardian migration. Academic and attendance access retain their previous defaults; digest delivery, portfolio access, and event-consent authority remain disabled until an authorised administrator explicitly enables them. Adding another guardian never replaces an existing relationship.
+
+Parent-facing queries must re-resolve the selected student through the authenticated guardian's active relationship in the same school and, where applicable, check the relevant authority flag. A `parent` role by itself does not grant access to every student or every category of information.
 
 ## Roles and authorization
 
