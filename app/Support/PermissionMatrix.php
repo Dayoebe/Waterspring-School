@@ -50,6 +50,16 @@ class PermissionMatrix
             'contribute student records',
             'approve student records',
             'manage student portfolio',
+            'view house points',
+            'manage houses',
+            'award house points',
+            'deduct house points',
+            'approve house point awards',
+            'manage house challenges',
+            'access intervention alerts',
+            'manage intervention rules',
+            'generate intervention alerts',
+            'manage intervention alerts',
 
             'read teacher',
             'read staff directory',
@@ -213,6 +223,10 @@ class PermissionMatrix
             'view student growth timeline',
             'contribute student records',
             'manage student portfolio',
+            'view house points',
+            'award house points',
+            'manage house challenges',
+            'access intervention alerts',
             'read parent',
             'read school resources',
 
@@ -289,6 +303,7 @@ class PermissionMatrix
             'view own growth timeline',
             'view own portfolio',
             'submit own portfolio',
+            'view house points',
         ];
 
         $parent = [
@@ -321,6 +336,7 @@ class PermissionMatrix
             'respond school event',
             'view child growth timeline',
             'view child portfolio',
+            'view house points',
         ];
 
         $basicUser = [
@@ -443,6 +459,16 @@ class PermissionMatrix
             'view own portfolio',
             'view child portfolio',
             'submit own portfolio',
+            'view house points',
+            'manage houses',
+            'award house points',
+            'deduct house points',
+            'approve house point awards',
+            'manage house challenges',
+            'access intervention alerts',
+            'manage intervention rules',
+            'generate intervention alerts',
+            'manage intervention alerts',
 
             'read parent',
             'create parent',

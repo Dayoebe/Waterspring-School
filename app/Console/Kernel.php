@@ -38,6 +38,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        $schedule->command('interventions:generate')
+            ->dailyAt('06:30')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->command('birthdays:send-automated')
             ->hourly()
             ->withoutOverlapping()

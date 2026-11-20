@@ -74,6 +74,8 @@ use App\Livewire\Fees\ManageFeeCategories;
 use App\Livewire\Fees\ManageFeeInvoices;
 use App\Livewire\Fees\ManageFees;
 use App\Livewire\Gallery\ManageGallery;
+use App\Livewire\Houses\HousePointsHub;
+use App\Livewire\Interventions\SmartInterventionHub;
 use App\Livewire\Media\ManageMediaLibrary;
 use App\Livewire\Parents\AssignStudentsToParent;
 use App\Livewire\Parents\ManageParents;
@@ -290,6 +292,14 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/students/portfolio', PortfolioHub::class)
         ->middleware('permission:manage student portfolio|view own portfolio|view child portfolio')
         ->name('students.portfolio');
+
+    Route::get('/student-life/house-points', HousePointsHub::class)
+        ->middleware('permission:view house points')
+        ->name('house-points.index');
+
+    Route::get('/dashboard/intervention-alerts', SmartInterventionHub::class)
+        ->middleware('permission:access intervention alerts')
+        ->name('interventions.index');
 
     Route::get('/recognitions/face-of-the-week', ManageRecognitions::class)
         ->middleware('permission:read student recognition')

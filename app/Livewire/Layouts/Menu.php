@@ -598,6 +598,13 @@ class Menu extends Component
                 'route' => 'recognitions.index',
                 'permissions' => ['read student recognition'],
             ],
+            [
+                'type' => 'menu-item',
+                'text' => 'House Points & Challenges',
+                'icon' => 'fas fa-trophy',
+                'route' => 'house-points.index',
+                'permissions' => ['view house points'],
+            ],
         ];
     }
 
@@ -635,6 +642,13 @@ class Menu extends Component
                         'text' => 'Student Support Centre',
                         'route' => 'student-support.index',
                         'permissions' => ['access student support'],
+                        'section' => 'Support Plans',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Smart Intervention Alerts',
+                        'route' => 'interventions.index',
+                        'permissions' => ['access intervention alerts'],
                         'section' => 'Support Plans',
                     ],
                     [
