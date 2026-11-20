@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\CloudinaryImageStorage;
+use App\Support\ContentVisibility;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,18 +14,24 @@ class MediaAsset extends Model
 
     protected $fillable = [
         'school_id',
+        'subject_user_id',
         'usage_area',
+        'visibility',
         'title',
         'alt_text',
+        'original_name',
         'disk',
         'path',
         'optimized_path',
         'thumbnails',
         'mime_type',
         'file_size',
+        'checksum_sha256',
         'width',
         'height',
         'uploaded_by',
+        'publication_approved_at',
+        'publication_approved_by',
     ];
 
     protected $casts = [
@@ -32,6 +39,7 @@ class MediaAsset extends Model
         'file_size' => 'integer',
         'width' => 'integer',
         'height' => 'integer',
+        'publication_approved_at' => 'datetime',
     ];
 
     public function school(): BelongsTo
@@ -44,8 +52,26 @@ class MediaAsset extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
+    public function subjectUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'subject_user_id')->withTrashed();
+    }
+
+    public function publicationApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'publication_approved_by')->withTrashed();
+    }
+
     public function getUrlAttribute(): string
     {
+        if (
+            ($this->visibility ?: ContentVisibility::PUBLIC) !== ContentVisibility::PUBLIC
+            || ! $this->publication_approved_at
+            || $this->disk === 'local'
+        ) {
+            return route('media-assets.show', $this);
+        }
+
         return app(CloudinaryImageStorage::class)->url($this->path, $this->disk ?: 'public') ?? '';
     }
 
@@ -58,7 +84,7 @@ class MediaAsset extends Model
             );
         }
 
-        if (!$this->optimized_path) {
+        if (! $this->optimized_path) {
             return null;
         }
 

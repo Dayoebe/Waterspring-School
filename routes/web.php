@@ -17,6 +17,7 @@ use App\Http\Controllers\FlutterwaveCallbackController;
 use App\Http\Controllers\FlutterwavePaymentController;
 use App\Http\Controllers\GradeSystemController;
 use App\Http\Controllers\LockUserAccountController;
+use App\Http\Controllers\MediaAssetController;
 use App\Http\Controllers\MyClassController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\OperationalHealthController;
@@ -173,6 +174,10 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots')-
 Route::get('/llms.txt', [SeoController::class, 'llms'])->name('seo.llms')->withoutMiddleware($statelessPublicFileMiddleware);
 Route::get('/llms-full.txt', [SeoController::class, 'llmsFull'])->name('seo.llms-full')->withoutMiddleware($statelessPublicFileMiddleware);
 Route::get('/ai.txt', [SeoController::class, 'ai'])->name('seo.ai')->withoutMiddleware($statelessPublicFileMiddleware);
+Route::get('/media/{mediaAsset}', MediaAssetController::class)
+    ->whereNumber('mediaAsset')
+    ->middleware('throttle:120,1')
+    ->name('media-assets.show');
 
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');

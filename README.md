@@ -44,7 +44,8 @@ The following modules are present in the codebase. Their availability depends on
 | --- | --- |
 | Identity and access | Email/username login, administrator-managed accounts, public applications, role/permission assignment, account locks, forced password change and school context |
 | School administration | Schools, school/site settings, academic years, terms/semesters, class groups, classes, sections, subjects and staff directory |
-| People and progression | Students, parents, teachers, administrators, parent-child links, admissions, promotions and graduation |
+| People and progression | Students, verified multi-guardian relationships, teachers, administrators, admissions, promotions and graduation |
+| Community governance | Versioned content review, explicit audiences and private media delivery for safeguarding-sensitive features |
 | Admissions | Public registration, documents, interviews, internal notes, status history, offers, acceptance, fee confirmation and conversion to student/parent records |
 | Teaching and curriculum | Assignments, subject allocation, syllabi, schemes of work, timetables, calendar, clubs, resources and teacher responsibilities |
 | Assessment and results | Exams, exam slots/papers, CA1/CA2/exam scoring, grade systems, spreadsheet entry/import, publication, reports, exports and history |

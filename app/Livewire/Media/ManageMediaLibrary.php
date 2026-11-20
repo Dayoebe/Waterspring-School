@@ -3,7 +3,9 @@
 namespace App\Livewire\Media;
 
 use App\Models\MediaAsset;
+use App\Services\AuditTrail;
 use App\Services\CloudinaryImageStorage;
+use App\Support\ContentVisibility;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -60,6 +62,7 @@ class ManageMediaLibrary extends Component
         $schoolId = (int) auth()->user()?->school_id;
         if ($schoolId <= 0) {
             $this->addError('mediaFile', 'Select a school context before uploading media.');
+
             return;
         }
 
@@ -75,7 +78,7 @@ class ManageMediaLibrary extends Component
             $disk = 'cloudinary';
             $storedPath = $storage->upload(
                 $this->mediaFile,
-                $storage->folder('media-library/' . $schoolId . '/' . now()->format('Y/m'))
+                $storage->folder('media-library/'.$schoolId.'/'.now()->format('Y/m'))
             );
             $imagePath = $this->mediaFile->getRealPath();
             $imageSize = is_string($imagePath) ? @getimagesize($imagePath) : false;
@@ -86,16 +89,18 @@ class ManageMediaLibrary extends Component
         } else {
             $disk = 'public';
             $storedPath = $this->mediaFile->store(
-                'media-library/' . $schoolId . '/' . now()->format('Y/m'),
+                'media-library/'.$schoolId.'/'.now()->format('Y/m'),
                 $disk
             );
         }
 
         MediaAsset::query()->create([
             'school_id' => $schoolId,
+            'visibility' => ContentVisibility::PUBLIC,
             'usage_area' => $this->usageArea,
             'title' => trim($this->title) ?: null,
             'alt_text' => trim($this->altText) ?: null,
+            'original_name' => $this->mediaFile->getClientOriginalName(),
             'disk' => $disk,
             'path' => $storedPath,
             'optimized_path' => $optimizedPath,
@@ -105,6 +110,8 @@ class ManageMediaLibrary extends Component
             'width' => $width,
             'height' => $height,
             'uploaded_by' => auth()->id(),
+            'publication_approved_at' => now(),
+            'publication_approved_by' => auth()->id(),
         ]);
 
         $this->reset(['title', 'altText', 'mediaFile']);
@@ -118,6 +125,17 @@ class ManageMediaLibrary extends Component
         $asset = MediaAsset::query()
             ->where('school_id', auth()->user()?->school_id)
             ->findOrFail($assetId);
+
+        app(AuditTrail::class)->record(
+            (int) $asset->school_id,
+            'media',
+            'media.deleted',
+            'A media-library asset was deleted.',
+            $asset,
+            ['path' => $asset->path, 'visibility' => $asset->visibility],
+            actor: auth()->user(),
+            subjectLabel: $asset->title ?: $asset->original_name ?: basename($asset->path),
+        );
 
         if ($asset->disk !== 'cloudinary') {
             Storage::disk($asset->disk ?: 'public')->delete($asset->path);
@@ -148,7 +166,7 @@ class ManageMediaLibrary extends Component
                 $query->where('usage_area', $this->usageFilter);
             })
             ->when($this->search !== '', function ($query): void {
-                $search = '%' . trim($this->search) . '%';
+                $search = '%'.trim($this->search).'%';
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('title', 'like', $search)
                         ->orWhere('alt_text', 'like', $search)
