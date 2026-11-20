@@ -34,7 +34,7 @@ class SendAutomatedBirthdayGreetings extends Command
                     return;
                 }
 
-                $ids = $birthdays->today((int) $settings->school_id, $now)->pluck('id');
+                $ids = $birthdays->todayForAutomatedGreetings((int) $settings->school_id, $now)->pluck('id');
                 User::query()->whereIn('id', $ids)->with(['roles', 'parents'])->each(function (User $celebrant) use ($wishes, $settings, $now, &$queued): void {
                     if ($wishes->queueAutomated($celebrant, $settings, $now->year)) {
                         $queued++;

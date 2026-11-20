@@ -107,7 +107,7 @@ class ManageBirthdaySettings extends Component
         session()->flash('birthday_settings_success', 'Birthday settings saved. Automated delivery remains controlled by the switches below.');
     }
 
-    public function togglePrivacy(int $userId, BirthdayService $birthdays): void
+    public function toggleAutomatedGreetingExclusion(int $userId, BirthdayService $birthdays): void
     {
         abort_unless(auth()->user()?->can('manage birthday settings'), 403);
         $user = User::query()
@@ -139,7 +139,7 @@ class ManageBirthdaySettings extends Component
         return view('livewire.birthdays.manage-birthday-settings', compact('people', 'deliveries', 'stats'))
             ->layout('layouts.dashboard', [
                 'title' => 'Birthday Settings',
-                'description' => 'Control visibility, greetings, privacy exclusions, and delivery status.',
+                'description' => 'Control birthday visibility, greetings, and delivery status.',
                 'icon' => 'fas fa-cake-candles',
             ]);
     }

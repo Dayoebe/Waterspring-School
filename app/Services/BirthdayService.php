@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 class BirthdayService
 {
+    private const CACHE_PREFIX = 'birthdays:v2';
+
     public const STAFF_ROLES = ['teacher', 'principal', 'admin', 'super-admin', 'super_admin'];
 
     public function settings(int $schoolId): BirthdaySetting
@@ -45,6 +47,25 @@ class BirthdayService
             ->values();
     }
 
+    public function todayForAutomatedGreetings(int $schoolId, ?CarbonInterface $now = null): Collection
+    {
+        $celebrants = $this->today($schoolId, $now);
+        if ($celebrants->isEmpty()) {
+            return $celebrants;
+        }
+
+        $eligibleIds = User::query()
+            ->where('school_id', $schoolId)
+            ->where('birthday_is_private', false)
+            ->whereIn('id', $celebrants->pluck('id'))
+            ->pluck('id')
+            ->flip();
+
+        return $celebrants
+            ->filter(fn (array $celebrant): bool => $eligibleIds->has($celebrant['id']))
+            ->values();
+    }
+
     public function upcoming(int $schoolId, int $days = 30, ?CarbonInterface $now = null): Collection
     {
         $today = $this->todayAt($now);
@@ -58,8 +79,8 @@ class BirthdayService
     public function dashboard(int $schoolId, ?CarbonInterface $now = null): array
     {
         $today = $this->todayAt($now);
-        $version = Cache::get("birthdays:{$schoolId}:version", 1);
-        $key = "birthdays:{$schoolId}:dashboard:{$today->toDateString()}:{$version}";
+        $version = Cache::get(self::CACHE_PREFIX.":{$schoolId}:version", 1);
+        $key = self::CACHE_PREFIX.":{$schoolId}:dashboard:{$today->toDateString()}:{$version}";
 
         return Cache::remember($key, now()->addMinutes(10), function () use ($schoolId, $today): array {
             $upcoming = $this->upcoming($schoolId, 7, $today);
@@ -79,8 +100,8 @@ class BirthdayService
     public function celebrants(int $schoolId, ?CarbonInterface $now = null): Collection
     {
         $today = $this->todayAt($now);
-        $version = Cache::get("birthdays:{$schoolId}:version", 1);
-        $key = "birthdays:{$schoolId}:people:{$today->toDateString()}:{$version}";
+        $version = Cache::get(self::CACHE_PREFIX.":{$schoolId}:version", 1);
+        $key = self::CACHE_PREFIX.":{$schoolId}:people:{$today->toDateString()}:{$version}";
 
         return Cache::remember($key, now()->addMinutes(10), fn (): Collection => $this->resolveCelebrants($schoolId, $today));
     }
@@ -96,7 +117,6 @@ class BirthdayService
         $query = User::query()
             ->where('school_id', $schoolId)
             ->where('locked', false)
-            ->where('birthday_is_private', false)
             ->whereNotNull('birthday')
             ->whereHas('roles', function (Builder $query) use ($settings): void {
                 $roles = [];
@@ -197,7 +217,7 @@ class BirthdayService
 
     public function clearCache(int $schoolId): void
     {
-        Cache::increment("birthdays:{$schoolId}:version");
+        Cache::increment(self::CACHE_PREFIX.":{$schoolId}:version");
     }
 
     private function todayAt(?CarbonInterface $now): CarbonImmutable

@@ -153,7 +153,7 @@
                         <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                             <input type="hidden" name="birthday_is_private" value="0">
                             <input type="checkbox" name="birthday_is_private" value="1" @checked((bool) old('birthday_is_private', $user->birthday_is_private)) class="mt-1 rounded border-slate-300 text-sky-700">
-                            <span><strong class="block text-slate-900">Keep my birthday private</strong><span class="mt-1 block text-xs leading-5 text-slate-500">Hide me from the birthday widget, directory, calendar, and automated greetings.</span></span>
+                            <span><strong class="block text-slate-900">Exclude me from automated birthday emails</strong><span class="mt-1 block text-xs leading-5 text-slate-500">Your name and birthday month/day remain visible to authorised school users. Contact details and birth year stay private.</span></span>
                         </label>
                     </div>
 
