@@ -11,16 +11,27 @@ use Livewire\Component;
 class SchoolCalendar extends Component
 {
     public string $month = '';
+
     public string $search = '';
+
     public string $categoryFilter = 'all';
+
     public ?int $editingEventId = null;
+
     public string $title = '';
+
     public string $description = '';
+
     public string $category = 'event';
+
     public string $startsAt = '';
+
     public string $endsAt = '';
+
     public bool $allDay = false;
+
     public string $location = '';
+
     public array $audiences = ['all'];
 
     public function mount(): void
@@ -55,6 +66,7 @@ class SchoolCalendar extends Component
     {
         $this->ensureCanManage();
         $event = SchoolEvent::query()->findOrFail($eventId);
+        abort_if($event->requires_rsvp || $event->requires_consent || $event->requires_emergency_contact, 403, 'Manage RSVP and consent events from Event Management.');
         $this->editingEventId = $event->id;
         $this->title = $event->title;
         $this->description = (string) $event->description;
@@ -84,6 +96,8 @@ class SchoolCalendar extends Component
         $event = $this->editingEventId
             ? SchoolEvent::query()->findOrFail($this->editingEventId)
             : new SchoolEvent(['created_by' => auth()->id()]);
+        abort_if($event->exists && ($event->requires_rsvp || $event->requires_consent || $event->requires_emergency_contact), 403, 'Manage RSVP and consent events from Event Management.');
+        $isNew = ! $event->exists;
         $event->fill([
             'title' => trim($validated['title']),
             'description' => trim($validated['description']) ?: null,
@@ -93,6 +107,9 @@ class SchoolCalendar extends Component
             'all_day' => $validated['allDay'],
             'location' => trim($validated['location']) ?: null,
             'audiences' => in_array('all', $validated['audiences'], true) ? ['all'] : array_values(array_unique($validated['audiences'])),
+            'status' => $isNew ? 'published' : $event->status,
+            'published_at' => $isNew ? now() : $event->published_at,
+            'published_by' => $isNew ? auth()->id() : $event->published_by,
         ])->save();
 
         $this->resetForm();
@@ -102,7 +119,9 @@ class SchoolCalendar extends Component
     public function deleteEvent(int $eventId): void
     {
         $this->ensureCanManage();
-        SchoolEvent::query()->findOrFail($eventId)->delete();
+        $event = SchoolEvent::query()->findOrFail($eventId);
+        abort_if($event->requires_rsvp || $event->requires_consent || $event->requires_emergency_contact, 403, 'Manage RSVP and consent events from Event Management.');
+        $event->delete();
         if ($this->editingEventId === $eventId) {
             $this->resetForm();
         }
@@ -144,6 +163,7 @@ class SchoolCalendar extends Component
 
         return SchoolEvent::query()
             ->with('creator:id,name')
+            ->when(! $user->can('manage school events'), fn (Builder $query) => $query->published())
             ->whereBetween('starts_at', [$start, $end])
             ->when($this->categoryFilter !== 'all', fn (Builder $query) => $query->where('category', $this->categoryFilter))
             ->when($this->search !== '', function (Builder $query): void {

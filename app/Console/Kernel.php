@@ -48,6 +48,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        $schedule->command('events:send-reminders --hours=24')
+            ->hourly()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->command('appointments:send-reminders --hours=24')
             ->hourly()
             ->withoutOverlapping()

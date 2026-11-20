@@ -133,7 +133,7 @@ class ParentDigestBuilder
 
     private function events(int $schoolId, CarbonInterface $start, CarbonInterface $end): array
     {
-        return SchoolEvent::query()->where('school_id', $schoolId)
+        return SchoolEvent::query()->where('school_id', $schoolId)->published()
             ->whereBetween('starts_at', [$start->copy()->endOfDay(), $end])
             ->orderBy('starts_at')->get()
             ->filter(fn (SchoolEvent $event): bool => in_array('all', $event->audiences ?: ['all'], true) || in_array('parent', $event->audiences ?: [], true))

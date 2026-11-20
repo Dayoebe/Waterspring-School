@@ -67,6 +67,8 @@ use App\Livewire\Dashboard\ExecutiveReport;
 use App\Livewire\Dashboard\PerformanceTrends;
 use App\Livewire\Dashboard\TeacherResponsibilities;
 use App\Livewire\Discipline\ManageDisciplineIncidents;
+use App\Livewire\Events\FamilyEvents;
+use App\Livewire\Events\ManageEvents;
 use App\Livewire\Fees\FeeInvoiceDetail;
 use App\Livewire\Fees\ManageFeeCategories;
 use App\Livewire\Fees\ManageFeeInvoices;
@@ -271,6 +273,14 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/dashboard/communications/weekly-digest', ManageWeeklyDigest::class)
         ->middleware('permission:manage parent digest')
         ->name('parent-digest.manage');
+
+    Route::get('/family/events', FamilyEvents::class)
+        ->middleware('permission:respond school event')
+        ->name('family-events.index');
+
+    Route::get('/dashboard/events', ManageEvents::class)
+        ->middleware('permission:manage school events')
+        ->name('events.manage');
 
     Route::get('/recognitions/face-of-the-week', ManageRecognitions::class)
         ->middleware('permission:read student recognition')

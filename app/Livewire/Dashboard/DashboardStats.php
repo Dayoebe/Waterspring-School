@@ -1277,6 +1277,7 @@ class DashboardStats extends Component
 
         $this->calendarPanel = SchoolEvent::query()
             ->where('school_id', $user->school_id)
+            ->published()
             ->where('starts_at', '>=', now()->startOfDay())
             ->where('starts_at', '<=', now()->addYear()->endOfDay())
             ->orderBy('starts_at')

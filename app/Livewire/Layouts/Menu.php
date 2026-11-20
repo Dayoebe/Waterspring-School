@@ -372,6 +372,22 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'text' => 'Event Management',
+                        'icon' => 'fas fa-calendar-check',
+                        'route' => 'events.manage',
+                        'permissions' => ['manage school events'],
+                        'section' => 'Academic Calendar',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Events & Permission Slips',
+                        'icon' => 'fas fa-file-signature',
+                        'route' => 'family-events.index',
+                        'permissions' => ['respond school event'],
+                        'section' => 'Academic Calendar',
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'text' => 'Academic Years',
                         'route' => 'academic-years.index',
                         'permissions' => ['read academic year'],
