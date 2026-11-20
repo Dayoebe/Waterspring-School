@@ -46,6 +46,10 @@ class PermissionMatrix
             'manage birthday settings',
             'manage parent digest',
             'manage school events',
+            'view student growth timeline',
+            'contribute student records',
+            'approve student records',
+            'manage student portfolio',
 
             'read teacher',
             'read staff directory',
@@ -206,6 +210,9 @@ class PermissionMatrix
             'publish student recognition',
             'view birthdays',
             'send birthday wishes',
+            'view student growth timeline',
+            'contribute student records',
+            'manage student portfolio',
             'read parent',
             'read school resources',
 
@@ -279,6 +286,9 @@ class PermissionMatrix
             'view own broadcasts',
             'view birthdays',
             'send birthday wishes',
+            'view own growth timeline',
+            'view own portfolio',
+            'submit own portfolio',
         ];
 
         $parent = [
@@ -309,6 +319,8 @@ class PermissionMatrix
             'send birthday wishes',
             'view parent digest',
             'respond school event',
+            'view child growth timeline',
+            'view child portfolio',
         ];
 
         $basicUser = [
@@ -422,6 +434,15 @@ class PermissionMatrix
             'manage parent digest',
             'manage school events',
             'respond school event',
+            'view student growth timeline',
+            'view own growth timeline',
+            'view child growth timeline',
+            'contribute student records',
+            'approve student records',
+            'manage student portfolio',
+            'view own portfolio',
+            'view child portfolio',
+            'submit own portfolio',
 
             'read parent',
             'create parent',

@@ -70,6 +70,11 @@ class StudentRecognition extends Model
         return $this->belongsTo(User::class, 'custom_category_approved_by')->withTrashed();
     }
 
+    public function activityRecord()
+    {
+        return $this->hasOne(StudentActivityRecord::class);
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('status', 'published')->whereNotNull('published_at');

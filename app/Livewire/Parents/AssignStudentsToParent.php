@@ -39,6 +39,8 @@ class AssignStudentsToParent extends Component
 
     public bool $canViewPortfolio = false;
 
+    public bool $canViewGrowthTimeline = false;
+
     public bool $canConsentEvents = false;
 
     protected $queryString = ['search'];
@@ -114,6 +116,7 @@ class AssignStudentsToParent extends Component
             'canViewAcademics' => ['boolean'],
             'canViewAttendance' => ['boolean'],
             'canViewPortfolio' => ['boolean'],
+            'canViewGrowthTimeline' => ['boolean'],
             'canConsentEvents' => ['boolean'],
         ]);
 
@@ -140,6 +143,7 @@ class AssignStudentsToParent extends Component
             'can_view_academics' => $this->canViewAcademics,
             'can_view_attendance' => $this->canViewAttendance,
             'can_view_portfolio' => $this->canViewPortfolio,
+            'can_view_growth_timeline' => $this->canViewGrowthTimeline,
             'can_consent_events' => $this->canConsentEvents,
         ]);
 
@@ -156,7 +160,7 @@ class AssignStudentsToParent extends Component
     {
         $allowed = [
             'receives_digest', 'can_view_academics', 'can_view_attendance',
-            'can_view_portfolio', 'can_consent_events',
+            'can_view_portfolio', 'can_view_growth_timeline', 'can_consent_events',
         ];
         abort_unless(in_array($field, $allowed, true), 422);
 

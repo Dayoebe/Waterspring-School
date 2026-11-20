@@ -23,6 +23,10 @@ class MediaAssetController extends Controller
         $disk = Storage::disk($mediaAsset->disk ?: 'local');
         abort_unless($disk->exists($mediaAsset->path), 404);
 
+        if ($request->boolean('download')) {
+            return $disk->download($mediaAsset->path, $mediaAsset->original_name ?: basename($mediaAsset->path));
+        }
+
         return $disk->response(
             $mediaAsset->path,
             $mediaAsset->original_name ?: basename($mediaAsset->path),

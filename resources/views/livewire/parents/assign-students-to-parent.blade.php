@@ -62,6 +62,7 @@
                                     'can_view_academics' => 'Academics',
                                     'can_view_attendance' => 'Attendance',
                                     'can_view_portfolio' => 'Portfolio',
+                                    'can_view_growth_timeline' => 'Growth timeline',
                                     'receives_digest' => 'Digest',
                                     'can_consent_events' => 'Event consent',
                                 ] as $field => $label)
@@ -105,6 +106,7 @@
                 <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewAcademics" class="rounded text-sky-700"> Academic records</label>
                 <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewAttendance" class="rounded text-sky-700"> Attendance records</label>
                 <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewPortfolio" class="rounded text-sky-700"> Approved portfolio items</label>
+                <label class="flex items-center gap-2"><input type="checkbox" wire:model="canViewGrowthTimeline" class="rounded text-sky-700"> Approved growth timeline</label>
             </div>
             <div class="space-y-2 text-sm text-slate-700">
                 <label class="flex items-center gap-2"><input type="checkbox" wire:model="receivesDigest" class="rounded text-sky-700"> Receive weekly digest when enabled</label>

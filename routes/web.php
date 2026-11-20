@@ -95,10 +95,11 @@ use App\Livewire\Schools\ManageSiteSettings;
 use App\Livewire\Schools\SchoolDetail;
 use App\Livewire\Sections\ManageSections;
 use App\Livewire\Sections\SectionDetail;
-// Controllers
 use App\Livewire\Staff\ManageStaffDirectory;
 use App\Livewire\Students\GraduateStudents;
+use App\Livewire\Students\GrowthTimeline;
 use App\Livewire\Students\ManageStudents;
+use App\Livewire\Students\PortfolioHub;
 use App\Livewire\Students\PromoteStudents;
 use App\Livewire\Students\StudentCredentialReadiness;
 use App\Livewire\Students\StudentDetail;
@@ -281,6 +282,14 @@ Route::middleware($schoolContextMiddleware)->group(function () {
     Route::get('/dashboard/events', ManageEvents::class)
         ->middleware('permission:manage school events')
         ->name('events.manage');
+
+    Route::get('/students/growth-timeline', GrowthTimeline::class)
+        ->middleware('permission:view student growth timeline|view own growth timeline|view child growth timeline')
+        ->name('students.growth-timeline');
+
+    Route::get('/students/portfolio', PortfolioHub::class)
+        ->middleware('permission:manage student portfolio|view own portfolio|view child portfolio')
+        ->name('students.portfolio');
 
     Route::get('/recognitions/face-of-the-week', ManageRecognitions::class)
         ->middleware('permission:read student recognition')

@@ -186,6 +186,22 @@ class Menu extends Component
                     ],
                     [
                         'type' => 'menu-item',
+                        'text' => 'Growth Timeline',
+                        'icon' => 'fas fa-chart-line',
+                        'route' => 'students.growth-timeline',
+                        'permissions' => ['view student growth timeline', 'view own growth timeline', 'view child growth timeline'],
+                        'section' => 'Student Records',
+                    ],
+                    [
+                        'type' => 'menu-item',
+                        'text' => 'Student Portfolio',
+                        'icon' => 'fas fa-folder-open',
+                        'route' => 'students.portfolio',
+                        'permissions' => ['manage student portfolio', 'view own portfolio', 'view child portfolio'],
+                        'section' => 'Student Records',
+                    ],
+                    [
+                        'type' => 'menu-item',
                         'text' => 'Add Parent',
                         'route' => 'parents.index',
                         'params' => ['mode' => 'create'],

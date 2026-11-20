@@ -8,7 +8,7 @@ use App\Models\Notice;
 use App\Models\ParentRecord;
 use App\Models\Result;
 use App\Models\SchoolEvent;
-use App\Models\StudentRecognition;
+use App\Models\StudentActivityRecord;
 use App\Models\User;
 use App\Support\ResultPublicationStatus;
 use Carbon\CarbonInterface;
@@ -51,7 +51,7 @@ class ParentDigestBuilder
             'attendance' => $link->can_view_attendance && $record ? $this->attendance($record->id, $start, $end) : null,
             'assignments' => $link->can_view_academics && $record ? $this->assignments($record->id, $start, $end) : null,
             'results' => $link->can_view_academics && $record ? $this->results($student, $record->id) : null,
-            'recognitions' => $this->recognitions((int) $student?->id, $start, $end),
+            'achievements' => $link->can_view_growth_timeline ? $this->achievements((int) $student?->id, $start, $end) : [],
         ];
     }
 
@@ -112,13 +112,12 @@ class ParentDigestBuilder
         ];
     }
 
-    private function recognitions(int $studentId, CarbonInterface $start, CarbonInterface $end): array
+    private function achievements(int $studentId, CarbonInterface $start, CarbonInterface $end): array
     {
-        return StudentRecognition::query()->published()
-            ->where('student_id', $studentId)
-            ->whereBetween('published_at', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
-            ->get(['category', 'custom_category', 'congratulatory_message'])
-            ->map(fn (StudentRecognition $recognition): array => ['category' => $recognition->category_label, 'message' => $recognition->congratulatory_message])
+        return StudentActivityRecord::query()->approved()->where('student_id', $studentId)->where('eligible_digest', true)
+            ->whereBetween('occurred_on', [$start->toDateString(), $end->toDateString()])
+            ->with('recognition')->oldest('occurred_on')->get()
+            ->map(fn (StudentActivityRecord $record): array => ['category' => $record->display_title, 'message' => $record->display_description])
             ->all();
     }
 

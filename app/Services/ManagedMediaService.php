@@ -19,6 +19,11 @@ class ManagedMediaService
         'image/png' => 'png',
         'image/webp' => 'webp',
         'application/pdf' => 'pdf',
+        'application/msword' => 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        'application/vnd.ms-powerpoint' => 'ppt',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+        'text/plain' => 'txt',
         'video/mp4' => 'mp4',
         'video/webm' => 'webm',
     ];
@@ -33,6 +38,7 @@ class ManagedMediaService
         ?User $subject = null,
         ?string $title = null,
         ?string $altText = null,
+        ?int $maxBytes = null,
     ): MediaAsset {
         if (! in_array($visibility, ContentVisibility::values(), true)) {
             throw ValidationException::withMessages(['media' => 'The selected media visibility is invalid.']);
@@ -43,8 +49,8 @@ class ManagedMediaService
 
         $mimeType = (string) $file->getMimeType();
         $extension = self::ALLOWED_MIME_TYPES[$mimeType] ?? null;
-        if (! $extension || (int) $file->getSize() <= 0 || (int) $file->getSize() > self::MAX_BYTES) {
-            throw ValidationException::withMessages(['media' => 'Upload a JPG, PNG, WebP, PDF, MP4 or WebM file no larger than 25 MB.']);
+        if (! $extension || (int) $file->getSize() <= 0 || (int) $file->getSize() > ($maxBytes ?: self::MAX_BYTES)) {
+            throw ValidationException::withMessages(['media' => 'Upload a supported image, PDF, document, presentation or video within the configured file limit.']);
         }
 
         $directory = 'community-media/'.$uploader->school_id.'/'.now()->format('Y/m');

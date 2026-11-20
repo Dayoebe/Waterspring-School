@@ -20,6 +20,12 @@ class MediaAccessService
         if ($viewer->id === $asset->uploaded_by || $viewer->can('moderate community content')) {
             return true;
         }
+        if ($asset->usage_area === 'portfolio' && $viewer->can('manage student portfolio') && $asset->subject_user_id) {
+            return app(StudentRecordAccessService::class)->canViewPortfolio($viewer, $asset->subjectUser);
+        }
+        if ($asset->usage_area === 'student_record_evidence' && $viewer->can('view student growth timeline') && $asset->subject_user_id) {
+            return app(StudentRecordAccessService::class)->canViewTimeline($viewer, $asset->subjectUser);
+        }
         if ($asset->visibility === ContentVisibility::SCHOOL) {
             return true;
         }
@@ -38,6 +44,9 @@ class MediaAccessService
 
         if ($asset->usage_area === 'portfolio') {
             $links->where('can_view_portfolio', true);
+        }
+        if ($asset->usage_area === 'student_record_evidence') {
+            $links->where('can_view_growth_timeline', true);
         }
 
         return $links->exists();

@@ -209,7 +209,7 @@ class User extends Authenticatable
         return $this->belongsToMany(User::class, 'parent_records', 'student_id', 'user_id')
             ->withPivot([
                 'relationship_type', 'is_primary_contact', 'receives_digest',
-                'can_view_academics', 'can_view_attendance', 'can_view_portfolio',
+                'can_view_academics', 'can_view_attendance', 'can_view_portfolio', 'can_view_growth_timeline',
                 'can_consent_events', 'active_from', 'active_until', 'verified_at', 'verified_by',
             ])
             ->withTimestamps();
@@ -226,7 +226,7 @@ class User extends Authenticatable
         return $this->belongsToMany(User::class, 'parent_records', 'user_id', 'student_id')
             ->withPivot([
                 'relationship_type', 'is_primary_contact', 'receives_digest',
-                'can_view_academics', 'can_view_attendance', 'can_view_portfolio',
+                'can_view_academics', 'can_view_attendance', 'can_view_portfolio', 'can_view_growth_timeline',
                 'can_consent_events', 'active_from', 'active_until', 'verified_at', 'verified_by',
             ])
             ->withTimestamps();

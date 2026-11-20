@@ -14,7 +14,7 @@ class ParentRecord extends Model
     protected $fillable = [
         'user_id', 'student_id', 'relationship_type', 'is_primary_contact',
         'receives_digest', 'can_view_academics', 'can_view_attendance',
-        'can_view_portfolio', 'can_consent_events', 'active_from', 'active_until',
+        'can_view_portfolio', 'can_view_growth_timeline', 'can_consent_events', 'active_from', 'active_until',
         'verified_at', 'verified_by',
     ];
 
@@ -24,6 +24,7 @@ class ParentRecord extends Model
         'can_view_academics' => 'boolean',
         'can_view_attendance' => 'boolean',
         'can_view_portfolio' => 'boolean',
+        'can_view_growth_timeline' => 'boolean',
         'can_consent_events' => 'boolean',
         'active_from' => 'date',
         'active_until' => 'date',

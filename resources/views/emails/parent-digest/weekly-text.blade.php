@@ -13,6 +13,9 @@ Hello {{ $digest['guardian']['name'] }},
 @endforelse @endif
 @if($child['results'] !== null)Published result average: {{ $child['results']['average'] === null ? 'No approved results available' : $child['results']['average'].'%' }}
 @endif
+@if($child['achievements'] !== [])Achievements and activities:
+@foreach($child['achievements'] as $achievement)- {{ $achievement['category'] }}: {{ $achievement['message'] }}
+@endforeach @endif
 @endforeach
 Upcoming events:
 @forelse($digest['events'] as $event)- {{ $event['title'] }} — {{ \Carbon\Carbon::parse($event['starts_at'])->format('D, M j · g:i A') }}

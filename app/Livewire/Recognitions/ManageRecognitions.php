@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\ClassPilot\Exceptions\ClassPilotException;
 use App\Services\ClassPilot\Manager;
 use App\Services\CloudinaryImageStorage;
+use App\Services\StudentActivityRecordService;
 use App\Support\RecognitionCategories;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -188,6 +189,7 @@ class ManageRecognitions extends Component
             'published_at' => null,
             'published_by' => null,
         ]);
+        app(StudentActivityRecordService::class)->syncRecognition($recognition->fresh());
         session()->flash('success', 'Recognition unpublished. It is no longer visible publicly.');
     }
 
@@ -195,7 +197,10 @@ class ManageRecognitions extends Component
     {
         $recognition = $this->scopedQuery()->findOrFail($id);
         $this->authorize('delete', $recognition);
-        $recognition->delete();
+        DB::transaction(function () use ($recognition): void {
+            $recognition->activityRecord?->delete();
+            $recognition->delete();
+        });
         session()->flash('success', 'Draft recognition deleted.');
     }
 
@@ -300,6 +305,8 @@ class ManageRecognitions extends Component
             }
             throw $exception;
         }
+
+        app(StudentActivityRecordService::class)->syncRecognition($recognition->fresh());
 
         session()->flash('success', $publish ? 'Face of the Week published successfully.' : 'Recognition draft saved.');
         $this->resetForm();
